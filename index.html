@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f1117">
+<link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIlByZXNlbsOnYUbDoWNpbCIsCiAgInNob3J0X25hbWUiOiAiUHJlc2Vuw6dhRsOhY2lsIiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwZjExMTciLAogICJ0aGVtZV9jb2xvciI6ICIjMGYxMTE3IgogIH0=">
 <title>PresençaFácil</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
@@ -16,12 +18,16 @@
   --text:#e8ecf4;--text2:#8892aa;--text3:#556070;
   --r:14px;--rs:8px;
 }
+[data-theme="light"]{
+  --bg:#f5f6fa;--surface:#ffffff;--surface2:#f0f2f8;--border:#e1e5ee;
+  --text:#1a1d29;--text2:#5d6478;--text3:#9098ad;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;min-height:100vh;overflow-x:hidden}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;min-height:100vh;overflow-x:hidden;transition:background .2s,color .2s}
 
 /* LOGIN */
 #screen-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
-.login-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:36px 28px;width:100%;max-width:360px}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:36px 28px;width:100%;max-width:380px}
 .login-logo{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:10px}
 .ldot{width:11px;height:11px;background:var(--accent);border-radius:50%;box-shadow:0 0 10px var(--accent)}
 .login-sub{font-size:13px;color:var(--text2);margin-bottom:28px}
@@ -34,26 +40,27 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 .logo-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent)}
 .header-right{display:flex;align-items:center;gap:8px;min-width:0}
 .user-chip{font-size:11px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
-.clock{font-family:'Space Grotesk',sans-serif;font-size:11px;color:var(--text2);flex-shrink:0}
+.theme-toggle{background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.escola-chip{font-size:11px;color:var(--accent);background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);border-radius:20px;padding:4px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
 
 /* TABS */
 .tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
-.tab{padding:12px 14px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s,border-color .15s;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;flex-shrink:0}
+.tab{padding:12px 14px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;flex-shrink:0}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 
 /* PAGES */
-.page{display:none;padding:16px;max-width:900px;margin:0 auto}
+.page{display:none;padding:16px;max-width:920px;margin:0 auto}
 .page.active{display:block}
 
 /* FIELDS */
 .field{margin-bottom:14px}
 .field label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500}
-.field input,.field select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .15s}
-.field input:focus,.field select:focus{border-color:var(--accent)}
+.field input,.field select,.field textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
 
 /* BTNS */
-.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s,transform .1s;font-family:'DM Sans',sans-serif}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:opacity .15s,transform .1s}
 .btn:active{transform:scale(.97)}
 .btn-primary{background:var(--accent);color:#fff}
 .btn-primary:hover{opacity:.88}
@@ -61,7 +68,9 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
 .btn-danger{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:var(--danger)}
 .btn-success{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:var(--success)}
+.btn-wpp{background:#25d366;color:#fff}
 .btn-sm{padding:6px 12px;font-size:12px}
+.btn-lg{padding:14px 28px;font-size:15px}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 
 /* SCANNER */
@@ -70,55 +79,71 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 #overlay{position:absolute;top:0;left:0;width:100%;height:100%;transform:scaleX(-1);pointer-events:none}
 .scan-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:180px;height:180px;pointer-events:none}
 .scan-frame::before,.scan-frame::after,.scan-frame span::before,.scan-frame span::after{content:'';position:absolute;width:26px;height:26px;border-color:var(--accent);border-style:solid}
-.scan-frame::before{top:0;left:0;border-width:3px 0 0 3px;border-radius:3px 0 0 0}
-.scan-frame::after{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 3px 0 0}
-.scan-frame span::before{bottom:0;left:0;border-width:0 0 3px 3px;border-radius:0 0 0 3px}
-.scan-frame span::after{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 3px 0}
+.scan-frame::before{top:0;left:0;border-width:3px 0 0 3px}
+.scan-frame::after{top:0;right:0;border-width:3px 3px 0 0}
+.scan-frame span::before{bottom:0;left:0;border-width:0 0 3px 3px}
+.scan-frame span::after{bottom:0;right:0;border-width:0 3px 3px 0}
 .scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scanLine 2s ease-in-out infinite;box-shadow:0 0 6px var(--accent)}
 @keyframes scanLine{0%{top:18%;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:82%;opacity:0}}
 .scanner-status{position:absolute;bottom:12px;left:0;right:0;text-align:center}
 .status-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(0,0,0,.7);backdrop-filter:blur(8px)}
-.status-badge.idle{color:var(--text2);border:1px solid var(--border)}
+.status-badge.idle{color:#aaa;border:1px solid #444}
 .status-badge.looking{color:var(--warning);border:1px solid rgba(245,158,11,.3)}
 .status-badge.found{color:var(--success);border:1px solid rgba(34,197,94,.3)}
 .status-badge.error{color:var(--danger);border:1px solid rgba(239,68,68,.3)}
-.pulse{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.5s ease-in-out infinite;flex-shrink:0}
+.pulse{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.5s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
 
+/* CONFIRM CARD — Grande, atenção do aluno */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s}
+.confirm-overlay.show{opacity:1;pointer-events:all}
+.confirm-card{background:var(--surface);border:2px solid var(--accent);border-radius:18px;padding:28px 24px;width:100%;max-width:440px;text-align:center;transform:scale(.9);transition:transform .25s}
+.confirm-overlay.show .confirm-card{transform:scale(1)}
+.confirm-card .big-avatar{width:90px;height:90px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;font-family:'Space Grotesk',sans-serif;margin:0 auto 16px}
+.confirm-card h2{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.confirm-card .nome{font-size:24px;font-weight:700;font-family:'Space Grotesk',sans-serif;margin-bottom:6px;word-break:break-word}
+.confirm-card .turma{font-size:14px;color:var(--text2);margin-bottom:22px}
+.confirm-actions{display:flex;flex-direction:column;gap:10px}
+.confirm-actions .btn{width:100%;justify-content:center}
+
 /* RESULT CARD */
-.result-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-top:14px;display:flex;align-items:center;gap:12px;opacity:0;transform:translateY(8px);transition:opacity .3s,transform .3s}
-.result-card.visible{opacity:1;transform:none}
+.result-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-top:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .result-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;font-weight:700;font-family:'Space Grotesk',sans-serif}
+.result-info{flex:1;min-width:140px}
 .result-info h3{font-size:14px;font-weight:600;margin-bottom:3px}
 .result-info p{font-size:12px;color:var(--text2)}
-.result-time{margin-left:auto;text-align:right;flex-shrink:0}
+.result-time{text-align:right;flex-shrink:0}
 .result-time .time-big{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;color:var(--accent)}
 .result-time .time-label{font-size:10px;color:var(--text3);margin-top:2px}
 
 /* SECTION TITLE */
-.sec{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;margin-top:24px}
+.sec{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;margin-top:20px}
 
 /* STUDENT GRID */
-.student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-.student-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;transition:border-color .15s}
-.student-card:hover{border-color:var(--accent)}
+.student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.student-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative}
+.student-card.no-bio{border-color:rgba(245,158,11,.3)}
 .avatar{width:48px;height:48px;border-radius:50%;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif}
 .sname{font-size:13px;font-weight:600;text-align:center;word-break:break-word}
 .sturma{font-size:11px;color:var(--text2);background:var(--surface);padding:2px 8px;border-radius:20px}
 .bio-dot{position:absolute;top:9px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 6px var(--success)}
-.del-btn{position:absolute;top:6px;right:6px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:2px;transition:color .15s}
+.no-bio-tag{position:absolute;top:6px;right:6px;font-size:9px;background:var(--warning);color:#000;padding:2px 6px;border-radius:8px;font-weight:700}
+.del-btn{position:absolute;top:6px;left:6px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:2px}
 .del-btn:hover{color:var(--danger)}
+.cam-btn{position:absolute;bottom:6px;right:6px;background:var(--accent);border:none;color:#fff;cursor:pointer;font-size:12px;padding:4px 8px;border-radius:6px;font-weight:600}
 
 /* TABLE */
 .table-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border)}
-table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:10px 14px;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border)}
-td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 12px;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border)}
+td{padding:10px 12px;border-bottom:1px solid var(--border)}
 tr:last-child td{border-bottom:none}
 
 /* BADGE */
 .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
 .badge-success{background:rgba(34,197,94,.12);color:var(--success)}
+.badge-warning{background:rgba(245,158,11,.12);color:var(--warning)}
+.badge-danger{background:rgba(239,68,68,.12);color:var(--danger)}
 
 /* KPI */
 .kpi-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px}
@@ -128,44 +153,67 @@ tr:last-child td{border-bottom:none}
 .kpi-sub{font-size:11px;color:var(--text2);margin-top:3px}
 
 /* MODAL */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;padding:16px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;padding:16px}
 .modal-bg.open{opacity:1;pointer-events:all}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px 20px;width:100%;max-width:400px;transform:scale(.95);transition:transform .2s;max-height:90vh;overflow-y:auto}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px 20px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;transform:scale(.95);transition:transform .2s}
 .modal-bg.open .modal{transform:scale(1)}
 .modal h2{font-family:'Space Grotesk',sans-serif;font-size:16px;margin-bottom:18px}
 .modal-cam{width:100%;aspect-ratio:1;background:#000;border-radius:var(--rs);overflow:hidden;margin-bottom:12px}
 #modal-video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+
+/* KIOSK */
+.kiosk-mode header,.kiosk-mode .tabs,.kiosk-mode .kiosk-banner,.kiosk-mode .scanner-controls{display:none !important}
+.kiosk-mode .page{max-width:100%;padding:8px}
+.kiosk-mode .scanner-wrapper{max-width:600px;margin:20px auto}
+.kiosk-exit{position:fixed;top:10px;right:10px;z-index:50;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);color:#666;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:14px;display:none}
+.kiosk-mode .kiosk-exit{display:flex;align-items:center;justify-content:center}
+
+/* PIN MODAL */
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.pin-key{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:18px;font-size:20px;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif}
+.pin-key:active{background:var(--accent);color:#fff}
+.pin-display{text-align:center;font-size:32px;letter-spacing:14px;font-family:'Space Grotesk',sans-serif;color:var(--accent);min-height:40px;margin:8px 0 14px;font-weight:700}
+
+/* SEARCH LIST */
+.search-list{max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--rs);margin-top:10px}
+.search-item{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:10px}
+.search-item:last-child{border-bottom:none}
+.search-item:hover{background:var(--surface2)}
 
 /* FILTERS */
 .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
 .filters input,.filters select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:7px 10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;flex:1;min-width:120px}
 
 /* BANNER */
-.kiosk-banner{background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:var(--rs);padding:8px 12px;font-size:11px;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.kiosk-banner{background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:var(--rs);padding:8px 12px;font-size:11px;color:var(--accent);margin-bottom:14px}
 
 /* MISC */
 .row{display:flex;gap:8px;flex-wrap:wrap}
 .divider{height:1px;background:var(--border);margin:18px 0}
 .empty{text-align:center;padding:40px 16px;color:var(--text3)}
 .empty p{font-size:13px}
-#loading-bar{position:fixed;top:0;left:0;height:2px;background:var(--accent);width:0%;z-index:9999;transition:width .3s ease;box-shadow:0 0 8px var(--accent)}
+#loading-bar{position:fixed;top:0;left:0;height:2px;background:var(--accent);width:0%;z-index:9999;transition:width .3s ease}
 #toast{position:fixed;bottom:16px;right:16px;left:16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:12px 16px;font-size:13px;font-weight:500;z-index:999;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.5);transform:translateY(20px);opacity:0;transition:opacity .25s,transform .25s}
 #toast.show{opacity:1;transform:none}
 
 @media(min-width:500px){
   #toast{left:auto;max-width:320px}
   .kpi-row{grid-template-columns:repeat(4,1fr)}
-  .student-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
   header{padding:14px 20px}
   .tab{padding:13px 18px;font-size:13px}
   .page{padding:20px}
 }
+
+/* Flash de sucesso */
+@keyframes flashSuccess{0%{background:rgba(34,197,94,.3)}100%{background:transparent}}
+.flash-success{animation:flashSuccess .8s ease-out}
 </style>
 </head>
 <body>
 <div id="loading-bar"></div>
 <div id="toast"></div>
+<button class="kiosk-exit" onclick="askExitKiosk()" title="Sair do modo portaria">✕</button>
 
 <!-- LOGIN -->
 <div id="screen-login">
@@ -175,7 +223,7 @@ tr:last-child td{border-bottom:none}
     <h2 id="login-title">Entrar</h2>
 
     <div id="login-form">
-      <div class="field"><label>E-mail</label><input type="email" id="login-email" placeholder="gestor@escola.com.br" autocomplete="email"></div>
+      <div class="field"><label>E-mail</label><input type="email" id="login-email" placeholder="usuario@escola.com" autocomplete="email"></div>
       <div class="field"><label>Senha</label><input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
       <div id="login-error" style="font-size:12px;color:var(--danger);margin-bottom:12px;display:none"></div>
       <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">Entrar</button>
@@ -186,8 +234,8 @@ tr:last-child td{border-bottom:none}
 
     <div id="reg-form" style="display:none">
       <div class="field"><label>Nome</label><input type="text" id="reg-nome" placeholder="Seu nome"></div>
-      <div class="field"><label>E-mail</label><input type="email" id="reg-email" placeholder="gestor@escola.com.br"></div>
-      <div class="field"><label>Senha (mín. 6 caracteres)</label><input type="password" id="reg-pass" placeholder="••••••••"></div>
+      <div class="field"><label>E-mail</label><input type="email" id="reg-email"></div>
+      <div class="field"><label>Senha (mín. 6 caracteres)</label><input type="password" id="reg-pass"></div>
       <div id="reg-error" style="font-size:12px;color:var(--danger);margin-bottom:12px;display:none"></div>
       <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doRegister()">Criar conta</button>
       <p style="font-size:12px;color:var(--text2);text-align:center;margin-top:14px">
@@ -202,21 +250,34 @@ tr:last-child td{border-bottom:none}
   <header>
     <div class="logo"><div class="logo-dot"></div>PresençaFácil</div>
     <div class="header-right">
-      <span class="clock" id="clock">--:--</span>
+      <span class="escola-chip" id="escola-chip" style="display:none">...</span>
+      <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙</button>
       <div class="user-chip" id="user-chip">...</div>
       <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sair</button>
     </div>
   </header>
-  <nav class="tabs">
-    <button class="tab active" onclick="switchTab('scanner',this)">📷 Scanner</button>
-    <button class="tab" onclick="switchTab('alunos',this)">👤 Alunos</button>
-    <button class="tab" onclick="switchTab('presencas',this)">📋 Presenças</button>
-    <button class="tab" onclick="switchTab('relatorios',this)">📊 Relatórios</button>
+
+  <!-- Tabs do GESTOR -->
+  <nav class="tabs" id="tabs-gestor" style="display:none">
+    <button class="tab active" data-page="scanner" onclick="switchTab(this,'scanner')">📷 Scanner</button>
+    <button class="tab" data-page="alunos" onclick="switchTab(this,'alunos')">👤 Alunos</button>
+    <button class="tab" data-page="presencas" onclick="switchTab(this,'presencas')">📋 Presenças</button>
+    <button class="tab" data-page="relatorios" onclick="switchTab(this,'relatorios')">📊 Relatórios</button>
+    <button class="tab" data-page="config" onclick="switchTab(this,'config')">⚙️ Configurações</button>
   </nav>
 
-  <!-- SCANNER -->
+  <!-- Tabs do SUPER-ADMIN -->
+  <nav class="tabs" id="tabs-admin" style="display:none">
+    <button class="tab active" data-page="admin-escolas" onclick="switchTab(this,'admin-escolas')">🏫 Escolas</button>
+    <button class="tab" data-page="admin-gestores" onclick="switchTab(this,'admin-gestores')">👥 Gestores</button>
+    <button class="tab" data-page="admin-stats" onclick="switchTab(this,'admin-stats')">📊 Estatísticas</button>
+  </nav>
+
+  <!-- ────────── SCANNER ────────── -->
   <div class="page active" id="page-scanner">
-    <div class="kiosk-banner">🔒 Modo Portaria — Gestor: <span id="gestor-banner">...</span></div>
+    <div class="kiosk-banner">🔒 <span id="gestor-banner">...</span>
+      <button class="btn btn-ghost btn-sm" style="margin-left:10px" onclick="ativarKiosk()">🔐 Modo Portaria</button>
+    </div>
     <p class="sec">Câmera ao vivo</p>
     <div class="scanner-wrapper">
       <video id="video" autoplay muted playsinline></video>
@@ -230,10 +291,11 @@ tr:last-child td{border-bottom:none}
         </span>
       </div>
     </div>
-    <div class="row" style="justify-content:center;margin-bottom:8px">
+    <div class="row scanner-controls" style="justify-content:center;margin-bottom:8px">
       <button class="btn btn-primary" id="btn-start" onclick="startScanner()">▶ Iniciar Scanner</button>
       <button class="btn btn-ghost" id="btn-stop" onclick="stopScanner()" style="display:none">⏹ Parar</button>
-      <button class="btn btn-ghost btn-sm" onclick="recarregarFaces()" title="Atualizar lista de alunos">🔄</button>
+      <button class="btn btn-ghost btn-sm" onclick="recarregarFaces()" title="Atualizar">🔄</button>
+      <button class="btn btn-ghost btn-sm" onclick="abrirListaManual()">📋 Selecionar manualmente</button>
     </div>
     <div id="result-area"></div>
     <div class="divider"></div>
@@ -241,39 +303,51 @@ tr:last-child td{border-bottom:none}
     <div id="today-list"><div class="empty"><p>Nenhuma presença registrada hoje.</p></div></div>
   </div>
 
-  <!-- ALUNOS -->
+  <!-- ────────── ALUNOS ────────── -->
   <div class="page" id="page-alunos">
     <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:16px">
       <div>
         <p style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700">Alunos</p>
         <p style="font-size:12px;color:var(--text2);margin-top:3px" id="alunos-count">carregando...</p>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="openAddAluno()">+ Cadastrar</button>
+      <div class="row">
+        <button class="btn btn-ghost btn-sm" onclick="abrirImportCSV()">📥 Importar CSV</button>
+        <button class="btn btn-primary btn-sm" onclick="openAddAluno()">+ Cadastrar</button>
+      </div>
+    </div>
+    <div class="filters">
+      <input type="text" id="filter-alunos" placeholder="Buscar por nome ou turma..." oninput="renderAlunos()">
+      <select id="filter-alunos-bio" onchange="renderAlunos()">
+        <option value="">Todos</option>
+        <option value="sim">Com biometria</option>
+        <option value="nao">Sem biometria</option>
+      </select>
     </div>
     <div class="student-grid" id="student-grid"><div class="empty" style="grid-column:1/-1"><p>Carregando...</p></div></div>
   </div>
 
-  <!-- PRESENÇAS -->
+  <!-- ────────── PRESENÇAS ────────── -->
   <div class="page" id="page-presencas">
     <div class="filters">
       <input type="date" id="filter-date" onchange="renderPresencas()">
       <select id="filter-turma" onchange="renderPresencas()"><option value="">Todas as turmas</option></select>
       <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ CSV</button>
+      <button class="btn btn-warning btn-sm" onclick="avisarAusentes()" style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:var(--warning)">📱 Avisar ausentes</button>
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Aluno</th><th>Turma</th><th>Hora</th><th>Status</th></tr></thead>
-        <tbody id="presencas-body"><tr><td colspan="4" style="text-align:center;color:var(--text3);padding:30px">Carregando...</td></tr></tbody>
+        <thead><tr><th>Aluno</th><th>Turma</th><th>Hora</th><th>Status</th><th></th></tr></thead>
+        <tbody id="presencas-body"><tr><td colspan="5" style="text-align:center;color:var(--text3);padding:30px">Carregando...</td></tr></tbody>
       </table>
     </div>
   </div>
 
-  <!-- RELATÓRIOS -->
+  <!-- ────────── RELATÓRIOS ────────── -->
   <div class="page" id="page-relatorios">
     <div class="kpi-row">
       <div class="kpi-card"><div class="kpi-label">Alunos</div><div class="kpi-value" id="kpi-alunos">—</div><div class="kpi-sub">cadastrados</div></div>
       <div class="kpi-card"><div class="kpi-label">Hoje</div><div class="kpi-value" id="kpi-hoje" style="color:var(--success)">—</div><div class="kpi-sub" id="kpi-pct">—</div></div>
-      <div class="kpi-card"><div class="kpi-label">Registros</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">histórico</div></div>
+      <div class="kpi-card"><div class="kpi-label">Atrasados hoje</div><div class="kpi-value" id="kpi-atrasados" style="color:var(--warning)">—</div><div class="kpi-sub">passaram do limite</div></div>
       <div class="kpi-card"><div class="kpi-label">Turmas</div><div class="kpi-value" id="kpi-turmas">—</div><div class="kpi-sub">ativas</div></div>
     </div>
     <p class="sec">Frequência por turma</p>
@@ -283,23 +357,160 @@ tr:last-child td{border-bottom:none}
         <tbody id="rel-body"></tbody>
       </table>
     </div>
+  </div>
+
+  <!-- ────────── CONFIGURAÇÕES ────────── -->
+  <div class="page" id="page-config">
+    <p style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;margin-bottom:16px">Configurações da Escola</p>
+    <div class="field"><label>Horário de entrada</label><input type="time" id="cfg-hora"></div>
+    <div class="field"><label>Tolerância (minutos de atraso permitidos)</label><input type="number" id="cfg-tol" min="0" max="120"></div>
+    <button class="btn btn-primary" onclick="salvarConfig()">Salvar</button>
     <div class="divider"></div>
-    <button class="btn btn-danger btn-sm" onclick="clearData()">🗑 Limpar dados de teste</button>
+    <p class="sec">PIN do modo portaria</p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Defina um PIN de 4 dígitos para sair do modo portaria.</p>
+    <div class="field"><label>Novo PIN</label><input type="password" id="cfg-pin" maxlength="4" pattern="[0-9]{4}" placeholder="0000"></div>
+    <button class="btn btn-primary btn-sm" onclick="salvarPin()">Salvar PIN</button>
+  </div>
+
+  <!-- ────────── ADMIN: ESCOLAS ────────── -->
+  <div class="page" id="page-admin-escolas">
+    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <p style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700">Escolas</p>
+        <p style="font-size:12px;color:var(--text2);margin-top:3px" id="escolas-count">...</p>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="abrirNovaEscola()">+ Nova Escola</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>Cidade</th><th>Horário</th><th>Tolerância</th><th>Alunos</th><th></th></tr></thead>
+        <tbody id="escolas-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ────────── ADMIN: GESTORES ────────── -->
+  <div class="page" id="page-admin-gestores">
+    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <p style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700">Gestores</p>
+        <p style="font-size:12px;color:var(--text2);margin-top:3px">Vincule gestores às escolas</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>Função</th><th>Escola vinculada</th></tr></thead>
+        <tbody id="gestores-body"></tbody>
+      </table>
+    </div>
+    <p style="font-size:12px;color:var(--text2);margin-top:14px">Para vincular um gestor: peça para ele criar uma conta no app, depois selecione a escola dele aqui.</p>
+  </div>
+
+  <!-- ────────── ADMIN: STATS ────────── -->
+  <div class="page" id="page-admin-stats">
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-label">Escolas</div><div class="kpi-value" id="adm-escolas">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Gestores</div><div class="kpi-value" id="adm-gestores">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Alunos</div><div class="kpi-value" id="adm-alunos">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Presenças hoje</div><div class="kpi-value" id="adm-presencas" style="color:var(--success)">—</div></div>
+    </div>
   </div>
 </div>
 
-<!-- MODAL CADASTRO -->
+<!-- ───────── MODAL CONFIRMAÇÃO (aluno toca) ───────── -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-card">
+    <div class="big-avatar" id="conf-avatar">?</div>
+    <h2>É você?</h2>
+    <p class="nome" id="conf-nome">—</p>
+    <p class="turma" id="conf-turma">—</p>
+    <div class="confirm-actions">
+      <button class="btn btn-success btn-lg" onclick="confirmarPresenca()">✓ SIM, SOU EU</button>
+      <button class="btn btn-ghost" onclick="naoSouEu()">✗ Não sou eu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────── MODAL CADASTRO ALUNO ───────── -->
 <div class="modal-bg" id="modal-aluno">
   <div class="modal">
-    <h2>Cadastrar Aluno</h2>
+    <h2 id="modal-aluno-title">Cadastrar Aluno</h2>
     <div class="field"><label>Nome completo</label><input type="text" id="f-nome" placeholder="Ex.: Ana Beatriz Santos"></div>
     <div class="field"><label>Turma</label><input type="text" id="f-turma" placeholder="Ex.: 7º A"></div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:8px">Posicione o rosto e clique em Capturar:</p>
+    <div class="field"><label>Nome do responsável (opcional)</label><input type="text" id="f-resp" placeholder="Mãe, pai ou outro"></div>
+    <div class="field"><label>WhatsApp do responsável (opcional)</label><input type="tel" id="f-tel" placeholder="65 99999-9999"></div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:8px;margin-top:14px">Posicione o rosto e toque em Capturar:</p>
     <div class="modal-cam"><video id="modal-video" autoplay muted playsinline></video></div>
-    <div id="cap-status" style="font-size:12px;color:var(--text2);margin-bottom:4px;min-height:18px">Câmera iniciando...</div>
+    <div id="cap-status" style="font-size:12px;color:var(--text2);min-height:18px">Câmera iniciando...</div>
     <div class="modal-actions">
       <button class="btn btn-ghost btn-sm" onclick="closeAddAluno()">Cancelar</button>
+      <button class="btn btn-ghost btn-sm" onclick="salvarSemFoto()">Salvar sem foto</button>
       <button class="btn btn-success btn-sm" id="btn-capture" onclick="captureAluno()">📸 Capturar e Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────── MODAL IMPORTAR CSV ───────── -->
+<div class="modal-bg" id="modal-import">
+  <div class="modal">
+    <h2>Importar Alunos de Planilha</h2>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Cole abaixo no formato:<br><b>nome;turma;nome_responsavel;telefone</b><br>(uma linha por aluno; ponto-e-vírgula como separador)</p>
+    <div class="field"><textarea id="csv-text" rows="8" style="font-family:monospace;font-size:12px" placeholder="Ana Silva;7º A;Maria Silva;65999991111
+João Souza;7º A;;
+..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="fecharImportCSV()">Cancelar</button>
+      <button class="btn btn-success btn-sm" onclick="importarCSV()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────── MODAL LISTA MANUAL ───────── -->
+<div class="modal-bg" id="modal-lista">
+  <div class="modal">
+    <h2>Selecionar aluno manualmente</h2>
+    <input type="text" id="lista-busca" placeholder="Digite o nome..." oninput="filtrarLista()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px;color:var(--text);font-size:14px;outline:none">
+    <div class="search-list" id="lista-resultados"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="fecharListaManual()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────── MODAL PIN ───────── -->
+<div class="modal-bg" id="modal-pin">
+  <div class="modal" style="max-width:320px">
+    <h2 id="pin-title">Digite o PIN</h2>
+    <div class="pin-display" id="pin-display"></div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinDigit(1)">1</button>
+      <button class="pin-key" onclick="pinDigit(2)">2</button>
+      <button class="pin-key" onclick="pinDigit(3)">3</button>
+      <button class="pin-key" onclick="pinDigit(4)">4</button>
+      <button class="pin-key" onclick="pinDigit(5)">5</button>
+      <button class="pin-key" onclick="pinDigit(6)">6</button>
+      <button class="pin-key" onclick="pinDigit(7)">7</button>
+      <button class="pin-key" onclick="pinDigit(8)">8</button>
+      <button class="pin-key" onclick="pinDigit(9)">9</button>
+      <button class="pin-key" onclick="pinClear()">✕</button>
+      <button class="pin-key" onclick="pinDigit(0)">0</button>
+      <button class="pin-key" onclick="pinBack()">⌫</button>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="fecharPin()" style="width:100%;justify-content:center">Cancelar</button>
+  </div>
+</div>
+
+<!-- ───────── MODAL NOVA ESCOLA ───────── -->
+<div class="modal-bg" id="modal-escola">
+  <div class="modal">
+    <h2 id="modal-escola-title">Nova Escola</h2>
+    <div class="field"><label>Nome da escola</label><input type="text" id="esc-nome"></div>
+    <div class="field"><label>Cidade</label><input type="text" id="esc-cidade"></div>
+    <div class="field"><label>Horário de entrada</label><input type="time" id="esc-hora" value="07:00"></div>
+    <div class="field"><label>Tolerância (min)</label><input type="number" id="esc-tol" value="10" min="0" max="120"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="fecharEscola()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarEscola()">Salvar</button>
     </div>
   </div>
 </div>
@@ -311,18 +522,15 @@ tr:last-child td{border-bottom:none}
 const SUPA_URL = 'https://awtzeflakcffshkvtmsf.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3dHplZmxha2NmZnNoa3Z0bXNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzOTMyODEsImV4cCI6MjA5Nzk2OTI4MX0.LgtYZFbcUtC2XwQCxley5uCmPvkueKnf_iB3p7qdVVk';
 const db = supabase.createClient(SUPA_URL, SUPA_KEY, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-    storageKey: 'presencafacil-auth'
-  }
+  auth: { autoRefreshToken:true, persistSession:true, detectSessionInUrl:false, storageKey:'pf-auth' }
 });
 
 // ══════════════════════════════════════
 // STATE
 // ══════════════════════════════════════
 let currentUser = null;
+let currentProfile = null;
+let currentEscola = null;
 let modelsLoaded = false;
 let appInitialized = false;
 let scanStream = null;
@@ -330,8 +538,29 @@ let modalStream = null;
 let scanRunning = false;
 let scanTimer = null;
 let localDescriptors = [];
-const recentReg = {};
+let alunosCache = [];
+let confirmCandidate = null;
+let kioskActive = false;
+let pinBuffer = '';
+let pinMode = null; // 'set' | 'check'
 const COLORS = ['#4f8ef7','#7c3aed','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16'];
+let editingAlunoId = null;
+
+// Audio: beep simples via Web Audio API
+let audioCtx = null;
+function beep(freq=880, dur=120) {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    o.frequency.value = freq;
+    o.type = 'sine';
+    g.gain.setValueAtTime(0.18, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur/1000);
+    o.start(); o.stop(audioCtx.currentTime + dur/1000);
+  } catch(e) {}
+}
 
 // ══════════════════════════════════════
 // HELPERS
@@ -340,7 +569,6 @@ const getColor = n => { let h=0; for(let c of (n||'X')) h=(h*31+c.charCodeAt(0))
 const getInit  = n => (n||'?').trim().split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
 const todayStr = () => new Date().toISOString().slice(0,10);
 const timeStr  = () => new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-const setBar   = p => { document.getElementById('loading-bar').style.width = p+'%'; };
 
 function toast(msg, icon='✓', dur=3500) {
   const t = document.getElementById('toast');
@@ -350,12 +578,28 @@ function toast(msg, icon='✓', dur=3500) {
   t._t = setTimeout(()=>t.classList.remove('show'), dur);
 }
 
-function updateClock() {
-  const el = document.getElementById('clock');
-  if(el) el.textContent = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+function setBar(p) { document.getElementById('loading-bar').style.width = p+'%'; }
+
+function formatTel(t) {
+  if (!t) return '';
+  let d = t.replace(/\D/g,'');
+  if (d.length === 11 || d.length === 10) d = '55' + d;
+  return d;
 }
-setInterval(updateClock, 1000);
-updateClock();
+
+// THEME
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('pf-theme', next);
+  document.getElementById('theme-btn').textContent = next === 'light' ? '☀️' : '🌙';
+}
+(function initTheme(){
+  const saved = localStorage.getItem('pf-theme');
+  if (saved === 'light') document.documentElement.setAttribute('data-theme','light');
+  document.getElementById('theme-btn') && (document.getElementById('theme-btn').textContent = saved==='light'?'☀️':'🌙');
+})();
 
 // ══════════════════════════════════════
 // AUTH
@@ -375,24 +619,17 @@ async function doLogin() {
   const pass  = document.getElementById('login-pass').value;
   const err   = document.getElementById('login-error');
   const btn   = document.querySelector('#login-form .btn-primary');
-  err.style.display = 'none';
-  if (!email || !pass) { err.textContent='Preencha e-mail e senha.'; err.style.display=''; return; }
-  btn.disabled = true; btn.textContent = 'Entrando...';
+  err.style.display='none';
+  if (!email||!pass) { err.textContent='Preencha e-mail e senha.'; err.style.display=''; return; }
+  btn.disabled = true; btn.textContent='Entrando...';
   try {
     const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
-    if (error) {
-      err.textContent = traduzirErro(error.message);
-      err.style.display = '';
-    } else if (data?.user) {
-      currentUser = data.user;
-      await initApp();
-    }
+    if (error) { err.textContent = traduzirErro(error.message); err.style.display=''; }
+    else if (data?.user) { currentUser = data.user; await initApp(); }
   } catch(e) {
-    console.error('login error:', e);
-    err.textContent = 'Erro de conexão. Tente novamente.';
-    err.style.display = '';
+    err.textContent='Erro de conexão.'; err.style.display='';
   }
-  btn.disabled = false; btn.textContent = 'Entrar';
+  btn.disabled = false; btn.textContent='Entrar';
 }
 
 async function doRegister() {
@@ -400,26 +637,22 @@ async function doRegister() {
   const email = document.getElementById('reg-email').value.trim();
   const pass  = document.getElementById('reg-pass').value;
   const err   = document.getElementById('reg-error');
-  err.style.display = 'none';
+  err.style.display='none';
   if (!nome||!email||!pass) { err.textContent='Preencha todos os campos.'; err.style.display=''; return; }
-  if (pass.length < 6) { err.textContent='Senha deve ter pelo menos 6 caracteres.'; err.style.display=''; return; }
-  const btn = event.currentTarget;
-  btn.disabled = true; btn.textContent = 'Criando...';
-  const { data, error } = await db.auth.signUp({ email, password: pass, options:{data:{nome,role:'gestor'}} });
-  btn.disabled = false; btn.textContent = 'Criar conta';
+  if (pass.length<6) { err.textContent='Senha precisa ter 6+ caracteres.'; err.style.display=''; return; }
+  const { data, error } = await db.auth.signUp({ email, password: pass, options:{data:{nome}} });
   if (error) { err.textContent = traduzirErro(error.message); err.style.display=''; return; }
-  // Criar perfil manualmente (trigger foi removido)
   if (data?.user) {
     await db.from('profiles').upsert({ id: data.user.id, nome, role:'gestor' }, {onConflict:'id'});
   }
-  toast('Conta criada com sucesso!','✅');
+  toast('Conta criada! Faça login.','✅');
   toggleReg();
 }
 
 function traduzirErro(msg) {
   if (msg.includes('Invalid login')) return 'E-mail ou senha incorretos.';
-  if (msg.includes('already registered')) return 'Este e-mail já está cadastrado.';
-  if (msg.includes('Password should')) return 'Senha deve ter pelo menos 6 caracteres.';
+  if (msg.includes('already registered')) return 'E-mail já cadastrado.';
+  if (msg.includes('Password should')) return 'Senha precisa de 6+ caracteres.';
   if (msg.includes('Unable to validate')) return 'E-mail inválido.';
   return msg;
 }
@@ -427,24 +660,19 @@ function traduzirErro(msg) {
 async function doLogout() {
   stopScanner();
   appInitialized = false;
-  currentUser = null;
-  localDescriptors = [];
+  currentUser = null; currentProfile = null; currentEscola = null;
+  localDescriptors = []; alunosCache = [];
   modelsLoaded = false;
-  try { await db.auth.signOut(); } catch(e) { console.warn('signOut:', e); }
-  // Limpa qualquer token preso no storage
-  Object.keys(localStorage).forEach(k => {
-    if (k.startsWith('sb-')) localStorage.removeItem(k);
-  });
+  try { await db.auth.signOut(); } catch(e) {}
+  Object.keys(localStorage).forEach(k => { if(k.startsWith('sb-')||k.startsWith('pf-auth')) localStorage.removeItem(k); });
+  document.body.classList.remove('kiosk-mode');
+  kioskActive = false;
   showLogin();
 }
 
-// ── Auth state listener
 db.auth.onAuthStateChange(async (event, session) => {
   if (event === 'SIGNED_OUT') {
-    currentUser = null;
-    appInitialized = false;
-    showLogin();
-    return;
+    currentUser=null; appInitialized=false; showLogin(); return;
   }
   if (session?.user) {
     if (currentUser?.id === session.user.id && appInitialized) return;
@@ -455,139 +683,163 @@ db.auth.onAuthStateChange(async (event, session) => {
 
 async function initApp() {
   appInitialized = true;
-  // Carregar ou criar perfil
+  // Carregar profile
   let { data: profile } = await db.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
   if (!profile) {
     const nome = currentUser.user_metadata?.nome || currentUser.email.split('@')[0];
     await db.from('profiles').upsert({ id: currentUser.id, nome, role:'gestor' }, {onConflict:'id'});
-    profile = { nome };
+    profile = { nome, role:'gestor' };
   }
-  const nome = profile?.nome || currentUser.email;
-  document.getElementById('user-chip').textContent = nome;
-  document.getElementById('gestor-banner').textContent = nome;
+  currentProfile = profile;
 
+  document.getElementById('user-chip').textContent = profile.nome;
   showApp();
-  document.getElementById('filter-date').value = todayStr();
-  renderTodayList();
-  loadModels(); // só carrega se ainda não carregou
+
+  if (profile.role === 'super_admin') {
+    document.getElementById('tabs-admin').style.display = '';
+    document.getElementById('tabs-gestor').style.display = 'none';
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-admin-escolas').classList.add('active');
+    document.querySelectorAll('#tabs-admin .tab').forEach(t=>t.classList.remove('active'));
+    document.querySelector('#tabs-admin .tab[data-page="admin-escolas"]').classList.add('active');
+    renderEscolas();
+  } else {
+    // Gestor — precisa estar vinculado a uma escola
+    if (!profile.escola_id) {
+      document.getElementById('tabs-gestor').style.display = 'none';
+      document.querySelector('main, #screen-app').innerHTML += '<div style="max-width:500px;margin:40px auto;text-align:center;padding:30px;background:var(--surface);border-radius:14px;border:1px solid var(--border)"><p style="font-size:16px;font-weight:600;margin-bottom:10px">Conta sem escola vinculada</p><p style="font-size:13px;color:var(--text2)">Aguarde o consultor vincular sua conta a uma escola. Entre em contato com o administrador do sistema.</p></div>';
+      return;
+    }
+    const { data: escola } = await db.from('escolas').select('*').eq('id', profile.escola_id).maybeSingle();
+    currentEscola = escola;
+    if (escola) {
+      document.getElementById('escola-chip').textContent = '🏫 '+escola.nome;
+      document.getElementById('escola-chip').style.display = '';
+      document.getElementById('gestor-banner').textContent = 'Modo Portaria — '+escola.nome+' · Gestor: '+profile.nome;
+    }
+    document.getElementById('tabs-gestor').style.display = '';
+    document.getElementById('tabs-admin').style.display = 'none';
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-scanner').classList.add('active');
+    document.querySelectorAll('#tabs-gestor .tab').forEach(t=>t.classList.remove('active'));
+    document.querySelector('#tabs-gestor .tab[data-page="scanner"]').classList.add('active');
+    document.getElementById('filter-date').value = todayStr();
+    loadModels();
+    renderTodayList();
+  }
 }
 
 function showLogin() {
-  document.getElementById('screen-login').style.display = 'flex';
-  document.getElementById('screen-app').style.display = 'none';
+  document.getElementById('screen-login').style.display='flex';
+  document.getElementById('screen-app').style.display='none';
 }
-
 function showApp() {
-  document.getElementById('screen-login').style.display = 'none';
-  document.getElementById('screen-app').style.display = 'block';
+  document.getElementById('screen-login').style.display='none';
+  document.getElementById('screen-app').style.display='block';
 }
 
 // ══════════════════════════════════════
-// FACE API — carregamento robusto
+// FACE API
 // ══════════════════════════════════════
-async function waitForFaceApi(tries=0) {
-  if (typeof faceapi !== 'undefined' && faceapi.nets) return true;
-  if (tries > 30) return false;
-  await new Promise(r => setTimeout(r, 500));
-  return waitForFaceApi(tries + 1);
-}
-
-async function recarregarFaces() {
-  await refreshDescriptors();
-  toast(`${localDescriptors.length} aluno(s) carregado(s) para reconhecimento.`, '🔄');
+async function waitForFaceApi(t=0) {
+  if (typeof faceapi!=='undefined' && faceapi.nets) return true;
+  if (t>30) return false;
+  await new Promise(r=>setTimeout(r,500));
+  return waitForFaceApi(t+1);
 }
 
 async function loadModels() {
-  if (modelsLoaded) return; // não recarregar
+  if (modelsLoaded) return;
   setBar(5);
   setScanStatus('looking','Carregando IA facial...');
   try {
-    const ready = await waitForFaceApi();
-    if (!ready) throw new Error('face-api.js não disponível');
+    if (!(await waitForFaceApi())) throw new Error('face-api indisponível');
     const M = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model/';
     await faceapi.nets.ssdMobilenetv1.loadFromUri(M); setBar(40);
     await faceapi.nets.faceLandmark68Net.loadFromUri(M); setBar(70);
     await faceapi.nets.faceRecognitionNet.loadFromUri(M); setBar(100);
-    setTimeout(()=>setBar(0), 800);
+    setTimeout(()=>setBar(0),800);
     modelsLoaded = true;
     setScanStatus('idle','Pronto — toque em Iniciar Scanner');
     await refreshDescriptors();
   } catch(e) {
     setBar(0);
-    setScanStatus('error','Falha ao carregar IA — recarregue');
-    console.error('loadModels:', e);
+    setScanStatus('error','Falha ao carregar IA');
+    console.error(e);
   }
 }
 
 async function refreshDescriptors() {
-  if (!currentUser) { console.warn('refreshDescriptors: sem usuário'); return; }
-  const { data, error } = await db.from('alunos')
-    .select('id,nome,turma_nome,descriptor')
-    .eq('ativo', true);
-  if (error) { console.error('refreshDescriptors error:', JSON.stringify(error)); return; }
-  if (!data) { console.warn('refreshDescriptors: sem dados'); return; }
-  console.log('Alunos no banco:', data.length, '| Com descriptor:', data.filter(a=>a.descriptor).length);
-
+  if (!currentUser || !currentEscola) return;
+  const { data, error } = await db.from('alunos').select('*').eq('ativo',true);
+  if (error) { console.error(error); return; }
+  alunosCache = data || [];
   localDescriptors = [];
-  for (const a of data) {
+  for (const a of alunosCache) {
     if (!a.descriptor) continue;
     let arr = a.descriptor;
-    // pgvector retorna como string "[0.1,0.2,...]" — converter para array
     if (typeof arr === 'string') {
-      try { arr = JSON.parse(arr); } catch(e) { console.warn('parse fail:', a.nome); continue; }
+      try { arr = JSON.parse(arr); } catch(e) { continue; }
     }
-    if (!Array.isArray(arr) || arr.length !== 128) {
-      console.warn('descriptor inválido:', a.nome, 'tipo:', typeof arr, 'len:', arr?.length);
-      continue;
-    }
+    if (!Array.isArray(arr) || arr.length!==128) continue;
     localDescriptors.push({
-      id: a.id, nome: a.nome, turma_nome: a.turma_nome,
-      descriptor: new Float32Array(arr)
+      id:a.id, nome:a.nome, turma_nome:a.turma_nome,
+      telefone_resp:a.telefone_resp, nome_resp:a.nome_resp,
+      descriptor:new Float32Array(arr)
     });
   }
-  console.log('Cache atualizado:', localDescriptors.length, 'descritores');
+  console.log('Cache:', alunosCache.length, 'alunos /', localDescriptors.length, 'com biometria');
+}
+
+async function recarregarFaces() {
+  await refreshDescriptors();
+  toast(`${localDescriptors.length} aluno(s) com biometria carregado(s).`,'🔄');
 }
 
 // ══════════════════════════════════════
 // TABS
 // ══════════════════════════════════════
-function switchTab(id, el) {
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+function switchTab(el, id) {
+  const isAdmin = currentProfile?.role === 'super_admin';
+  const container = isAdmin ? '#tabs-admin' : '#tabs-gestor';
+  document.querySelectorAll(container+' .tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('page-'+id).classList.add('active');
-  if (id==='alunos')     renderAlunos();
-  if (id==='presencas')  { loadTurmasFilter(); renderPresencas(); }
-  if (id==='relatorios') renderRelatorios();
+  if (id==='alunos')        renderAlunos();
+  if (id==='presencas')     { loadTurmasFilter(); renderPresencas(); }
+  if (id==='relatorios')    renderRelatorios();
+  if (id==='config')        loadConfig();
+  if (id==='admin-escolas') renderEscolas();
+  if (id==='admin-gestores')renderGestores();
+  if (id==='admin-stats')   renderAdminStats();
 }
 
 // ══════════════════════════════════════
 // SCANNER
 // ══════════════════════════════════════
-function setScanStatus(type, text) {
+function setScanStatus(type,text) {
   const el = document.getElementById('scan-badge');
   const tx = document.getElementById('scan-txt');
-  if (el) el.className = 'status-badge '+type;
-  if (tx) tx.textContent = text;
+  if (el) el.className='status-badge '+type;
+  if (tx) tx.textContent=text;
 }
 
 async function startScanner() {
   if (!modelsLoaded) { toast('Aguarde a IA carregar...','⏳'); return; }
   const video = document.getElementById('video');
   try {
-    scanStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode:'user', width:{ideal:640}, height:{ideal:480} }
-    });
+    scanStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}});
     video.srcObject = scanStream;
     await video.play();
-    document.getElementById('btn-start').style.display = 'none';
-    document.getElementById('btn-stop').style.display  = '';
+    document.getElementById('btn-start').style.display='none';
+    document.getElementById('btn-stop').style.display='';
     scanRunning = true;
     setScanStatus('looking','Procurando rostos...');
     runDetection();
   } catch(e) {
     setScanStatus('error','Sem acesso à câmera');
-    toast('Permita o acesso à câmera nas configurações do navegador.','⚠️');
+    toast('Permita o acesso à câmera.','⚠️');
   }
 }
 
@@ -595,17 +847,22 @@ function stopScanner() {
   scanRunning = false;
   clearTimeout(scanTimer);
   if (scanStream) { scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; }
-  const video = document.getElementById('video');
-  if (video) video.srcObject = null;
+  const v = document.getElementById('video');
+  if (v) v.srcObject=null;
   const bs = document.getElementById('btn-start');
-  const bst = document.getElementById('btn-stop');
-  if (bs)  bs.style.display  = '';
-  if (bst) bst.style.display = 'none';
+  const bst= document.getElementById('btn-stop');
+  if (bs)  bs.style.display='';
+  if (bst) bst.style.display='none';
   setScanStatus('idle','Scanner parado');
 }
 
 async function runDetection() {
   if (!scanRunning) return;
+  // Se o modal de confirmação está aberto, pausa
+  if (document.getElementById('confirm-overlay').classList.contains('show')) {
+    scanTimer = setTimeout(runDetection, 500);
+    return;
+  }
   const video = document.getElementById('video');
   const canvas = document.getElementById('overlay');
   if (!video || !canvas || video.readyState < 2) {
@@ -615,146 +872,246 @@ async function runDetection() {
   canvas.width  = video.videoWidth  || video.clientWidth;
   canvas.height = video.videoHeight || video.clientHeight;
   const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
   try {
-    const dets = await faceapi
-      .detectAllFaces(video, new faceapi.SsdMobilenetv1Options({minConfidence:0.45}))
-      .withFaceLandmarks()
-      .withFaceDescriptors();
+    const dets = await faceapi.detectAllFaces(video, new faceapi.SsdMobilenetv1Options({minConfidence:0.45}))
+      .withFaceLandmarks().withFaceDescriptors();
 
     if (!dets.length) {
       setScanStatus('looking','Procurando rostos...');
-      scanTimer = setTimeout(runDetection, 700);
+      scanTimer = setTimeout(runDetection,700);
       return;
     }
-
-    setScanStatus('found', dets.length + ' rosto(s) detectado(s)');
-    const resized = faceapi.resizeResults(dets, {width:canvas.width, height:canvas.height});
-
-    resized.forEach(d => {
-      const b = d.detection.box;
-      ctx.strokeStyle = '#4f8ef7'; ctx.lineWidth = 2;
-      ctx.strokeRect(b.x, b.y, b.width, b.height);
+    setScanStatus('found',dets.length+' rosto(s) detectado(s)');
+    const resized = faceapi.resizeResults(dets,{width:canvas.width,height:canvas.height});
+    resized.forEach(d=>{
+      const b=d.detection.box;
+      ctx.strokeStyle='#4f8ef7'; ctx.lineWidth=2;
+      ctx.strokeRect(b.x,b.y,b.width,b.height);
     });
 
-    if (localDescriptors.length > 0) {
-      const labeled = localDescriptors.map(a =>
-        new faceapi.LabeledFaceDescriptors(a.id, [a.descriptor])
-      );
-      const matcher = new faceapi.FaceMatcher(labeled, 0.5);
+    if (localDescriptors.length>0) {
+      const labeled = localDescriptors.map(a=>new faceapi.LabeledFaceDescriptors(a.id,[a.descriptor]));
+      const matcher = new faceapi.FaceMatcher(labeled,0.5);
       for (const d of resized) {
         const match = matcher.findBestMatch(d.descriptor);
-        if (match.label !== 'unknown') {
-          const aluno = localDescriptors.find(a => a.id === match.label);
-          if (aluno) await registerPresenca(aluno);
+        if (match.label!=='unknown') {
+          const aluno = localDescriptors.find(a=>a.id===match.label);
+          if (aluno) { mostrarConfirmacao(aluno); return; }
         }
       }
     }
-  } catch(e) { console.warn('detection:', e); }
+  } catch(e) { console.warn(e); }
 
-  scanTimer = setTimeout(runDetection, 900);
+  scanTimer = setTimeout(runDetection,900);
 }
 
 // ══════════════════════════════════════
-// PRESENÇA
+// CONFIRMAÇÃO DE PRESENÇA
 // ══════════════════════════════════════
-async function registerPresenca(aluno) {
-  const now = Date.now();
-  if (recentReg[aluno.id] && now - recentReg[aluno.id] < 12000) return;
-  recentReg[aluno.id] = now;
-  const hora = timeStr();
+function mostrarConfirmacao(aluno) {
+  confirmCandidate = aluno;
+  document.getElementById('conf-avatar').textContent = getInit(aluno.nome);
+  document.getElementById('conf-avatar').style.background = getColor(aluno.nome)+'22';
+  document.getElementById('conf-avatar').style.color = getColor(aluno.nome);
+  document.getElementById('conf-nome').textContent = aluno.nome;
+  document.getElementById('conf-turma').textContent = aluno.turma_nome||'Sem turma';
+  document.getElementById('confirm-overlay').classList.add('show');
+  beep(660,80);
+}
+
+function naoSouEu() {
+  document.getElementById('confirm-overlay').classList.remove('show');
+  confirmCandidate = null;
+  abrirListaManual();
+}
+
+async function confirmarPresenca() {
+  if (!confirmCandidate) return;
+  const aluno = confirmCandidate;
+  document.getElementById('confirm-overlay').classList.remove('show');
+  confirmCandidate = null;
+
+  // Calcula se está atrasado
+  const agora = new Date();
+  let atrasado = false;
+  if (currentEscola?.hora_entrada) {
+    const [hh,mm] = currentEscola.hora_entrada.split(':');
+    const limite = new Date(); limite.setHours(parseInt(hh), parseInt(mm) + (currentEscola.tolerancia_min||0), 0, 0);
+    atrasado = agora > limite;
+  }
+
   const { error } = await db.from('presencas').insert({
+    escola_id: currentEscola.id,
     aluno_id: aluno.id, aluno_nome: aluno.nome,
-    turma_nome: aluno.turma_nome, data: todayStr(), hora
+    turma_nome: aluno.turma_nome,
+    data: todayStr(), hora: timeStr(), atrasado
   });
-  if (error) { console.error('presença:', error); return; }
-  showResultCard(aluno, hora);
+
+  if (error) {
+    if (error.code === '23505' || (error.message||'').includes('duplicate')) {
+      toast(`${aluno.nome} já registrou presença hoje.`,'⚠️',4000);
+      beep(330,200);
+    } else {
+      toast('Erro: '+error.message,'❌',5000);
+      console.error(error);
+    }
+    return;
+  }
+
+  beep(880,120); setTimeout(()=>beep(1320,150),130);
+  document.body.classList.add('flash-success');
+  setTimeout(()=>document.body.classList.remove('flash-success'),800);
+
+  showResultCard(aluno, timeStr(), atrasado);
   renderTodayList();
-  toast(`✅ ${aluno.nome} — ${hora}`);
 }
 
-function showResultCard(aluno, hora) {
+function showResultCard(aluno, hora, atrasado) {
   const area = document.getElementById('result-area');
+  const tel = formatTel(aluno.telefone_resp);
+  const msg = encodeURIComponent(`Olá! Confirmamos a presença de ${aluno.nome} na escola hoje às ${hora.slice(0,5)}.`);
+  const wppLink = tel ? `https://wa.me/${tel}?text=${msg}` : null;
   area.innerHTML = `
-    <div class="result-card" id="rc">
+    <div class="result-card">
       <div class="result-avatar" style="background:${getColor(aluno.nome)}22;color:${getColor(aluno.nome)};border:2px solid ${getColor(aluno.nome)}44">${getInit(aluno.nome)}</div>
       <div class="result-info">
         <h3>${aluno.nome}</h3>
-        <p>${aluno.turma_nome?'Turma '+aluno.turma_nome+' · ':''}✅ Presente</p>
+        <p>${aluno.turma_nome?'Turma '+aluno.turma_nome+' · ':''}${atrasado?'⚠️ ATRASADO':'✅ Presente'}</p>
       </div>
       <div class="result-time">
         <div class="time-big">${hora.slice(0,5)}</div>
         <div class="time-label">horário</div>
       </div>
+      ${wppLink ? `<a href="${wppLink}" target="_blank" class="btn btn-wpp btn-sm">📱 Avisar responsável</a>` : ''}
     </div>`;
-  setTimeout(()=>document.getElementById('rc')?.classList.add('visible'), 10);
 }
 
 async function renderTodayList() {
-  if (!currentUser) return;
+  if (!currentUser || !currentEscola) return;
   const { data } = await db.from('presencas').select('*')
-    .eq('data', todayStr()).order('created_at',{ascending:false}).limit(8);
+    .eq('data',todayStr()).order('created_at',{ascending:false}).limit(10);
   const el = document.getElementById('today-list');
   if (!el) return;
   if (!data?.length) { el.innerHTML='<div class="empty"><p>Nenhuma presença hoje.</p></div>'; return; }
   el.innerHTML = data.map(a=>`
     <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
-      <div style="width:30px;height:30px;border-radius:50%;background:${getColor(a.aluno_nome)}22;color:${getColor(a.aluno_nome)};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:'Space Grotesk',sans-serif;flex-shrink:0">${getInit(a.aluno_nome)}</div>
-      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.aluno_nome}</div><div style="font-size:11px;color:var(--text2)">${a.turma_nome||'—'}</div></div>
-      <div style="font-size:12px;color:var(--accent);font-family:'Space Grotesk',sans-serif;font-weight:600;flex-shrink:0">${(a.hora||'').slice(0,5)}</div>
+      <div style="width:30px;height:30px;border-radius:50%;background:${getColor(a.aluno_nome)}22;color:${getColor(a.aluno_nome)};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:'Space Grotesk',sans-serif">${getInit(a.aluno_nome)}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${a.aluno_nome}</div><div style="font-size:11px;color:var(--text2)">${a.turma_nome||'—'}</div></div>
+      ${a.atrasado?'<span class="badge badge-warning">atrasado</span>':''}
+      <div style="font-size:12px;color:var(--accent);font-family:'Space Grotesk',sans-serif;font-weight:600">${(a.hora||'').slice(0,5)}</div>
     </div>`).join('');
 }
 
 // ══════════════════════════════════════
-// ALUNOS
+// LISTA MANUAL
+// ══════════════════════════════════════
+function abrirListaManual() {
+  document.getElementById('lista-busca').value = '';
+  document.getElementById('modal-lista').classList.add('open');
+  filtrarLista();
+}
+function fecharListaManual() {
+  document.getElementById('modal-lista').classList.remove('open');
+}
+function filtrarLista() {
+  const q = document.getElementById('lista-busca').value.toLowerCase().trim();
+  const filtrados = alunosCache.filter(a =>
+    !q || a.nome.toLowerCase().includes(q) || (a.turma_nome||'').toLowerCase().includes(q)
+  ).slice(0,30);
+  const el = document.getElementById('lista-resultados');
+  if (!filtrados.length) { el.innerHTML='<div class="empty" style="padding:20px"><p>Nenhum aluno encontrado.</p></div>'; return; }
+  el.innerHTML = filtrados.map(a=>`
+    <div class="search-item" onclick="confirmarAlunoManual('${a.id}')">
+      <div style="width:32px;height:32px;border-radius:50%;background:${getColor(a.nome)}22;color:${getColor(a.nome)};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Space Grotesk',sans-serif">${getInit(a.nome)}</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600">${a.nome}</div><div style="font-size:11px;color:var(--text2)">${a.turma_nome||'—'}</div></div>
+    </div>`).join('');
+}
+function confirmarAlunoManual(id) {
+  const a = alunosCache.find(x=>x.id===id);
+  if (!a) return;
+  fecharListaManual();
+  mostrarConfirmacao(a);
+}
+
+// ══════════════════════════════════════
+// ALUNOS — listagem
 // ══════════════════════════════════════
 async function renderAlunos() {
-  if (!currentUser) return;
+  if (!currentEscola) return;
   const { data, count } = await db.from('alunos').select('*',{count:'exact'}).eq('ativo',true).order('nome');
-  const lbl = document.getElementById('alunos-count');
+  const q = (document.getElementById('filter-alunos')?.value||'').toLowerCase().trim();
+  const bio = document.getElementById('filter-alunos-bio')?.value;
+  let lista = data||[];
+  if (q) lista = lista.filter(a => a.nome.toLowerCase().includes(q) || (a.turma_nome||'').toLowerCase().includes(q));
+  if (bio==='sim') lista = lista.filter(a=>a.descriptor);
+  if (bio==='nao') lista = lista.filter(a=>!a.descriptor);
+
+  document.getElementById('alunos-count').textContent = (count||0)+' aluno'+(count!==1?'s':'')+' (mostrando '+lista.length+')';
   const grid = document.getElementById('student-grid');
-  if (lbl) lbl.textContent = (count||0)+' aluno'+(count!==1?'s':'')+' cadastrado'+(count!==1?'s':'');
-  if (!data?.length) { grid.innerHTML='<div class="empty" style="grid-column:1/-1"><p>Nenhum aluno cadastrado.</p></div>'; return; }
-  grid.innerHTML = data.map(a=>`
-    <div class="student-card">
-      ${a.descriptor ? '<div class="bio-dot" title="Face cadastrada"></div>' : '<button class="del-btn" onclick="deleteAluno(\''+a.id+'\')">✕</button>'}
+  if (!lista.length) { grid.innerHTML='<div class="empty" style="grid-column:1/-1"><p>Nenhum aluno encontrado.</p></div>'; return; }
+  grid.innerHTML = lista.map(a=>`
+    <div class="student-card ${a.descriptor?'':'no-bio'}">
+      <button class="del-btn" onclick="deleteAluno('${a.id}')">✕</button>
+      ${a.descriptor ? '<div class="bio-dot" title="Face cadastrada"></div>' : '<div class="no-bio-tag">SEM FOTO</div>'}
       <div class="avatar" style="background:${getColor(a.nome)}22;color:${getColor(a.nome)}">${getInit(a.nome)}</div>
       <div class="sname">${a.nome}</div>
       <div class="sturma">${a.turma_nome||'Sem turma'}</div>
-      ${a.descriptor ? '<button class="del-btn" style="top:auto;bottom:6px;right:6px" onclick="deleteAluno(\''+a.id+'\')">✕</button>' : ''}
+      ${!a.descriptor ? `<button class="cam-btn" onclick="cadastrarBiometria('${a.id}')">📸 Tirar foto</button>` : ''}
     </div>`).join('');
 }
 
 async function deleteAluno(id) {
   if (!confirm('Remover este aluno?')) return;
-  await db.from('presencas').delete().eq('aluno_id',id);
   await db.from('alunos').update({ativo:false}).eq('id',id);
   localDescriptors = localDescriptors.filter(a=>a.id!==id);
+  alunosCache = alunosCache.filter(a=>a.id!==id);
   toast('Aluno removido.','🗑');
   renderAlunos();
 }
 
 // ══════════════════════════════════════
-// MODAL CADASTRO
+// CADASTRO ALUNO
 // ══════════════════════════════════════
 async function openAddAluno() {
-  document.getElementById('f-nome').value = '';
-  document.getElementById('f-turma').value = '';
-  document.getElementById('cap-status').textContent = 'Câmera iniciando...';
-  document.getElementById('btn-capture').disabled = false;
-  document.getElementById('btn-capture').textContent = '📸 Capturar e Salvar';
+  editingAlunoId = null;
+  document.getElementById('modal-aluno-title').textContent = 'Cadastrar Aluno';
+  ['f-nome','f-turma','f-resp','f-tel'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cap-status').textContent='Câmera iniciando...';
+  document.getElementById('btn-capture').disabled=false;
+  document.getElementById('btn-capture').textContent='📸 Capturar e Salvar';
   document.getElementById('modal-aluno').classList.add('open');
   try {
-    modalStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode:'user', width:{ideal:320}, height:{ideal:320} }
-    });
+    modalStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:320},height:{ideal:320}}});
     const v = document.getElementById('modal-video');
-    v.srcObject = modalStream;
-    await v.play();
-    document.getElementById('cap-status').textContent = '✅ Posicione o rosto e toque em Capturar';
+    v.srcObject=modalStream; await v.play();
+    document.getElementById('cap-status').textContent='✅ Posicione o rosto e toque em Capturar';
   } catch(e) {
-    document.getElementById('cap-status').textContent = '⚠️ Câmera indisponível — salvo sem biometria facial';
+    document.getElementById('cap-status').textContent='⚠️ Câmera indisponível';
+  }
+}
+
+async function cadastrarBiometria(alunoId) {
+  const a = alunosCache.find(x=>x.id===alunoId);
+  if (!a) return;
+  editingAlunoId = alunoId;
+  document.getElementById('modal-aluno-title').textContent = 'Tirar foto: '+a.nome;
+  document.getElementById('f-nome').value = a.nome;
+  document.getElementById('f-turma').value = a.turma_nome||'';
+  document.getElementById('f-resp').value = a.nome_resp||'';
+  document.getElementById('f-tel').value = a.telefone_resp||'';
+  document.getElementById('cap-status').textContent='Câmera iniciando...';
+  document.getElementById('btn-capture').disabled=false;
+  document.getElementById('btn-capture').textContent='📸 Capturar e Salvar';
+  document.getElementById('modal-aluno').classList.add('open');
+  try {
+    modalStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:320},height:{ideal:320}}});
+    const v = document.getElementById('modal-video');
+    v.srcObject=modalStream; await v.play();
+    document.getElementById('cap-status').textContent='✅ Posicione o rosto';
+  } catch(e) {
+    document.getElementById('cap-status').textContent='⚠️ Câmera indisponível';
   }
 }
 
@@ -763,60 +1120,103 @@ function closeAddAluno() {
   if (modalStream) { modalStream.getTracks().forEach(t=>t.stop()); modalStream=null; }
 }
 
-async function captureAluno() {
-  const nome  = document.getElementById('f-nome').value.trim();
+async function salvarSemFoto() {
+  const nome = document.getElementById('f-nome').value.trim();
   const turma = document.getElementById('f-turma').value.trim();
-  if (!nome)  { toast('Digite o nome do aluno.','⚠️'); return; }
+  const resp = document.getElementById('f-resp').value.trim();
+  const tel = document.getElementById('f-tel').value.trim();
+  if (!nome||!turma) { toast('Preencha nome e turma.','⚠️'); return; }
+  const payload = { nome, turma_nome:turma, nome_resp:resp||null, telefone_resp:tel||null, ativo:true, escola_id:currentEscola.id };
+  const op = editingAlunoId
+    ? db.from('alunos').update(payload).eq('id',editingAlunoId)
+    : db.from('alunos').insert(payload);
+  const { error } = await op;
+  if (error) { toast('Erro: '+error.message,'❌'); return; }
+  toast(nome+' salvo sem biometria.','✅');
+  await refreshDescriptors();
+  closeAddAluno();
+  renderAlunos();
+}
+
+async function captureAluno() {
+  const nome = document.getElementById('f-nome').value.trim();
+  const turma = document.getElementById('f-turma').value.trim();
+  const resp = document.getElementById('f-resp').value.trim();
+  const tel = document.getElementById('f-tel').value.trim();
+  if (!nome) { toast('Digite o nome.','⚠️'); return; }
   if (!turma) { toast('Digite a turma.','⚠️'); return; }
 
   const btn = document.getElementById('btn-capture');
-  btn.disabled = true;
-  btn.textContent = 'Processando...';
+  btn.disabled = true; btn.textContent = 'Processando...';
 
   let descriptor = null;
   const video = document.getElementById('modal-video');
-
   if (modelsLoaded && modalStream) {
-    // Aguarda video estar pronto
-    await new Promise(r => {
-      if (video.readyState >= 2) { r(); return; }
-      video.addEventListener('canplay', r, {once:true});
-      setTimeout(r, 3000); // fallback 3s
+    await new Promise(r=>{
+      if (video.readyState>=2){r();return;}
+      video.addEventListener('canplay',r,{once:true});
+      setTimeout(r,3000);
     });
     try {
-      document.getElementById('cap-status').textContent = '🔍 Detectando rosto...';
-      const det = await faceapi
-        .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({minConfidence:0.4}))
-        .withFaceLandmarks()
-        .withFaceDescriptor();
+      document.getElementById('cap-status').textContent='🔍 Detectando rosto...';
+      const det = await faceapi.detectSingleFace(video,new faceapi.SsdMobilenetv1Options({minConfidence:0.4}))
+        .withFaceLandmarks().withFaceDescriptor();
       if (det) {
-        descriptor = Array.from(det.descriptor); // array de 128 números
-        document.getElementById('cap-status').textContent = '✅ Rosto capturado!';
+        descriptor = Array.from(det.descriptor);
+        document.getElementById('cap-status').textContent='✅ Rosto capturado!';
       } else {
-        document.getElementById('cap-status').textContent = '⚠️ Rosto não detectado. Salvo sem biometria.';
+        document.getElementById('cap-status').textContent='⚠️ Rosto não detectado.';
+        btn.disabled = false; btn.textContent='📸 Capturar e Salvar';
+        return;
       }
     } catch(e) {
-      console.warn('capture error:', e);
-      document.getElementById('cap-status').textContent = '⚠️ Erro na detecção. Salvo sem biometria.';
+      console.warn(e);
+      document.getElementById('cap-status').textContent='⚠️ Erro na detecção.';
+      btn.disabled=false; btn.textContent='📸 Capturar e Salvar';
+      return;
     }
   }
 
-  const payload = { nome, turma_nome: turma, ativo: true };
-  if (descriptor) payload.descriptor = descriptor; // pgvector aceita array JS diretamente
+  const payload = { nome, turma_nome:turma, nome_resp:resp||null, telefone_resp:tel||null, ativo:true, escola_id:currentEscola.id };
+  if (descriptor) payload.descriptor = descriptor;
 
-  const { error } = await db.from('alunos').insert(payload);
-
+  const op = editingAlunoId
+    ? db.from('alunos').update(payload).eq('id',editingAlunoId)
+    : db.from('alunos').insert(payload);
+  const { error } = await op;
   if (error) {
-    console.error('insert aluno:', error);
-    toast('Erro ao salvar: '+error.message,'❌',5000);
-    btn.disabled = false;
-    btn.textContent = '📸 Capturar e Salvar';
+    toast('Erro: '+error.message,'❌',5000);
+    btn.disabled=false; btn.textContent='📸 Capturar e Salvar';
     return;
   }
-
-  toast(`${nome} cadastrado${descriptor?' com reconhecimento facial':' (sem biometria)'}.`,'✅');
+  toast(nome+' salvo com reconhecimento facial.','✅');
   await refreshDescriptors();
   closeAddAluno();
+  renderAlunos();
+}
+
+// ══════════════════════════════════════
+// IMPORTAR CSV
+// ══════════════════════════════════════
+function abrirImportCSV() { document.getElementById('csv-text').value=''; document.getElementById('modal-import').classList.add('open'); }
+function fecharImportCSV() { document.getElementById('modal-import').classList.remove('open'); }
+
+async function importarCSV() {
+  const txt = document.getElementById('csv-text').value.trim();
+  if (!txt) { toast('Cole os dados.','⚠️'); return; }
+  const linhas = txt.split('\n').map(l=>l.trim()).filter(Boolean);
+  const novos = [];
+  for (const l of linhas) {
+    const [nome, turma, resp, tel] = l.split(';').map(x=>(x||'').trim());
+    if (!nome) continue;
+    novos.push({ nome, turma_nome:turma||null, nome_resp:resp||null, telefone_resp:tel||null, ativo:true, escola_id:currentEscola.id });
+  }
+  if (!novos.length) { toast('Nenhuma linha válida.','⚠️'); return; }
+  const { error } = await db.from('alunos').insert(novos);
+  if (error) { toast('Erro: '+error.message,'❌',5000); return; }
+  toast(novos.length+' alunos importados! Tire a foto de cada um depois.','✅',5000);
+  fecharImportCSV();
+  await refreshDescriptors();
   renderAlunos();
 }
 
@@ -827,85 +1227,288 @@ async function loadTurmasFilter() {
   const { data } = await db.from('alunos').select('turma_nome').eq('ativo',true);
   const turmas = [...new Set((data||[]).map(a=>a.turma_nome).filter(Boolean))].sort();
   const sel = document.getElementById('filter-turma');
-  sel.innerHTML = '<option value="">Todas as turmas</option>' +
-    turmas.map(t=>`<option value="${t}">${t}</option>`).join('');
+  sel.innerHTML = '<option value="">Todas as turmas</option>'+turmas.map(t=>`<option value="${t}">${t}</option>`).join('');
 }
 
 async function renderPresencas() {
-  const date  = document.getElementById('filter-date').value || todayStr();
+  const date = document.getElementById('filter-date').value || todayStr();
   const turma = document.getElementById('filter-turma').value;
   let q = db.from('presencas').select('*').eq('data',date).order('hora',{ascending:false});
   if (turma) q = q.eq('turma_nome',turma);
   const { data } = await q;
   const tbody = document.getElementById('presencas-body');
-  if (!data?.length) {
-    tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:30px">Nenhuma presença para esta data.</td></tr>`;
-    return;
-  }
-  tbody.innerHTML = data.map(r=>`
-    <tr>
-      <td><div style="display:flex;align-items:center;gap:8px">
-        <div style="width:26px;height:26px;border-radius:50%;background:${getColor(r.aluno_nome)}22;color:${getColor(r.aluno_nome)};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:'Space Grotesk',sans-serif;flex-shrink:0">${getInit(r.aluno_nome)}</div>
-        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">${r.aluno_nome}</span>
-      </div></td>
+  if (!data?.length) { tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:30px">Nenhuma presença.</td></tr>'; return; }
+  tbody.innerHTML = data.map(r=>{
+    const aluno = alunosCache.find(a=>a.id===r.aluno_id);
+    const tel = aluno ? formatTel(aluno.telefone_resp) : '';
+    const msg = encodeURIComponent(`Olá! Confirmamos a presença de ${r.aluno_nome} na escola hoje às ${(r.hora||'').slice(0,5)}.`);
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px"><div style="width:26px;height:26px;border-radius:50%;background:${getColor(r.aluno_nome)}22;color:${getColor(r.aluno_nome)};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:'Space Grotesk',sans-serif">${getInit(r.aluno_nome)}</div><span>${r.aluno_nome}</span></div></td>
       <td>${r.turma_nome||'—'}</td>
       <td style="font-family:'Space Grotesk',sans-serif;color:var(--accent)">${(r.hora||'').slice(0,5)}</td>
-      <td><span class="badge badge-success">✓</span></td>
-    </tr>`).join('');
+      <td>${r.atrasado?'<span class="badge badge-warning">⚠ Atrasado</span>':'<span class="badge badge-success">✓ Presente</span>'}</td>
+      <td>${tel?`<a href="https://wa.me/${tel}?text=${msg}" target="_blank" class="btn btn-wpp btn-sm">📱</a>`:''}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function avisarAusentes() {
+  const date = document.getElementById('filter-date').value || todayStr();
+  const turmaFiltro = document.getElementById('filter-turma').value;
+  const { data: alunos } = await db.from('alunos').select('*').eq('ativo',true);
+  const { data: pres } = await db.from('presencas').select('aluno_id').eq('data',date);
+  const presentesIds = new Set((pres||[]).map(p=>p.aluno_id));
+  let ausentes = (alunos||[]).filter(a=>!presentesIds.has(a.id));
+  if (turmaFiltro) ausentes = ausentes.filter(a=>a.turma_nome===turmaFiltro);
+  const comTel = ausentes.filter(a=>a.telefone_resp);
+  if (!ausentes.length) { toast('Sem ausentes!','✅'); return; }
+  if (!comTel.length) { toast(`${ausentes.length} ausentes mas sem telefone cadastrado.`,'⚠️',5000); return; }
+
+  // Gera popup com links
+  const dt = new Date(date+'T12:00:00').toLocaleDateString('pt-BR');
+  const links = comTel.map(a=>{
+    const tel = formatTel(a.telefone_resp);
+    const msg = encodeURIComponent(`Olá! Informamos que ${a.nome} (${a.turma_nome||''}) não compareceu à escola hoje, ${dt}. Em caso de dúvida, entre em contato.`);
+    return `<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px"><div><div style="font-size:13px;font-weight:600">${a.nome}</div><div style="font-size:11px;color:var(--text2)">${a.turma_nome||'—'} · ${a.telefone_resp}</div></div><a href="https://wa.me/${tel}?text=${msg}" target="_blank" class="btn btn-wpp btn-sm">📱 Avisar</a></div>`;
+  }).join('');
+  const html = `<div style="position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)this.remove()">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;max-width:480px;width:100%;max-height:80vh;overflow-y:auto">
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:16px;margin-bottom:14px">Ausentes em ${dt} (${comTel.length} com WhatsApp)</h2>
+      ${links}
+      <div style="margin-top:14px;text-align:right"><button class="btn btn-ghost btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Fechar</button></div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
 }
 
 // ══════════════════════════════════════
 // RELATÓRIOS
 // ══════════════════════════════════════
 async function renderRelatorios() {
-  if (!currentUser) return;
-  const [r1, r2, r3, r4] = await Promise.all([
+  if (!currentEscola) return;
+  const [r1,r2,r3,r4,r5] = await Promise.all([
     db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true),
     db.from('presencas').select('*',{count:'exact',head:true}),
     db.from('presencas').select('*',{count:'exact',head:true}).eq('data',todayStr()),
+    db.from('presencas').select('*',{count:'exact',head:true}).eq('data',todayStr()).eq('atrasado',true),
     db.from('alunos').select('turma_nome').eq('ativo',true)
   ]);
-  const total = r1.count||0, todos = r2.count||0, hoje = r3.count||0;
-  const turmas = [...new Set((r4.data||[]).map(a=>a.turma_nome).filter(Boolean))];
+  const total = r1.count||0, hoje = r3.count||0;
+  const turmas = [...new Set((r5.data||[]).map(a=>a.turma_nome).filter(Boolean))];
   document.getElementById('kpi-alunos').textContent = total;
-  document.getElementById('kpi-hoje').textContent   = hoje;
-  document.getElementById('kpi-total').textContent  = todos;
+  document.getElementById('kpi-hoje').textContent = hoje;
+  document.getElementById('kpi-atrasados').textContent = r4.count||0;
   document.getElementById('kpi-turmas').textContent = turmas.length;
-  document.getElementById('kpi-pct').textContent    = total ? Math.round(hoje/total*100)+'% hoje' : '—';
+  document.getElementById('kpi-pct').textContent = total?Math.round(hoje/total*100)+'% hoje':'—';
 
-  const rows = await Promise.all(turmas.sort().map(async t => {
+  const rows = await Promise.all(turmas.sort().map(async t=>{
     const [a,p] = await Promise.all([
       db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true).eq('turma_nome',t),
       db.from('presencas').select('*',{count:'exact',head:true}).eq('turma_nome',t)
     ]);
     return `<tr><td>${t}</td><td>${a.count||0}</td><td>${p.count||0}</td></tr>`;
   }));
-  document.getElementById('rel-body').innerHTML = rows.length
-    ? rows.join('')
-    : `<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:24px">Nenhuma turma.</td></tr>`;
+  document.getElementById('rel-body').innerHTML = rows.join('')||'<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:24px">Nenhuma turma.</td></tr>';
 }
 
 async function exportCSV() {
   const { data } = await db.from('presencas').select('*').order('data',{ascending:false});
-  if (!data?.length) { toast('Nenhum dado para exportar.','⚠️'); return; }
-  const csv = 'Data,Hora,Nome,Turma\n' +
-    data.map(r=>`${r.data},${r.hora},"${r.aluno_nome}","${r.turma_nome||''}"`).join('\n');
-  const a = Object.assign(document.createElement('a'),{
-    href: URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),
-    download:'presencas.csv'
-  });
+  if (!data?.length) { toast('Nada para exportar.','⚠️'); return; }
+  const csv = 'Data;Hora;Nome;Turma;Atrasado\n'+data.map(r=>`${r.data};${r.hora};${r.aluno_nome};${r.turma_nome||''};${r.atrasado?'sim':'não'}`).join('\n');
+  const a = Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),download:'presencas.csv'});
   a.click();
   toast('CSV exportado.','⬇');
 }
 
-async function clearData() {
-  if (!confirm('Apagar TODOS os dados? Isso não pode ser desfeito.')) return;
-  if (!confirm('Confirmar exclusão total?')) return;
-  await db.from('presencas').delete().neq('id','00000000-0000-0000-0000-000000000000');
-  await db.from('alunos').update({ativo:false}).neq('id','00000000-0000-0000-0000-000000000000');
-  localDescriptors = [];
-  toast('Dados apagados.','🗑');
-  renderTodayList(); renderAlunos(); renderRelatorios();
+// ══════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════
+async function loadConfig() {
+  if (!currentEscola) return;
+  document.getElementById('cfg-hora').value = currentEscola.hora_entrada?.slice(0,5) || '07:00';
+  document.getElementById('cfg-tol').value = currentEscola.tolerancia_min ?? 10;
+}
+
+async function salvarConfig() {
+  const hora = document.getElementById('cfg-hora').value;
+  const tol = parseInt(document.getElementById('cfg-tol').value)||0;
+  const { error } = await db.from('escolas').update({hora_entrada:hora, tolerancia_min:tol}).eq('id',currentEscola.id);
+  if (error) { toast('Erro: '+error.message,'❌'); return; }
+  currentEscola.hora_entrada = hora;
+  currentEscola.tolerancia_min = tol;
+  toast('Configuração salva.','✅');
+}
+
+function salvarPin() {
+  const pin = document.getElementById('cfg-pin').value;
+  if (!/^\d{4}$/.test(pin)) { toast('PIN deve ter 4 dígitos.','⚠️'); return; }
+  localStorage.setItem('pf-kiosk-pin', pin);
+  document.getElementById('cfg-pin').value = '';
+  toast('PIN salvo.','✅');
+}
+
+// ══════════════════════════════════════
+// MODO KIOSK
+// ══════════════════════════════════════
+function ativarKiosk() {
+  if (!localStorage.getItem('pf-kiosk-pin')) {
+    toast('Defina um PIN em Configurações primeiro.','⚠️',5000);
+    return;
+  }
+  document.body.classList.add('kiosk-mode');
+  kioskActive = true;
+  if (!scanRunning) startScanner();
+  toast('Modo portaria ativo. Toque no ✕ para sair.','🔒',4000);
+}
+
+function askExitKiosk() {
+  pinMode = 'check';
+  pinBuffer = '';
+  document.getElementById('pin-title').textContent = 'Digite o PIN do gestor';
+  document.getElementById('pin-display').textContent = '';
+  document.getElementById('modal-pin').classList.add('open');
+}
+
+function pinDigit(d) {
+  if (pinBuffer.length>=4) return;
+  pinBuffer += d;
+  document.getElementById('pin-display').textContent = '•'.repeat(pinBuffer.length);
+  if (pinBuffer.length===4) {
+    setTimeout(()=>{
+      const correct = localStorage.getItem('pf-kiosk-pin');
+      if (pinBuffer === correct) {
+        document.body.classList.remove('kiosk-mode');
+        kioskActive = false;
+        fecharPin();
+        toast('Modo portaria desativado.','🔓');
+      } else {
+        document.getElementById('pin-display').textContent = '❌ ERRADO';
+        beep(200,300);
+        setTimeout(()=>{ pinBuffer=''; document.getElementById('pin-display').textContent=''; },1000);
+      }
+    },200);
+  }
+}
+function pinBack() { pinBuffer = pinBuffer.slice(0,-1); document.getElementById('pin-display').textContent = '•'.repeat(pinBuffer.length); }
+function pinClear() { pinBuffer=''; document.getElementById('pin-display').textContent=''; }
+function fecharPin() { document.getElementById('modal-pin').classList.remove('open'); pinBuffer=''; }
+
+// ══════════════════════════════════════
+// SUPER-ADMIN: ESCOLAS
+// ══════════════════════════════════════
+async function renderEscolas() {
+  const { data } = await db.from('escolas').select('*').order('nome');
+  document.getElementById('escolas-count').textContent = (data?.length||0)+' escola(s) cadastrada(s)';
+  if (!data?.length) {
+    document.getElementById('escolas-body').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:30px">Nenhuma escola.</td></tr>';
+    return;
+  }
+  const rows = await Promise.all(data.map(async e=>{
+    const { count } = await db.from('alunos').select('*',{count:'exact',head:true}).eq('escola_id',e.id).eq('ativo',true);
+    return `<tr>
+      <td><b>${e.nome}</b></td>
+      <td>${e.cidade||'—'}</td>
+      <td>${(e.hora_entrada||'').slice(0,5)}</td>
+      <td>${e.tolerancia_min} min</td>
+      <td>${count||0}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="editarEscola('${e.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="excluirEscola('${e.id}','${e.nome}')">🗑</button>
+      </td>
+    </tr>`;
+  }));
+  document.getElementById('escolas-body').innerHTML = rows.join('');
+}
+
+let editingEscolaId = null;
+function abrirNovaEscola() {
+  editingEscolaId = null;
+  document.getElementById('modal-escola-title').textContent = 'Nova Escola';
+  ['esc-nome','esc-cidade'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('esc-hora').value = '07:00';
+  document.getElementById('esc-tol').value = 10;
+  document.getElementById('modal-escola').classList.add('open');
+}
+async function editarEscola(id) {
+  const { data } = await db.from('escolas').select('*').eq('id',id).maybeSingle();
+  if (!data) return;
+  editingEscolaId = id;
+  document.getElementById('modal-escola-title').textContent = 'Editar Escola';
+  document.getElementById('esc-nome').value = data.nome;
+  document.getElementById('esc-cidade').value = data.cidade||'';
+  document.getElementById('esc-hora').value = (data.hora_entrada||'07:00').slice(0,5);
+  document.getElementById('esc-tol').value = data.tolerancia_min;
+  document.getElementById('modal-escola').classList.add('open');
+}
+function fecharEscola() { document.getElementById('modal-escola').classList.remove('open'); }
+
+async function salvarEscola() {
+  const nome = document.getElementById('esc-nome').value.trim();
+  const cidade = document.getElementById('esc-cidade').value.trim();
+  const hora = document.getElementById('esc-hora').value;
+  const tol = parseInt(document.getElementById('esc-tol').value)||0;
+  if (!nome) { toast('Digite o nome.','⚠️'); return; }
+  const payload = { nome, cidade, hora_entrada:hora, tolerancia_min:tol };
+  const op = editingEscolaId
+    ? db.from('escolas').update(payload).eq('id',editingEscolaId)
+    : db.from('escolas').insert(payload);
+  const { error } = await op;
+  if (error) { toast('Erro: '+error.message,'❌'); return; }
+  toast('Escola salva.','✅');
+  fecharEscola();
+  renderEscolas();
+}
+
+async function excluirEscola(id, nome) {
+  if (!confirm(`Excluir "${nome}"? Todos os alunos e presenças desta escola serão perdidos.`)) return;
+  const { error } = await db.from('escolas').delete().eq('id',id);
+  if (error) { toast('Erro: '+error.message,'❌'); return; }
+  toast('Escola excluída.','🗑');
+  renderEscolas();
+}
+
+// ══════════════════════════════════════
+// SUPER-ADMIN: GESTORES
+// ══════════════════════════════════════
+async function renderGestores() {
+  const [profs, escs] = await Promise.all([
+    db.from('profiles').select('*').order('nome'),
+    db.from('escolas').select('id,nome').order('nome')
+  ]);
+  const escolas = escs.data||[];
+  const escOpts = escolas.map(e=>`<option value="${e.id}">${e.nome}</option>`).join('');
+  if (!profs.data?.length) {
+    document.getElementById('gestores-body').innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:30px">Sem gestores ainda.</td></tr>';
+    return;
+  }
+  document.getElementById('gestores-body').innerHTML = profs.data.map(p=>`
+    <tr>
+      <td>${p.nome}</td>
+      <td>${p.role==='super_admin'?'<span class="badge badge-success">Super-Admin</span>':'Gestor'}</td>
+      <td>${p.role==='super_admin'?'—':`<select onchange="vincularGestor('${p.id}',this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px;color:var(--text)"><option value="">— sem vínculo —</option>${escolas.map(e=>`<option value="${e.id}" ${e.id===p.escola_id?'selected':''}>${e.nome}</option>`).join('')}</select>`}</td>
+    </tr>`).join('');
+}
+
+async function vincularGestor(profileId, escolaId) {
+  const { error } = await db.from('profiles').update({escola_id: escolaId||null}).eq('id',profileId);
+  if (error) { toast('Erro: '+error.message,'❌'); return; }
+  toast('Gestor vinculado.','✅');
+}
+
+// ══════════════════════════════════════
+// SUPER-ADMIN: STATS
+// ══════════════════════════════════════
+async function renderAdminStats() {
+  const [esc,prof,al,pr] = await Promise.all([
+    db.from('escolas').select('*',{count:'exact',head:true}),
+    db.from('profiles').select('*',{count:'exact',head:true}).eq('role','gestor'),
+    db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true),
+    db.from('presencas').select('*',{count:'exact',head:true}).eq('data',todayStr())
+  ]);
+  document.getElementById('adm-escolas').textContent = esc.count||0;
+  document.getElementById('adm-gestores').textContent = prof.count||0;
+  document.getElementById('adm-alunos').textContent = al.count||0;
+  document.getElementById('adm-presencas').textContent = pr.count||0;
 }
 </script>
 </body>
