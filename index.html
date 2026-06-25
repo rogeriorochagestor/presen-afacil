@@ -527,12 +527,24 @@ async function refreshDescriptors() {
   if (error) { console.error('refreshDescriptors error:', JSON.stringify(error)); return; }
   if (!data) { console.warn('refreshDescriptors: sem dados'); return; }
   console.log('Alunos no banco:', data.length, '| Com descriptor:', data.filter(a=>a.descriptor).length);
-  localDescriptors = data
-    .filter(a => Array.isArray(a.descriptor) && a.descriptor.length === 128)
-    .map(a => ({
+
+  localDescriptors = [];
+  for (const a of data) {
+    if (!a.descriptor) continue;
+    let arr = a.descriptor;
+    // pgvector retorna como string "[0.1,0.2,...]" — converter para array
+    if (typeof arr === 'string') {
+      try { arr = JSON.parse(arr); } catch(e) { console.warn('parse fail:', a.nome); continue; }
+    }
+    if (!Array.isArray(arr) || arr.length !== 128) {
+      console.warn('descriptor inválido:', a.nome, 'tipo:', typeof arr, 'len:', arr?.length);
+      continue;
+    }
+    localDescriptors.push({
       id: a.id, nome: a.nome, turma_nome: a.turma_nome,
-      descriptor: new Float32Array(a.descriptor)
-    }));
+      descriptor: new Float32Array(arr)
+    });
+  }
   console.log('Cache atualizado:', localDescriptors.length, 'descritores');
 }
 
