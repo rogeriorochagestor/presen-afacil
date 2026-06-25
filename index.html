@@ -2,10 +2,12 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>PresençaFácil</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/face-api.js/0.22.2/face-api.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@400;600;700&display=swap');
 
@@ -157,7 +159,29 @@ tr:hover td{background:rgba(79,142,247,.03)}
 #toast.show{opacity:1;transform:none}
 .spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
-@media(max-width:480px){.tabs,.page,header{padding-left:16px;padding-right:16px}.page{padding-top:20px}}
+@media(max-width:600px){
+  header{padding:10px 12px}
+  .logo{font-size:15px}
+  .user-chip{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .clock{display:none}
+  .tabs{padding:0 6px}
+  .tab{padding:10px 10px;font-size:11px}
+  .page{padding:14px 12px}
+  #screen-login{padding:12px}
+  .login-box{padding:24px 16px;border-radius:10px}
+  .scanner-wrapper{border-radius:8px;max-width:100%}
+  .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px}
+  .kpi-card{padding:12px}
+  .kpi-value{font-size:22px}
+  .student-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .modal{padding:18px 14px;width:96%;border-radius:10px}
+  .kiosk-banner{font-size:11px;padding:7px 10px}
+  .result-card{padding:12px;gap:10px}
+  .result-time .time-big{font-size:15px}
+  .table-wrap{font-size:12px}
+  th,td{padding:8px 10px}
+  #toast{bottom:12px;right:12px;left:12px;max-width:none}
+}
 </style>
 </head>
 <body>
@@ -461,22 +485,31 @@ function showApp() {
 // ══════════════════════════════════════
 // LOAD FACE MODELS
 // ══════════════════════════════════════
+async function waitForFaceApi(tries=0) {
+  if (typeof faceapi !== 'undefined') return true;
+  if (tries > 20) return false;
+  await new Promise(r => setTimeout(r, 500));
+  return waitForFaceApi(tries + 1);
+}
+
 async function loadModels() {
   setBar(10);
   setScanStatus('looking','Carregando modelos de IA...');
   try {
-    const URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model/';
-    await faceapi.nets.ssdMobilenetv1.loadFromUri(URL); setBar(45);
-    await faceapi.nets.faceRecognitionNet.loadFromUri(URL); setBar(75);
-    await faceapi.nets.faceLandmark68Net.loadFromUri(URL); setBar(100);
+    const ready = await waitForFaceApi();
+    if (!ready) throw new Error('face-api não carregou');
+    const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model/';
+    await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL); setBar(45);
+    await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL); setBar(75);
+    await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL); setBar(100);
     setTimeout(()=>setBar(0),600);
     modelsLoaded = true;
     setScanStatus('idle','Pronto — clique em Iniciar Scanner');
     await refreshDescriptors();
   } catch(e) {
     setBar(0);
-    setScanStatus('error','Falha ao carregar modelos');
-    console.error(e);
+    setScanStatus('error','Falha ao carregar modelos — recarregue a página');
+    console.error('loadModels error:', e);
   }
 }
 
