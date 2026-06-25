@@ -310,7 +310,14 @@ tr:last-child td{border-bottom:none}
 // ══════════════════════════════════════
 const SUPA_URL = 'https://awtzeflakcffshkvtmsf.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3dHplZmxha2NmZnNoa3Z0bXNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzOTMyODEsImV4cCI6MjA5Nzk2OTI4MX0.LgtYZFbcUtC2XwQCxley5uCmPvkueKnf_iB3p7qdVVk';
-const db = supabase.createClient(SUPA_URL, SUPA_KEY);
+const db = supabase.createClient(SUPA_URL, SUPA_KEY, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+    storageKey: 'presencafacil-auth'
+  }
+});
 
 // ══════════════════════════════════════
 // STATE
@@ -367,13 +374,25 @@ async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pass  = document.getElementById('login-pass').value;
   const err   = document.getElementById('login-error');
+  const btn   = document.querySelector('#login-form .btn-primary');
   err.style.display = 'none';
   if (!email || !pass) { err.textContent='Preencha e-mail e senha.'; err.style.display=''; return; }
-  const btn = event.currentTarget;
   btn.disabled = true; btn.textContent = 'Entrando...';
-  const { error } = await db.auth.signInWithPassword({ email, password: pass });
+  try {
+    const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
+    if (error) {
+      err.textContent = traduzirErro(error.message);
+      err.style.display = '';
+    } else if (data?.user) {
+      currentUser = data.user;
+      await initApp();
+    }
+  } catch(e) {
+    console.error('login error:', e);
+    err.textContent = 'Erro de conexão. Tente novamente.';
+    err.style.display = '';
+  }
   btn.disabled = false; btn.textContent = 'Entrar';
-  if (error) { err.textContent = traduzirErro(error.message); err.style.display=''; }
 }
 
 async function doRegister() {
