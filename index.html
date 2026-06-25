@@ -233,6 +233,7 @@ tr:last-child td{border-bottom:none}
     <div class="row" style="justify-content:center;margin-bottom:8px">
       <button class="btn btn-primary" id="btn-start" onclick="startScanner()">▶ Iniciar Scanner</button>
       <button class="btn btn-ghost" id="btn-stop" onclick="stopScanner()" style="display:none">⏹ Parar</button>
+      <button class="btn btn-ghost btn-sm" onclick="recarregarFaces()" title="Atualizar lista de alunos">🔄</button>
     </div>
     <div id="result-area"></div>
     <div class="divider"></div>
@@ -407,19 +408,29 @@ function traduzirErro(msg) {
 async function doLogout() {
   stopScanner();
   appInitialized = false;
-  await db.auth.signOut();
+  currentUser = null;
+  localDescriptors = [];
+  modelsLoaded = false;
+  try { await db.auth.signOut(); } catch(e) { console.warn('signOut:', e); }
+  // Limpa qualquer token preso no storage
+  Object.keys(localStorage).forEach(k => {
+    if (k.startsWith('sb-')) localStorage.removeItem(k);
+  });
+  showLogin();
 }
 
-// ── Auth state listener (executa apenas uma vez por mudança real)
+// ── Auth state listener
 db.auth.onAuthStateChange(async (event, session) => {
-  if (session?.user) {
-    if (currentUser?.id === session.user.id && appInitialized) return; // evita re-render desnecessário
-    currentUser = session.user;
-    await initApp();
-  } else {
+  if (event === 'SIGNED_OUT') {
     currentUser = null;
     appInitialized = false;
     showLogin();
+    return;
+  }
+  if (session?.user) {
+    if (currentUser?.id === session.user.id && appInitialized) return;
+    currentUser = session.user;
+    await initApp();
   }
 });
 
@@ -462,6 +473,11 @@ async function waitForFaceApi(tries=0) {
   return waitForFaceApi(tries + 1);
 }
 
+async function recarregarFaces() {
+  await refreshDescriptors();
+  toast(`${localDescriptors.length} aluno(s) carregado(s) para reconhecimento.`, '🔄');
+}
+
 async function loadModels() {
   if (modelsLoaded) return; // não recarregar
   setBar(5);
@@ -485,20 +501,20 @@ async function loadModels() {
 }
 
 async function refreshDescriptors() {
-  if (!currentUser) return;
+  if (!currentUser) { console.warn('refreshDescriptors: sem usuário'); return; }
   const { data, error } = await db.from('alunos')
     .select('id,nome,turma_nome,descriptor')
-    .eq('ativo', true)
-    .not('descriptor','is',null);
-  if (error || !data) return;
+    .eq('ativo', true);
+  if (error) { console.error('refreshDescriptors error:', JSON.stringify(error)); return; }
+  if (!data) { console.warn('refreshDescriptors: sem dados'); return; }
+  console.log('Alunos no banco:', data.length, '| Com descriptor:', data.filter(a=>a.descriptor).length);
   localDescriptors = data
     .filter(a => Array.isArray(a.descriptor) && a.descriptor.length === 128)
     .map(a => ({
-      id: a.id,
-      nome: a.nome,
-      turma_nome: a.turma_nome,
+      id: a.id, nome: a.nome, turma_nome: a.turma_nome,
       descriptor: new Float32Array(a.descriptor)
     }));
+  console.log('Cache atualizado:', localDescriptors.length, 'descritores');
 }
 
 // ══════════════════════════════════════
