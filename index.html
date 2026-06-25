@@ -9,53 +9,51 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@400;600;700&display=swap');
-
-:root {
-  --bg:#0f1117; --surface:#181c27; --surface2:#1e2333; --border:#2a3044;
-  --accent:#4f8ef7; --accent2:#7c3aed; --success:#22c55e; --warning:#f59e0b; --danger:#ef4444;
-  --text:#e8ecf4; --text2:#8892aa; --text3:#556070;
-  --radius:14px; --radius-sm:8px;
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@400;600;700&display=swap');
+:root{
+  --bg:#0f1117;--surface:#181c27;--surface2:#1e2333;--border:#2a3044;
+  --accent:#4f8ef7;--success:#22c55e;--warning:#f59e0b;--danger:#ef4444;
+  --text:#e8ecf4;--text2:#8892aa;--text3:#556070;
+  --r:14px;--rs:8px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;min-height:100vh;overflow-x:hidden}
 
-/* ── LOGIN ── */
-#screen-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
-.login-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:40px 36px;width:100%;max-width:380px}
-.login-logo{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:10px}
-.login-logo-dot{width:12px;height:12px;background:var(--accent);border-radius:50%;box-shadow:0 0 12px var(--accent)}
-.login-sub{font-size:13px;color:var(--text2);margin-bottom:32px}
-.login-box h2{font-family:'Space Grotesk',sans-serif;font-size:18px;margin-bottom:24px}
+/* LOGIN */
+#screen-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:36px 28px;width:100%;max-width:360px}
+.login-logo{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.ldot{width:11px;height:11px;background:var(--accent);border-radius:50%;box-shadow:0 0 10px var(--accent)}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:28px}
+.login-box h2{font-size:17px;font-family:'Space Grotesk',sans-serif;margin-bottom:20px}
 
-/* ── APP SHELL ── */
+/* APP */
 #screen-app{display:none}
-header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:100}
-.logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;display:flex;align-items:center;gap:9px}
-.logo-dot{width:9px;height:9px;background:var(--accent);border-radius:50%;box-shadow:0 0 10px var(--accent)}
-.header-right{display:flex;align-items:center;gap:14px}
-.user-chip{font-size:12px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;display:flex;align-items:center;gap:6px}
-.clock{font-family:'Space Grotesk',sans-serif;font-size:12px;color:var(--text2)}
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:100;gap:8px}
+.logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.logo-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent)}
+.header-right{display:flex;align-items:center;gap:8px;min-width:0}
+.user-chip{font-size:11px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+.clock{font-family:'Space Grotesk',sans-serif;font-size:11px;color:var(--text2);flex-shrink:0}
 
-/* ── TABS ── */
-.tabs{display:flex;gap:2px;padding:0 24px;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+/* TABS */
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
-.tab{padding:13px 18px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s,border-color .15s;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif}
-.tab:hover{color:var(--text)}
+.tab{padding:12px 14px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s,border-color .15s;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;flex-shrink:0}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 
-/* ── PAGES ── */
-.page{display:none;padding:28px 24px;max-width:920px;margin:0 auto}
+/* PAGES */
+.page{display:none;padding:16px;max-width:900px;margin:0 auto}
 .page.active{display:block}
 
-/* ── FIELDS ── */
-.field{margin-bottom:16px}
-.field label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:500}
-.field input,.field select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .15s}
+/* FIELDS */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500}
+.field input,.field select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .15s}
 .field input:focus,.field select:focus{border-color:var(--accent)}
 
-/* ── BTNS ── */
-.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s,transform .1s;font-family:'DM Sans',sans-serif}
+/* BTNS */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s,transform .1s;font-family:'DM Sans',sans-serif}
 .btn:active{transform:scale(.97)}
 .btn-primary{background:var(--accent);color:#fff}
 .btn-primary:hover{opacity:.88}
@@ -63,200 +61,152 @@ header{display:flex;align-items:center;justify-content:space-between;padding:16p
 .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
 .btn-danger{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:var(--danger)}
 .btn-success{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:var(--success)}
-.btn-sm{padding:7px 14px;font-size:12px}
+.btn-sm{padding:6px 12px;font-size:12px}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 
-/* ── SCANNER ── */
-.scanner-wrapper{position:relative;width:100%;max-width:480px;margin:0 auto 20px;border-radius:var(--radius);overflow:hidden;background:#000;aspect-ratio:4/3}
+/* SCANNER */
+.scanner-wrapper{position:relative;width:100%;max-width:460px;margin:0 auto 16px;border-radius:var(--r);overflow:hidden;background:#000;aspect-ratio:4/3}
 #video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
 #overlay{position:absolute;top:0;left:0;width:100%;height:100%;transform:scaleX(-1);pointer-events:none}
-.scanner-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:190px;height:190px;pointer-events:none}
-.scanner-frame::before,.scanner-frame::after,.scanner-frame span::before,.scanner-frame span::after{content:'';position:absolute;width:28px;height:28px;border-color:var(--accent);border-style:solid}
-.scanner-frame::before{top:0;left:0;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
-.scanner-frame::after{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 4px 0 0}
-.scanner-frame span::before{bottom:0;left:0;border-width:0 0 3px 3px;border-radius:0 0 0 4px}
-.scanner-frame span::after{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
-.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scanLine 2s ease-in-out infinite;box-shadow:0 0 8px var(--accent)}
-@keyframes scanLine{0%{top:20%;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:80%;opacity:0}}
-.scanner-status{position:absolute;bottom:14px;left:0;right:0;text-align:center}
-.status-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 13px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(0,0,0,.65);backdrop-filter:blur(8px)}
+.scan-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:180px;height:180px;pointer-events:none}
+.scan-frame::before,.scan-frame::after,.scan-frame span::before,.scan-frame span::after{content:'';position:absolute;width:26px;height:26px;border-color:var(--accent);border-style:solid}
+.scan-frame::before{top:0;left:0;border-width:3px 0 0 3px;border-radius:3px 0 0 0}
+.scan-frame::after{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 3px 0 0}
+.scan-frame span::before{bottom:0;left:0;border-width:0 0 3px 3px;border-radius:0 0 0 3px}
+.scan-frame span::after{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 3px 0}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scanLine 2s ease-in-out infinite;box-shadow:0 0 6px var(--accent)}
+@keyframes scanLine{0%{top:18%;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:82%;opacity:0}}
+.scanner-status{position:absolute;bottom:12px;left:0;right:0;text-align:center}
+.status-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(0,0,0,.7);backdrop-filter:blur(8px)}
 .status-badge.idle{color:var(--text2);border:1px solid var(--border)}
 .status-badge.looking{color:var(--warning);border:1px solid rgba(245,158,11,.3)}
 .status-badge.found{color:var(--success);border:1px solid rgba(34,197,94,.3)}
 .status-badge.error{color:var(--danger);border:1px solid rgba(239,68,68,.3)}
-.pulse{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.5s ease-in-out infinite}
+.pulse{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.5s ease-in-out infinite;flex-shrink:0}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
 
-/* ── RESULT CARD ── */
-.result-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-top:18px;display:flex;align-items:center;gap:14px;opacity:0;transform:translateY(8px);transition:opacity .3s,transform .3s}
+/* RESULT CARD */
+.result-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-top:14px;display:flex;align-items:center;gap:12px;opacity:0;transform:translateY(8px);transition:opacity .3s,transform .3s}
 .result-card.visible{opacity:1;transform:none}
-.result-avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;font-weight:700;font-family:'Space Grotesk',sans-serif}
-.result-info h3{font-size:15px;font-weight:600;margin-bottom:3px}
+.result-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;font-weight:700;font-family:'Space Grotesk',sans-serif}
+.result-info h3{font-size:14px;font-weight:600;margin-bottom:3px}
 .result-info p{font-size:12px;color:var(--text2)}
 .result-time{margin-left:auto;text-align:right;flex-shrink:0}
-.result-time .time-big{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--accent)}
-.result-time .time-label{font-size:11px;color:var(--text3);margin-top:2px}
+.result-time .time-big{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;color:var(--accent)}
+.result-time .time-label{font-size:10px;color:var(--text3);margin-top:2px}
 
-/* ── SECTION TITLE ── */
-.section-title{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:12px;margin-top:28px}
+/* SECTION TITLE */
+.sec{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;margin-top:24px}
 
-/* ── STUDENT GRID ── */
-.student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
-.student-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;transition:border-color .15s}
+/* STUDENT GRID */
+.student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.student-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;transition:border-color .15s}
 .student-card:hover{border-color:var(--accent)}
-.avatar{width:52px;height:52px;border-radius:50%;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;flex-shrink:0}
-.student-card .name{font-size:13px;font-weight:600;text-align:center}
-.student-card .turma-tag{font-size:11px;color:var(--text2);background:var(--surface);padding:3px 10px;border-radius:20px}
-.bio-dot{position:absolute;top:10px;right:10px;width:9px;height:9px;border-radius:50%;background:var(--success);box-shadow:0 0 7px var(--success);title:'Face cadastrada'}
-.del-btn{position:absolute;top:7px;right:7px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;line-height:1;padding:2px;transition:color .15s}
+.avatar{width:48px;height:48px;border-radius:50%;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif}
+.sname{font-size:13px;font-weight:600;text-align:center;word-break:break-word}
+.sturma{font-size:11px;color:var(--text2);background:var(--surface);padding:2px 8px;border-radius:20px}
+.bio-dot{position:absolute;top:9px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 6px var(--success)}
+.del-btn{position:absolute;top:6px;right:6px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:2px;transition:color .15s}
 .del-btn:hover{color:var(--danger)}
 
-/* ── TABLE ── */
-.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+/* TABLE */
+.table-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border)}
 table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:11px 16px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border)}
-td{padding:11px 16px;font-size:13px;border-bottom:1px solid var(--border)}
+th{text-align:left;padding:10px 14px;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border)}
+td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--border)}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:rgba(79,142,247,.03)}
 
-/* ── BADGES ── */
-.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+/* BADGE */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
 .badge-success{background:rgba(34,197,94,.12);color:var(--success)}
-.badge-danger{background:rgba(239,68,68,.12);color:var(--danger)}
 
-/* ── KPI ── */
-.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:28px}
-.kpi-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
-.kpi-label{font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
-.kpi-value{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700}
-.kpi-sub{font-size:12px;color:var(--text2);margin-top:4px}
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px}
+.kpi-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px}
+.kpi-label{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.kpi-value{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700}
+.kpi-sub{font-size:11px;color:var(--text2);margin-top:3px}
 
-/* ── MODAL ── */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;padding:16px}
 .modal-bg.open{opacity:1;pointer-events:all}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;width:90%;max-width:420px;transform:scale(.95);transition:transform .2s}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px 20px;width:100%;max-width:400px;transform:scale(.95);transition:transform .2s;max-height:90vh;overflow-y:auto}
 .modal-bg.open .modal{transform:scale(1)}
-.modal h2{font-family:'Space Grotesk',sans-serif;font-size:17px;margin-bottom:20px}
-.modal-cam-wrap{width:100%;aspect-ratio:1;background:#000;border-radius:var(--radius-sm);overflow:hidden;position:relative;margin-bottom:14px}
+.modal h2{font-family:'Space Grotesk',sans-serif;font-size:16px;margin-bottom:18px}
+.modal-cam{width:100%;aspect-ratio:1;background:#000;border-radius:var(--rs);overflow:hidden;margin-bottom:12px}
 #modal-video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 
-/* ── FILTERS ── */
-.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
-.filters input,.filters select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none}
-.filters input:focus,.filters select:focus{border-color:var(--accent)}
+/* FILTERS */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.filters input,.filters select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:7px 10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;flex:1;min-width:120px}
 
-/* ── KIOSK BANNER ── */
-.kiosk-banner{background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:var(--radius-sm);padding:10px 16px;font-size:12px;color:var(--accent);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+/* BANNER */
+.kiosk-banner{background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:var(--rs);padding:8px 12px;font-size:11px;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 
-/* ── MISC ── */
-.row{display:flex;gap:10px;flex-wrap:wrap}
-.divider{height:1px;background:var(--border);margin:22px 0}
-.empty{text-align:center;padding:50px 20px;color:var(--text3)}
-.empty p{font-size:14px}
+/* MISC */
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.divider{height:1px;background:var(--border);margin:18px 0}
+.empty{text-align:center;padding:40px 16px;color:var(--text3)}
+.empty p{font-size:13px}
 #loading-bar{position:fixed;top:0;left:0;height:2px;background:var(--accent);width:0%;z-index:9999;transition:width .3s ease;box-shadow:0 0 8px var(--accent)}
-#toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 18px;font-size:13px;font-weight:500;z-index:999;display:flex;align-items:center;gap:9px;box-shadow:0 8px 32px rgba(0,0,0,.4);transform:translateY(18px);opacity:0;transition:opacity .25s,transform .25s;max-width:300px}
+#toast{position:fixed;bottom:16px;right:16px;left:16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:12px 16px;font-size:13px;font-weight:500;z-index:999;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.5);transform:translateY(20px);opacity:0;transition:opacity .25s,transform .25s}
 #toast.show{opacity:1;transform:none}
-.spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
-@keyframes spin{to{transform:rotate(360deg)}}
-@media(max-width:600px){
-  header{padding:10px 12px}
-  .logo{font-size:15px}
-  .user-chip{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .clock{display:none}
-  .tabs{padding:0 6px}
-  .tab{padding:10px 10px;font-size:11px}
-  .page{padding:14px 12px}
-  #screen-login{padding:12px}
-  .login-box{padding:24px 16px;border-radius:10px}
-  .scanner-wrapper{border-radius:8px;max-width:100%}
-  .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px}
-  .kpi-card{padding:12px}
-  .kpi-value{font-size:22px}
-  .student-grid{grid-template-columns:repeat(2,1fr);gap:8px}
-  .modal{padding:18px 14px;width:96%;border-radius:10px}
-  .kiosk-banner{font-size:11px;padding:7px 10px}
-  .result-card{padding:12px;gap:10px}
-  .result-time .time-big{font-size:15px}
-  .table-wrap{font-size:12px}
-  th,td{padding:8px 10px}
-  #toast{bottom:12px;right:12px;left:12px;max-width:none}
+
+@media(min-width:500px){
+  #toast{left:auto;max-width:320px}
+  .kpi-row{grid-template-columns:repeat(4,1fr)}
+  .student-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+  header{padding:14px 20px}
+  .tab{padding:13px 18px;font-size:13px}
+  .page{padding:20px}
 }
 </style>
 </head>
 <body>
-
 <div id="loading-bar"></div>
 <div id="toast"></div>
 
-<!-- ══════════════════════════ LOGIN ══════════════════════════ -->
+<!-- LOGIN -->
 <div id="screen-login">
   <div class="login-box">
-    <div class="login-logo">
-      <div class="login-logo-dot"></div>
-      PresençaFácil
-    </div>
-    <p class="login-sub">Sistema de controle de presença escolar</p>
-    <h2 id="login-title">Entrar como Gestor</h2>
+    <div class="login-logo"><div class="ldot"></div>PresençaFácil</div>
+    <p class="login-sub">Controle de presença escolar</p>
+    <h2 id="login-title">Entrar</h2>
 
     <div id="login-form">
-      <div class="field">
-        <label>E-mail</label>
-        <input type="email" id="login-email" placeholder="gestor@escola.com.br" autocomplete="email">
-      </div>
-      <div class="field">
-        <label>Senha</label>
-        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
-      </div>
+      <div class="field"><label>E-mail</label><input type="email" id="login-email" placeholder="gestor@escola.com.br" autocomplete="email"></div>
+      <div class="field"><label>Senha</label><input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
       <div id="login-error" style="font-size:12px;color:var(--danger);margin-bottom:12px;display:none"></div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">
-        Entrar
-      </button>
-      <p style="font-size:12px;color:var(--text2);text-align:center;margin-top:16px">
-        Primeiro acesso?
-        <span style="color:var(--accent);cursor:pointer" onclick="toggleRegister()">Criar conta de gestor</span>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">Entrar</button>
+      <p style="font-size:12px;color:var(--text2);text-align:center;margin-top:14px">
+        Primeiro acesso? <span style="color:var(--accent);cursor:pointer" onclick="toggleReg()">Criar conta</span>
       </p>
     </div>
 
-    <div id="register-form" style="display:none">
-      <div class="field">
-        <label>Nome</label>
-        <input type="text" id="reg-nome" placeholder="Seu nome completo">
-      </div>
-      <div class="field">
-        <label>E-mail</label>
-        <input type="email" id="reg-email" placeholder="gestor@escola.com.br">
-      </div>
-      <div class="field">
-        <label>Senha</label>
-        <input type="password" id="reg-pass" placeholder="mínimo 6 caracteres">
-      </div>
+    <div id="reg-form" style="display:none">
+      <div class="field"><label>Nome</label><input type="text" id="reg-nome" placeholder="Seu nome"></div>
+      <div class="field"><label>E-mail</label><input type="email" id="reg-email" placeholder="gestor@escola.com.br"></div>
+      <div class="field"><label>Senha (mín. 6 caracteres)</label><input type="password" id="reg-pass" placeholder="••••••••"></div>
       <div id="reg-error" style="font-size:12px;color:var(--danger);margin-bottom:12px;display:none"></div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doRegister()">
-        Criar conta
-      </button>
-      <p style="font-size:12px;color:var(--text2);text-align:center;margin-top:16px">
-        Já tem conta?
-        <span style="color:var(--accent);cursor:pointer" onclick="toggleRegister()">Entrar</span>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doRegister()">Criar conta</button>
+      <p style="font-size:12px;color:var(--text2);text-align:center;margin-top:14px">
+        Já tem conta? <span style="color:var(--accent);cursor:pointer" onclick="toggleReg()">Entrar</span>
       </p>
     </div>
   </div>
 </div>
 
-<!-- ══════════════════════════ APP ══════════════════════════ -->
+<!-- APP -->
 <div id="screen-app">
   <header>
     <div class="logo"><div class="logo-dot"></div>PresençaFácil</div>
     <div class="header-right">
       <span class="clock" id="clock">--:--</span>
-      <div class="user-chip">
-        <span>👤</span>
-        <span id="user-name-chip">...</span>
-      </div>
+      <div class="user-chip" id="user-chip">...</div>
       <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sair</button>
     </div>
   </header>
-
   <nav class="tabs">
     <button class="tab active" onclick="switchTab('scanner',this)">📷 Scanner</button>
     <button class="tab" onclick="switchTab('alunos',this)">👤 Alunos</button>
@@ -266,60 +216,53 @@ tr:hover td{background:rgba(79,142,247,.03)}
 
   <!-- SCANNER -->
   <div class="page active" id="page-scanner">
-    <div class="kiosk-banner">🔒 Modo Portaria — scanner ativo. Gestor logado: <span id="gestor-nome-banner">...</span></div>
-
-    <p class="section-title">Câmera ao vivo</p>
+    <div class="kiosk-banner">🔒 Modo Portaria — Gestor: <span id="gestor-banner">...</span></div>
+    <p class="sec">Câmera ao vivo</p>
     <div class="scanner-wrapper">
       <video id="video" autoplay muted playsinline></video>
       <canvas id="overlay"></canvas>
-      <div class="scanner-frame"><span></span></div>
+      <div class="scan-frame"><span></span></div>
       <div class="scan-line"></div>
       <div class="scanner-status">
-        <span class="status-badge idle" id="scan-status">
+        <span class="status-badge idle" id="scan-badge">
           <span class="pulse"></span>
-          <span id="scan-status-text">Aguardando...</span>
+          <span id="scan-txt">Aguardando...</span>
         </span>
       </div>
     </div>
-
     <div class="row" style="justify-content:center;margin-bottom:8px">
       <button class="btn btn-primary" id="btn-start" onclick="startScanner()">▶ Iniciar Scanner</button>
       <button class="btn btn-ghost" id="btn-stop" onclick="stopScanner()" style="display:none">⏹ Parar</button>
     </div>
-
     <div id="result-area"></div>
     <div class="divider"></div>
-    <p class="section-title">Últimas presenças hoje</p>
+    <p class="sec">Últimas presenças hoje</p>
     <div id="today-list"><div class="empty"><p>Nenhuma presença registrada hoje.</p></div></div>
   </div>
 
   <!-- ALUNOS -->
   <div class="page" id="page-alunos">
-    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:20px">
+    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:16px">
       <div>
-        <p style="font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700">Alunos Cadastrados</p>
-        <p style="font-size:13px;color:var(--text2);margin-top:4px" id="alunos-count">carregando...</p>
+        <p style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700">Alunos</p>
+        <p style="font-size:12px;color:var(--text2);margin-top:3px" id="alunos-count">carregando...</p>
       </div>
-      <button class="btn btn-primary" onclick="openAddAluno()">+ Cadastrar</button>
+      <button class="btn btn-primary btn-sm" onclick="openAddAluno()">+ Cadastrar</button>
     </div>
-    <div class="student-grid" id="student-grid">
-      <div class="empty" style="grid-column:1/-1"><p>Carregando...</p></div>
-    </div>
+    <div class="student-grid" id="student-grid"><div class="empty" style="grid-column:1/-1"><p>Carregando...</p></div></div>
   </div>
 
   <!-- PRESENÇAS -->
   <div class="page" id="page-presencas">
     <div class="filters">
       <input type="date" id="filter-date" onchange="renderPresencas()">
-      <select id="filter-turma" onchange="renderPresencas()">
-        <option value="">Todas as turmas</option>
-      </select>
+      <select id="filter-turma" onchange="renderPresencas()"><option value="">Todas as turmas</option></select>
       <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ CSV</button>
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Aluno</th><th>Turma</th><th>Horário</th><th>Status</th></tr></thead>
-        <tbody id="presencas-body"><tr><td colspan="4" style="text-align:center;color:var(--text3);padding:40px">Carregando...</td></tr></tbody>
+        <thead><tr><th>Aluno</th><th>Turma</th><th>Hora</th><th>Status</th></tr></thead>
+        <tbody id="presencas-body"><tr><td colspan="4" style="text-align:center;color:var(--text3);padding:30px">Carregando...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -328,105 +271,108 @@ tr:hover td{background:rgba(79,142,247,.03)}
   <div class="page" id="page-relatorios">
     <div class="kpi-row">
       <div class="kpi-card"><div class="kpi-label">Alunos</div><div class="kpi-value" id="kpi-alunos">—</div><div class="kpi-sub">cadastrados</div></div>
-      <div class="kpi-card"><div class="kpi-label">Presentes Hoje</div><div class="kpi-value" id="kpi-hoje" style="color:var(--success)">—</div><div class="kpi-sub" id="kpi-pct">—</div></div>
-      <div class="kpi-card"><div class="kpi-label">Total Registros</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">histórico</div></div>
+      <div class="kpi-card"><div class="kpi-label">Hoje</div><div class="kpi-value" id="kpi-hoje" style="color:var(--success)">—</div><div class="kpi-sub" id="kpi-pct">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Registros</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">histórico</div></div>
       <div class="kpi-card"><div class="kpi-label">Turmas</div><div class="kpi-value" id="kpi-turmas">—</div><div class="kpi-sub">ativas</div></div>
     </div>
-    <p class="section-title">Frequência por Turma</p>
+    <p class="sec">Frequência por turma</p>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Turma</th><th>Alunos</th><th>Registros de Presença</th></tr></thead>
-        <tbody id="rel-turma-body"><tr><td colspan="3" style="text-align:center;color:var(--text3);padding:30px">Carregando...</td></tr></tbody>
+        <thead><tr><th>Turma</th><th>Alunos</th><th>Registros</th></tr></thead>
+        <tbody id="rel-body"></tbody>
       </table>
     </div>
+    <div class="divider"></div>
+    <button class="btn btn-danger btn-sm" onclick="clearData()">🗑 Limpar dados de teste</button>
   </div>
 </div>
 
-<!-- ══════════════════════════ MODAL CADASTRO ══ -->
+<!-- MODAL CADASTRO -->
 <div class="modal-bg" id="modal-aluno">
   <div class="modal">
     <h2>Cadastrar Aluno</h2>
     <div class="field"><label>Nome completo</label><input type="text" id="f-nome" placeholder="Ex.: Ana Beatriz Santos"></div>
     <div class="field"><label>Turma</label><input type="text" id="f-turma" placeholder="Ex.: 7º A"></div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Posicione o rosto na câmera e clique em Capturar:</p>
-    <div class="modal-cam-wrap"><video id="modal-video" autoplay muted playsinline></video></div>
-    <canvas id="modal-canvas" width="320" height="240" style="display:none"></canvas>
-    <div id="cap-status" style="font-size:12px;color:var(--text2);margin-bottom:4px">Câmera iniciando...</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:8px">Posicione o rosto e clique em Capturar:</p>
+    <div class="modal-cam"><video id="modal-video" autoplay muted playsinline></video></div>
+    <div id="cap-status" style="font-size:12px;color:var(--text2);margin-bottom:4px;min-height:18px">Câmera iniciando...</div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeAddAluno()">Cancelar</button>
-      <button class="btn btn-success" id="btn-capture" onclick="captureAluno()">📸 Capturar e Salvar</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeAddAluno()">Cancelar</button>
+      <button class="btn btn-success btn-sm" id="btn-capture" onclick="captureAluno()">📸 Capturar e Salvar</button>
     </div>
   </div>
 </div>
 
 <script>
 // ══════════════════════════════════════
-// CONFIG SUPABASE
+// CONFIG
 // ══════════════════════════════════════
 const SUPA_URL = 'https://awtzeflakcffshkvtmsf.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3dHplZmxha2NmZnNoa3Z0bXNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzOTMyODEsImV4cCI6MjA5Nzk2OTI4MX0.LgtYZFbcUtC2XwQCxley5uCmPvkueKnf_iB3p7qdVVk';
-const { createClient } = supabase;
-const db = createClient(SUPA_URL, SUPA_KEY);
+const db = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 // ══════════════════════════════════════
 // STATE
 // ══════════════════════════════════════
 let currentUser = null;
-let currentProfile = null;
 let modelsLoaded = false;
+let appInitialized = false;
 let scanStream = null;
 let modalStream = null;
 let scanRunning = false;
 let scanTimer = null;
-let localDescriptors = []; // cache [{id, nome, turma_nome, descriptor: Float32Array}]
+let localDescriptors = [];
 const recentReg = {};
 const COLORS = ['#4f8ef7','#7c3aed','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16'];
 
 // ══════════════════════════════════════
 // HELPERS
 // ══════════════════════════════════════
-const getColor = n => { let h=0; for(let c of n) h=(h*31+c.charCodeAt(0))%COLORS.length; return COLORS[h]; };
-const getInit  = n => n.trim().split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
+const getColor = n => { let h=0; for(let c of (n||'X')) h=(h*31+c.charCodeAt(0))%COLORS.length; return COLORS[h]; };
+const getInit  = n => (n||'?').trim().split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
 const todayStr = () => new Date().toISOString().slice(0,10);
 const timeStr  = () => new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-const setBar   = p => document.getElementById('loading-bar').style.width = p+'%';
+const setBar   = p => { document.getElementById('loading-bar').style.width = p+'%'; };
 
-function toast(msg, icon='✓', dur=3200) {
+function toast(msg, icon='✓', dur=3500) {
   const t = document.getElementById('toast');
-  t.innerHTML = `<span style="font-size:15px">${icon}</span> ${msg}`;
+  t.innerHTML = `<span style="font-size:15px">${icon}</span><span>${msg}</span>`;
   t.classList.add('show');
   clearTimeout(t._t);
   t._t = setTimeout(()=>t.classList.remove('show'), dur);
 }
 
 function updateClock() {
-  document.getElementById('clock').textContent =
-    new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const el = document.getElementById('clock');
+  if(el) el.textContent = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 }
-setInterval(updateClock,1000); updateClock();
+setInterval(updateClock, 1000);
+updateClock();
 
 // ══════════════════════════════════════
 // AUTH
 // ══════════════════════════════════════
-function toggleRegister() {
-  const login = document.getElementById('login-form');
-  const reg   = document.getElementById('register-form');
-  const title = document.getElementById('login-title');
-  if (login.style.display==='none') {
-    login.style.display=''; reg.style.display='none'; title.textContent='Entrar como Gestor';
-  } else {
-    login.style.display='none'; reg.style.display=''; title.textContent='Criar conta de Gestor';
-  }
+function toggleReg() {
+  const lf = document.getElementById('login-form');
+  const rf = document.getElementById('reg-form');
+  const t  = document.getElementById('login-title');
+  const show = lf.style.display === 'none';
+  lf.style.display = show ? '' : 'none';
+  rf.style.display = show ? 'none' : '';
+  t.textContent = show ? 'Entrar' : 'Criar conta';
 }
 
 async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pass  = document.getElementById('login-pass').value;
   const err   = document.getElementById('login-error');
-  err.style.display='none';
-  if (!email||!pass) { err.textContent='Preencha e-mail e senha.'; err.style.display=''; return; }
+  err.style.display = 'none';
+  if (!email || !pass) { err.textContent='Preencha e-mail e senha.'; err.style.display=''; return; }
+  const btn = event.currentTarget;
+  btn.disabled = true; btn.textContent = 'Entrando...';
   const { error } = await db.auth.signInWithPassword({ email, password: pass });
-  if (error) { err.textContent = error.message; err.style.display=''; }
+  btn.disabled = false; btn.textContent = 'Entrar';
+  if (error) { err.textContent = traduzirErro(error.message); err.style.display=''; }
 }
 
 async function doRegister() {
@@ -434,98 +380,125 @@ async function doRegister() {
   const email = document.getElementById('reg-email').value.trim();
   const pass  = document.getElementById('reg-pass').value;
   const err   = document.getElementById('reg-error');
-  err.style.display='none';
+  err.style.display = 'none';
   if (!nome||!email||!pass) { err.textContent='Preencha todos os campos.'; err.style.display=''; return; }
-  const { error } = await db.auth.signUp({
-    email, password: pass,
-    options: { data: { nome, role: 'gestor' } }
-  });
-  if (error) { err.textContent=error.message; err.style.display=''; }
-  else { toast('Conta criada! Verifique seu e-mail se necessário.','✅'); toggleRegister(); }
+  if (pass.length < 6) { err.textContent='Senha deve ter pelo menos 6 caracteres.'; err.style.display=''; return; }
+  const btn = event.currentTarget;
+  btn.disabled = true; btn.textContent = 'Criando...';
+  const { data, error } = await db.auth.signUp({ email, password: pass, options:{data:{nome,role:'gestor'}} });
+  btn.disabled = false; btn.textContent = 'Criar conta';
+  if (error) { err.textContent = traduzirErro(error.message); err.style.display=''; return; }
+  // Criar perfil manualmente (trigger foi removido)
+  if (data?.user) {
+    await db.from('profiles').upsert({ id: data.user.id, nome, role:'gestor' }, {onConflict:'id'});
+  }
+  toast('Conta criada com sucesso!','✅');
+  toggleReg();
+}
+
+function traduzirErro(msg) {
+  if (msg.includes('Invalid login')) return 'E-mail ou senha incorretos.';
+  if (msg.includes('already registered')) return 'Este e-mail já está cadastrado.';
+  if (msg.includes('Password should')) return 'Senha deve ter pelo menos 6 caracteres.';
+  if (msg.includes('Unable to validate')) return 'E-mail inválido.';
+  return msg;
 }
 
 async function doLogout() {
   stopScanner();
+  appInitialized = false;
   await db.auth.signOut();
 }
 
-// Auth state listener
+// ── Auth state listener (executa apenas uma vez por mudança real)
 db.auth.onAuthStateChange(async (event, session) => {
   if (session?.user) {
+    if (currentUser?.id === session.user.id && appInitialized) return; // evita re-render desnecessário
     currentUser = session.user;
-    await loadProfile();
-    showApp();
+    await initApp();
   } else {
     currentUser = null;
-    currentProfile = null;
+    appInitialized = false;
     showLogin();
   }
 });
 
-async function loadProfile() {
-  const { data } = await db.from('profiles').select('*').eq('id', currentUser.id).single();
-  currentProfile = data;
-  const nome = data?.nome || currentUser.email;
-  document.getElementById('user-name-chip').textContent = nome;
-  document.getElementById('gestor-nome-banner').textContent = nome;
+async function initApp() {
+  appInitialized = true;
+  // Carregar ou criar perfil
+  let { data: profile } = await db.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
+  if (!profile) {
+    const nome = currentUser.user_metadata?.nome || currentUser.email.split('@')[0];
+    await db.from('profiles').upsert({ id: currentUser.id, nome, role:'gestor' }, {onConflict:'id'});
+    profile = { nome };
+  }
+  const nome = profile?.nome || currentUser.email;
+  document.getElementById('user-chip').textContent = nome;
+  document.getElementById('gestor-banner').textContent = nome;
+
+  showApp();
+  document.getElementById('filter-date').value = todayStr();
+  renderTodayList();
+  loadModels(); // só carrega se ainda não carregou
 }
 
 function showLogin() {
-  document.getElementById('screen-login').style.display='flex';
-  document.getElementById('screen-app').style.display='none';
+  document.getElementById('screen-login').style.display = 'flex';
+  document.getElementById('screen-app').style.display = 'none';
 }
 
 function showApp() {
-  document.getElementById('screen-login').style.display='none';
-  document.getElementById('screen-app').style.display='block';
-  loadModels();
-  renderTodayList();
+  document.getElementById('screen-login').style.display = 'none';
+  document.getElementById('screen-app').style.display = 'block';
 }
 
 // ══════════════════════════════════════
-// LOAD FACE MODELS
+// FACE API — carregamento robusto
 // ══════════════════════════════════════
 async function waitForFaceApi(tries=0) {
-  if (typeof faceapi !== 'undefined') return true;
-  if (tries > 20) return false;
+  if (typeof faceapi !== 'undefined' && faceapi.nets) return true;
+  if (tries > 30) return false;
   await new Promise(r => setTimeout(r, 500));
   return waitForFaceApi(tries + 1);
 }
 
 async function loadModels() {
-  setBar(10);
-  setScanStatus('looking','Carregando modelos de IA...');
+  if (modelsLoaded) return; // não recarregar
+  setBar(5);
+  setScanStatus('looking','Carregando IA facial...');
   try {
     const ready = await waitForFaceApi();
-    if (!ready) throw new Error('face-api não carregou');
-    const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model/';
-    await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL); setBar(45);
-    await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL); setBar(75);
-    await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL); setBar(100);
-    setTimeout(()=>setBar(0),600);
+    if (!ready) throw new Error('face-api.js não disponível');
+    const M = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model/';
+    await faceapi.nets.ssdMobilenetv1.loadFromUri(M); setBar(40);
+    await faceapi.nets.faceLandmark68Net.loadFromUri(M); setBar(70);
+    await faceapi.nets.faceRecognitionNet.loadFromUri(M); setBar(100);
+    setTimeout(()=>setBar(0), 800);
     modelsLoaded = true;
-    setScanStatus('idle','Pronto — clique em Iniciar Scanner');
+    setScanStatus('idle','Pronto — toque em Iniciar Scanner');
     await refreshDescriptors();
   } catch(e) {
     setBar(0);
-    setScanStatus('error','Falha ao carregar modelos — recarregue a página');
-    console.error('loadModels error:', e);
+    setScanStatus('error','Falha ao carregar IA — recarregue');
+    console.error('loadModels:', e);
   }
 }
 
-// Carrega todos os descriptors do Supabase para cache local
 async function refreshDescriptors() {
-  const { data } = await db.from('alunos')
+  if (!currentUser) return;
+  const { data, error } = await db.from('alunos')
     .select('id,nome,turma_nome,descriptor')
-    .eq('ativo',true)
+    .eq('ativo', true)
     .not('descriptor','is',null);
-  if (!data) return;
-  localDescriptors = data.map(a => ({
-    id: a.id,
-    nome: a.nome,
-    turma_nome: a.turma_nome,
-    descriptor: new Float32Array(a.descriptor)
-  }));
+  if (error || !data) return;
+  localDescriptors = data
+    .filter(a => Array.isArray(a.descriptor) && a.descriptor.length === 128)
+    .map(a => ({
+      id: a.id,
+      nome: a.nome,
+      turma_nome: a.turma_nome,
+      descriptor: new Float32Array(a.descriptor)
+    }));
 }
 
 // ══════════════════════════════════════
@@ -537,44 +510,50 @@ function switchTab(id, el) {
   el.classList.add('active');
   document.getElementById('page-'+id).classList.add('active');
   if (id==='alunos')     renderAlunos();
-  if (id==='presencas')  { renderPresencas(); loadTurmasFilter(); }
+  if (id==='presencas')  { loadTurmasFilter(); renderPresencas(); }
   if (id==='relatorios') renderRelatorios();
 }
 
 // ══════════════════════════════════════
 // SCANNER
 // ══════════════════════════════════════
-function setScanStatus(type,text) {
-  const el = document.getElementById('scan-status');
-  el.className = 'status-badge '+type;
-  document.getElementById('scan-status-text').textContent = text;
+function setScanStatus(type, text) {
+  const el = document.getElementById('scan-badge');
+  const tx = document.getElementById('scan-txt');
+  if (el) el.className = 'status-badge '+type;
+  if (tx) tx.textContent = text;
 }
 
 async function startScanner() {
-  if (!modelsLoaded) { toast('Aguarde o carregamento dos modelos...','⏳'); return; }
+  if (!modelsLoaded) { toast('Aguarde a IA carregar...','⏳'); return; }
+  const video = document.getElementById('video');
   try {
-    scanStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640,height:480}});
-    const v = document.getElementById('video');
-    v.srcObject = scanStream;
-    await v.play();
-    document.getElementById('btn-start').style.display='none';
-    document.getElementById('btn-stop').style.display='';
+    scanStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode:'user', width:{ideal:640}, height:{ideal:480} }
+    });
+    video.srcObject = scanStream;
+    await video.play();
+    document.getElementById('btn-start').style.display = 'none';
+    document.getElementById('btn-stop').style.display  = '';
     scanRunning = true;
     setScanStatus('looking','Procurando rostos...');
     runDetection();
   } catch(e) {
     setScanStatus('error','Sem acesso à câmera');
-    toast('Permita o acesso à câmera.','⚠️');
+    toast('Permita o acesso à câmera nas configurações do navegador.','⚠️');
   }
 }
 
 function stopScanner() {
   scanRunning = false;
-  if (scanStream) { scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; }
   clearTimeout(scanTimer);
-  document.getElementById('video').srcObject = null;
-  document.getElementById('btn-start').style.display='';
-  document.getElementById('btn-stop').style.display='none';
+  if (scanStream) { scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; }
+  const video = document.getElementById('video');
+  if (video) video.srcObject = null;
+  const bs = document.getElementById('btn-start');
+  const bst = document.getElementById('btn-stop');
+  if (bs)  bs.style.display  = '';
+  if (bst) bst.style.display = 'none';
   setScanStatus('idle','Scanner parado');
 }
 
@@ -582,16 +561,18 @@ async function runDetection() {
   if (!scanRunning) return;
   const video = document.getElementById('video');
   const canvas = document.getElementById('overlay');
-  if (video.readyState < 2) { scanTimer = setTimeout(runDetection, 400); return; }
-
+  if (!video || !canvas || video.readyState < 2) {
+    scanTimer = setTimeout(runDetection, 400);
+    return;
+  }
   canvas.width  = video.videoWidth  || video.clientWidth;
   canvas.height = video.videoHeight || video.clientHeight;
   const ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   try {
     const dets = await faceapi
-      .detectAllFaces(video, new faceapi.SsdMobilenetv1Options({minConfidence:0.5}))
+      .detectAllFaces(video, new faceapi.SsdMobilenetv1Options({minConfidence:0.45}))
       .withFaceLandmarks()
       .withFaceDescriptors();
 
@@ -601,17 +582,15 @@ async function runDetection() {
       return;
     }
 
-    setScanStatus('found', dets.length+' rosto(s) detectado(s)');
+    setScanStatus('found', dets.length + ' rosto(s) detectado(s)');
     const resized = faceapi.resizeResults(dets, {width:canvas.width, height:canvas.height});
 
-    // Desenha caixas
     resized.forEach(d => {
       const b = d.detection.box;
-      ctx.strokeStyle='#4f8ef7'; ctx.lineWidth=2;
-      ctx.strokeRect(b.x,b.y,b.width,b.height);
+      ctx.strokeStyle = '#4f8ef7'; ctx.lineWidth = 2;
+      ctx.strokeRect(b.x, b.y, b.width, b.height);
     });
 
-    // Matching local com cache
     if (localDescriptors.length > 0) {
       const labeled = localDescriptors.map(a =>
         new faceapi.LabeledFaceDescriptors(a.id, [a.descriptor])
@@ -620,35 +599,29 @@ async function runDetection() {
       for (const d of resized) {
         const match = matcher.findBestMatch(d.descriptor);
         if (match.label !== 'unknown') {
-          const aluno = localDescriptors.find(a=>a.id===match.label);
+          const aluno = localDescriptors.find(a => a.id === match.label);
           if (aluno) await registerPresenca(aluno);
         }
       }
     }
-  } catch(e) { console.warn(e); }
+  } catch(e) { console.warn('detection:', e); }
 
   scanTimer = setTimeout(runDetection, 900);
 }
 
 // ══════════════════════════════════════
-// REGISTRAR PRESENÇA
+// PRESENÇA
 // ══════════════════════════════════════
 async function registerPresenca(aluno) {
   const now = Date.now();
   if (recentReg[aluno.id] && now - recentReg[aluno.id] < 12000) return;
   recentReg[aluno.id] = now;
-
   const hora = timeStr();
   const { error } = await db.from('presencas').insert({
-    aluno_id:   aluno.id,
-    aluno_nome: aluno.nome,
-    turma_nome: aluno.turma_nome,
-    data:       todayStr(),
-    hora:       hora
+    aluno_id: aluno.id, aluno_nome: aluno.nome,
+    turma_nome: aluno.turma_nome, data: todayStr(), hora
   });
-
-  if (error) { console.error(error); return; }
-
+  if (error) { console.error('presença:', error); return; }
   showResultCard(aluno, hora);
   renderTodayList();
   toast(`✅ ${aluno.nome} — ${hora}`);
@@ -658,34 +631,31 @@ function showResultCard(aluno, hora) {
   const area = document.getElementById('result-area');
   area.innerHTML = `
     <div class="result-card" id="rc">
-      <div class="result-avatar" style="background:${getColor(aluno.nome)}22;color:${getColor(aluno.nome)};border:2px solid ${getColor(aluno.nome)}44">
-        ${getInit(aluno.nome)}
-      </div>
+      <div class="result-avatar" style="background:${getColor(aluno.nome)}22;color:${getColor(aluno.nome)};border:2px solid ${getColor(aluno.nome)}44">${getInit(aluno.nome)}</div>
       <div class="result-info">
         <h3>${aluno.nome}</h3>
-        <p>${aluno.turma_nome ? 'Turma '+aluno.turma_nome+' · ' : ''}✅ Presença registrada</p>
+        <p>${aluno.turma_nome?'Turma '+aluno.turma_nome+' · ':''}✅ Presente</p>
       </div>
       <div class="result-time">
-        <div class="time-big">${hora}</div>
+        <div class="time-big">${hora.slice(0,5)}</div>
         <div class="time-label">horário</div>
       </div>
     </div>`;
-  setTimeout(()=>document.getElementById('rc')?.classList.add('visible'),10);
+  setTimeout(()=>document.getElementById('rc')?.classList.add('visible'), 10);
 }
 
 async function renderTodayList() {
-  const { data } = await db.from('presencas')
-    .select('*')
-    .eq('data', todayStr())
-    .order('created_at',{ascending:false})
-    .limit(8);
+  if (!currentUser) return;
+  const { data } = await db.from('presencas').select('*')
+    .eq('data', todayStr()).order('created_at',{ascending:false}).limit(8);
   const el = document.getElementById('today-list');
-  if (!data?.length) { el.innerHTML='<div class="empty"><p>Nenhuma presença registrada hoje.</p></div>'; return; }
+  if (!el) return;
+  if (!data?.length) { el.innerHTML='<div class="empty"><p>Nenhuma presença hoje.</p></div>'; return; }
   el.innerHTML = data.map(a=>`
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
-      <div style="width:32px;height:32px;border-radius:50%;background:${getColor(a.aluno_nome)}22;color:${getColor(a.aluno_nome)};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Space Grotesk',sans-serif;flex-shrink:0">${getInit(a.aluno_nome)}</div>
-      <div style="flex:1"><div style="font-size:13px;font-weight:600">${a.aluno_nome}</div><div style="font-size:11px;color:var(--text2)">${a.turma_nome||'—'}</div></div>
-      <div style="font-size:13px;color:var(--accent);font-family:'Space Grotesk',sans-serif;font-weight:600">${a.hora?.slice(0,5)||''}</div>
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+      <div style="width:30px;height:30px;border-radius:50%;background:${getColor(a.aluno_nome)}22;color:${getColor(a.aluno_nome)};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:'Space Grotesk',sans-serif;flex-shrink:0">${getInit(a.aluno_nome)}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.aluno_nome}</div><div style="font-size:11px;color:var(--text2)">${a.turma_nome||'—'}</div></div>
+      <div style="font-size:12px;color:var(--accent);font-family:'Space Grotesk',sans-serif;font-weight:600;flex-shrink:0">${(a.hora||'').slice(0,5)}</div>
     </div>`).join('');
 }
 
@@ -693,22 +663,24 @@ async function renderTodayList() {
 // ALUNOS
 // ══════════════════════════════════════
 async function renderAlunos() {
-  const { data, count } = await db.from('alunos').select('*', {count:'exact'}).eq('ativo',true).order('nome');
-  document.getElementById('alunos-count').textContent = (count||0)+' aluno'+(count!==1?'s':'')+' cadastrado'+(count!==1?'s':'');
+  if (!currentUser) return;
+  const { data, count } = await db.from('alunos').select('*',{count:'exact'}).eq('ativo',true).order('nome');
+  const lbl = document.getElementById('alunos-count');
   const grid = document.getElementById('student-grid');
-  if (!data?.length) { grid.innerHTML='<div class="empty" style="grid-column:1/-1"><p>Nenhum aluno cadastrado ainda.</p></div>'; return; }
+  if (lbl) lbl.textContent = (count||0)+' aluno'+(count!==1?'s':'')+' cadastrado'+(count!==1?'s':'');
+  if (!data?.length) { grid.innerHTML='<div class="empty" style="grid-column:1/-1"><p>Nenhum aluno cadastrado.</p></div>'; return; }
   grid.innerHTML = data.map(a=>`
     <div class="student-card">
-      <button class="del-btn" onclick="deleteAluno('${a.id}')" title="Remover">✕</button>
+      ${a.descriptor ? '<div class="bio-dot" title="Face cadastrada"></div>' : '<button class="del-btn" onclick="deleteAluno(\''+a.id+'\')">✕</button>'}
       <div class="avatar" style="background:${getColor(a.nome)}22;color:${getColor(a.nome)}">${getInit(a.nome)}</div>
-      <div class="name">${a.nome}</div>
-      <div class="turma-tag">${a.turma_nome||'Sem turma'}</div>
-      ${a.descriptor ? '<div class="bio-dot" title="Face cadastrada"></div>' : ''}
+      <div class="sname">${a.nome}</div>
+      <div class="sturma">${a.turma_nome||'Sem turma'}</div>
+      ${a.descriptor ? '<button class="del-btn" style="top:auto;bottom:6px;right:6px" onclick="deleteAluno(\''+a.id+'\')">✕</button>' : ''}
     </div>`).join('');
 }
 
 async function deleteAluno(id) {
-  if (!confirm('Remover este aluno e seus registros de presença?')) return;
+  if (!confirm('Remover este aluno?')) return;
   await db.from('presencas').delete().eq('aluno_id',id);
   await db.from('alunos').update({ativo:false}).eq('id',id);
   localDescriptors = localDescriptors.filter(a=>a.id!==id);
@@ -720,17 +692,22 @@ async function deleteAluno(id) {
 // MODAL CADASTRO
 // ══════════════════════════════════════
 async function openAddAluno() {
-  document.getElementById('f-nome').value='';
-  document.getElementById('f-turma').value='';
-  document.getElementById('cap-status').textContent='Câmera iniciando...';
+  document.getElementById('f-nome').value = '';
+  document.getElementById('f-turma').value = '';
+  document.getElementById('cap-status').textContent = 'Câmera iniciando...';
+  document.getElementById('btn-capture').disabled = false;
+  document.getElementById('btn-capture').textContent = '📸 Capturar e Salvar';
   document.getElementById('modal-aluno').classList.add('open');
   try {
-    modalStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:320,height:240}});
+    modalStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode:'user', width:{ideal:320}, height:{ideal:320} }
+    });
     const v = document.getElementById('modal-video');
-    v.srcObject = modalStream; v.play();
-    document.getElementById('cap-status').textContent='✅ Posicione o rosto e clique em Capturar';
+    v.srcObject = modalStream;
+    await v.play();
+    document.getElementById('cap-status').textContent = '✅ Posicione o rosto e toque em Capturar';
   } catch(e) {
-    document.getElementById('cap-status').textContent='⚠️ Câmera indisponível — salvo sem biometria';
+    document.getElementById('cap-status').textContent = '⚠️ Câmera indisponível — salvo sem biometria facial';
   }
 }
 
@@ -742,43 +719,58 @@ function closeAddAluno() {
 async function captureAluno() {
   const nome  = document.getElementById('f-nome').value.trim();
   const turma = document.getElementById('f-turma').value.trim();
-  if (!nome||!turma) { toast('Preencha nome e turma.','⚠️'); return; }
+  if (!nome)  { toast('Digite o nome do aluno.','⚠️'); return; }
+  if (!turma) { toast('Digite a turma.','⚠️'); return; }
 
   const btn = document.getElementById('btn-capture');
-  btn.disabled=true; btn.textContent='Salvando...';
+  btn.disabled = true;
+  btn.textContent = 'Processando...';
 
   let descriptor = null;
   const video = document.getElementById('modal-video');
 
-  if (modelsLoaded && modalStream && video.readyState>=2) {
+  if (modelsLoaded && modalStream) {
+    // Aguarda video estar pronto
+    await new Promise(r => {
+      if (video.readyState >= 2) { r(); return; }
+      video.addEventListener('canplay', r, {once:true});
+      setTimeout(r, 3000); // fallback 3s
+    });
     try {
-      document.getElementById('cap-status').textContent='🔍 Detectando rosto...';
+      document.getElementById('cap-status').textContent = '🔍 Detectando rosto...';
       const det = await faceapi
-        .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({minConfidence:0.5}))
+        .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({minConfidence:0.4}))
         .withFaceLandmarks()
         .withFaceDescriptor();
       if (det) {
-        descriptor = Array.from(det.descriptor);
-        document.getElementById('cap-status').textContent='✅ Rosto capturado!';
+        descriptor = Array.from(det.descriptor); // array de 128 números
+        document.getElementById('cap-status').textContent = '✅ Rosto capturado!';
       } else {
-        document.getElementById('cap-status').textContent='⚠️ Rosto não detectado — salvo sem biometria';
+        document.getElementById('cap-status').textContent = '⚠️ Rosto não detectado. Salvo sem biometria.';
       }
-    } catch(e) { console.warn(e); }
+    } catch(e) {
+      console.warn('capture error:', e);
+      document.getElementById('cap-status').textContent = '⚠️ Erro na detecção. Salvo sem biometria.';
+    }
   }
 
-  const { error } = await db.from('alunos').insert({
-    nome, turma_nome: turma, descriptor
-  });
+  const payload = { nome, turma_nome: turma, ativo: true };
+  if (descriptor) payload.descriptor = descriptor; // pgvector aceita array JS diretamente
+
+  const { error } = await db.from('alunos').insert(payload);
 
   if (error) {
-    toast('Erro ao salvar: '+error.message,'❌');
-  } else {
-    toast(`${nome} cadastrado${descriptor?' com reconhecimento facial':' (sem biometria)'}.`,'✅');
-    await refreshDescriptors();
-    closeAddAluno();
-    renderAlunos();
+    console.error('insert aluno:', error);
+    toast('Erro ao salvar: '+error.message,'❌',5000);
+    btn.disabled = false;
+    btn.textContent = '📸 Capturar e Salvar';
+    return;
   }
-  btn.disabled=false; btn.textContent='📸 Capturar e Salvar';
+
+  toast(`${nome} cadastrado${descriptor?' com reconhecimento facial':' (sem biometria)'}.`,'✅');
+  await refreshDescriptors();
+  closeAddAluno();
+  renderAlunos();
 }
 
 // ══════════════════════════════════════
@@ -799,16 +791,19 @@ async function renderPresencas() {
   if (turma) q = q.eq('turma_nome',turma);
   const { data } = await q;
   const tbody = document.getElementById('presencas-body');
-  if (!data?.length) { tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:40px">Nenhuma presença para esta data.</td></tr>`; return; }
+  if (!data?.length) {
+    tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:30px">Nenhuma presença para esta data.</td></tr>`;
+    return;
+  }
   tbody.innerHTML = data.map(r=>`
     <tr>
-      <td><div style="display:flex;align-items:center;gap:10px">
-        <div style="width:28px;height:28px;border-radius:50%;background:${getColor(r.aluno_nome)}22;color:${getColor(r.aluno_nome)};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:'Space Grotesk',sans-serif;flex-shrink:0">${getInit(r.aluno_nome)}</div>
-        ${r.aluno_nome}
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div style="width:26px;height:26px;border-radius:50%;background:${getColor(r.aluno_nome)}22;color:${getColor(r.aluno_nome)};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:'Space Grotesk',sans-serif;flex-shrink:0">${getInit(r.aluno_nome)}</div>
+        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">${r.aluno_nome}</span>
       </div></td>
       <td>${r.turma_nome||'—'}</td>
-      <td style="font-family:'Space Grotesk',sans-serif;color:var(--accent)">${r.hora?.slice(0,5)||''}</td>
-      <td><span class="badge badge-success">✓ Presente</span></td>
+      <td style="font-family:'Space Grotesk',sans-serif;color:var(--accent)">${(r.hora||'').slice(0,5)}</td>
+      <td><span class="badge badge-success">✓</span></td>
     </tr>`).join('');
 }
 
@@ -816,55 +811,55 @@ async function renderPresencas() {
 // RELATÓRIOS
 // ══════════════════════════════════════
 async function renderRelatorios() {
-  const [{ count: totalAlunos }, { count: totalReg }, todayRes, turmasRes] = await Promise.all([
+  if (!currentUser) return;
+  const [r1, r2, r3, r4] = await Promise.all([
     db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true),
     db.from('presencas').select('*',{count:'exact',head:true}),
     db.from('presencas').select('*',{count:'exact',head:true}).eq('data',todayStr()),
     db.from('alunos').select('turma_nome').eq('ativo',true)
   ]);
-
-  const hoje = todayRes.count||0;
-  const turmas = [...new Set((turmasRes.data||[]).map(a=>a.turma_nome).filter(Boolean))];
-
-  document.getElementById('kpi-alunos').textContent = totalAlunos||0;
+  const total = r1.count||0, todos = r2.count||0, hoje = r3.count||0;
+  const turmas = [...new Set((r4.data||[]).map(a=>a.turma_nome).filter(Boolean))];
+  document.getElementById('kpi-alunos').textContent = total;
   document.getElementById('kpi-hoje').textContent   = hoje;
-  document.getElementById('kpi-total').textContent  = totalReg||0;
+  document.getElementById('kpi-total').textContent  = todos;
   document.getElementById('kpi-turmas').textContent = turmas.length;
-  document.getElementById('kpi-pct').textContent    = totalAlunos
-    ? Math.round(hoje/(totalAlunos)*100)+'% de presença hoje' : '—';
+  document.getElementById('kpi-pct').textContent    = total ? Math.round(hoje/total*100)+'% hoje' : '—';
 
-  // Por turma
   const rows = await Promise.all(turmas.sort().map(async t => {
-    const [al, pr] = await Promise.all([
+    const [a,p] = await Promise.all([
       db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true).eq('turma_nome',t),
       db.from('presencas').select('*',{count:'exact',head:true}).eq('turma_nome',t)
     ]);
-    return `<tr><td>${t}</td><td>${al.count||0}</td><td>${pr.count||0}</td></tr>`;
+    return `<tr><td>${t}</td><td>${a.count||0}</td><td>${p.count||0}</td></tr>`;
   }));
-  document.getElementById('rel-turma-body').innerHTML =
-    rows.length ? rows.join('') : `<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:30px">Nenhuma turma cadastrada.</td></tr>`;
+  document.getElementById('rel-body').innerHTML = rows.length
+    ? rows.join('')
+    : `<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:24px">Nenhuma turma.</td></tr>`;
 }
 
-// ══════════════════════════════════════
-// EXPORT CSV
-// ══════════════════════════════════════
 async function exportCSV() {
   const { data } = await db.from('presencas').select('*').order('data',{ascending:false});
   if (!data?.length) { toast('Nenhum dado para exportar.','⚠️'); return; }
-  const csv = 'Data,Horário,Nome,Turma\n' +
+  const csv = 'Data,Hora,Nome,Turma\n' +
     data.map(r=>`${r.data},${r.hora},"${r.aluno_nome}","${r.turma_nome||''}"`).join('\n');
   const a = Object.assign(document.createElement('a'),{
     href: URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),
-    download: 'presencas.csv'
+    download:'presencas.csv'
   });
   a.click();
   toast('CSV exportado.','⬇');
 }
 
-// ══════════════════════════════════════
-// INIT
-// ══════════════════════════════════════
-document.getElementById('filter-date').value = todayStr();
+async function clearData() {
+  if (!confirm('Apagar TODOS os dados? Isso não pode ser desfeito.')) return;
+  if (!confirm('Confirmar exclusão total?')) return;
+  await db.from('presencas').delete().neq('id','00000000-0000-0000-0000-000000000000');
+  await db.from('alunos').update({ativo:false}).neq('id','00000000-0000-0000-0000-000000000000');
+  localDescriptors = [];
+  toast('Dados apagados.','🗑');
+  renderTodayList(); renderAlunos(); renderRelatorios();
+}
 </script>
 </body>
 </html>
