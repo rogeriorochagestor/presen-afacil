@@ -261,9 +261,10 @@ tr:last-child td{border-bottom:none}
   <nav class="tabs" id="tabs-gestor" style="display:none">
     <button class="tab active" data-page="scanner" onclick="switchTab(this,'scanner')">📷 Scanner</button>
     <button class="tab" data-page="alunos" onclick="switchTab(this,'alunos')">👤 Alunos</button>
+    <button class="tab" data-page="turmas" onclick="switchTab(this,'turmas')">🎓 Turmas</button>
     <button class="tab" data-page="presencas" onclick="switchTab(this,'presencas')">📋 Presenças</button>
     <button class="tab" data-page="relatorios" onclick="switchTab(this,'relatorios')">📊 Relatórios</button>
-    <button class="tab" data-page="config" onclick="switchTab(this,'config')">⚙️ Configurações</button>
+    <button class="tab" data-page="config" onclick="switchTab(this,'config')">⚙️ Config</button>
   </nav>
 
   <!-- Tabs do SUPER-ADMIN -->
@@ -326,6 +327,23 @@ tr:last-child td{border-bottom:none}
     <div class="student-grid" id="student-grid"><div class="empty" style="grid-column:1/-1"><p>Carregando...</p></div></div>
   </div>
 
+  <!-- ────────── TURMAS ────────── -->
+  <div class="page" id="page-turmas">
+    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <p style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700">Turmas</p>
+        <p style="font-size:12px;color:var(--text2);margin-top:3px" id="turmas-count">...</p>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="abrirNovaTurma()">+ Nova Turma</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>Ano</th><th>Período</th><th>Alunos</th><th></th></tr></thead>
+        <tbody id="turmas-body"></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- ────────── PRESENÇAS ────────── -->
   <div class="page" id="page-presencas">
     <div class="filters">
@@ -362,8 +380,16 @@ tr:last-child td{border-bottom:none}
   <!-- ────────── CONFIGURAÇÕES ────────── -->
   <div class="page" id="page-config">
     <p style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;margin-bottom:16px">Configurações da Escola</p>
-    <div class="field"><label>Horário de entrada</label><input type="time" id="cfg-hora"></div>
-    <div class="field"><label>Tolerância (minutos de atraso permitidos)</label><input type="number" id="cfg-tol" min="0" max="120"></div>
+    <p class="sec">Horários de entrada por turno</p>
+    <div class="row" style="gap:8px">
+      <div class="field" style="flex:1;min-width:120px"><label>Matutino</label><input type="time" id="cfg-h-mat"></div>
+      <div class="field" style="flex:1;min-width:120px"><label>Vespertino</label><input type="time" id="cfg-h-vesp"></div>
+    </div>
+    <div class="row" style="gap:8px">
+      <div class="field" style="flex:1;min-width:120px"><label>Noturno</label><input type="time" id="cfg-h-not"></div>
+      <div class="field" style="flex:1;min-width:120px"><label>Integral</label><input type="time" id="cfg-h-int"></div>
+    </div>
+    <div class="field"><label>Tolerância de atraso (minutos)</label><input type="number" id="cfg-tol" min="0" max="120"></div>
     <button class="btn btn-primary" onclick="salvarConfig()">Salvar</button>
     <div class="divider"></div>
     <p class="sec">PIN do modo portaria</p>
@@ -383,7 +409,7 @@ tr:last-child td{border-bottom:none}
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Nome</th><th>Cidade</th><th>Horário</th><th>Tolerância</th><th>Alunos</th><th></th></tr></thead>
+        <thead><tr><th>Nome</th><th>Cidade</th><th>Turnos</th><th>Alunos</th><th></th></tr></thead>
         <tbody id="escolas-body"></tbody>
       </table>
     </div>
@@ -436,15 +462,18 @@ tr:last-child td{border-bottom:none}
   <div class="modal">
     <h2 id="modal-aluno-title">Cadastrar Aluno</h2>
     <div class="field"><label>Nome completo</label><input type="text" id="f-nome" placeholder="Ex.: Ana Beatriz Santos"></div>
-    <div class="field"><label>Turma</label><input type="text" id="f-turma" placeholder="Ex.: 7º A"></div>
+    <div class="field">
+      <label>Turma</label>
+      <select id="f-turma-id"><option value="">— Selecione uma turma —</option></select>
+    </div>
     <div class="field"><label>Nome do responsável (opcional)</label><input type="text" id="f-resp" placeholder="Mãe, pai ou outro"></div>
     <div class="field"><label>WhatsApp do responsável (opcional)</label><input type="tel" id="f-tel" placeholder="65 99999-9999"></div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:8px;margin-top:14px">Posicione o rosto e toque em Capturar:</p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:8px;margin-top:14px" id="f-bio-label">Posicione o rosto e toque em Capturar:</p>
     <div class="modal-cam"><video id="modal-video" autoplay muted playsinline></video></div>
     <div id="cap-status" style="font-size:12px;color:var(--text2);min-height:18px">Câmera iniciando...</div>
     <div class="modal-actions">
       <button class="btn btn-ghost btn-sm" onclick="closeAddAluno()">Cancelar</button>
-      <button class="btn btn-ghost btn-sm" onclick="salvarSemFoto()">Salvar sem foto</button>
+      <button class="btn btn-ghost btn-sm" onclick="salvarSemFoto()">Só dados</button>
       <button class="btn btn-success btn-sm" id="btn-capture" onclick="captureAluno()">📸 Capturar e Salvar</button>
     </div>
   </div>
@@ -500,14 +529,44 @@ João Souza;7º A;;
   </div>
 </div>
 
+<!-- ───────── MODAL TURMA ───────── -->
+<div class="modal-bg" id="modal-turma">
+  <div class="modal">
+    <h2 id="modal-turma-title">Nova Turma</h2>
+    <div class="field"><label>Nome (ex.: 7º A)</label><input type="text" id="t-nome"></div>
+    <div class="field"><label>Ano letivo</label><input type="text" id="t-ano" value="2026"></div>
+    <div class="field">
+      <label>Período</label>
+      <select id="t-periodo">
+        <option value="Matutino">Matutino</option>
+        <option value="Vespertino">Vespertino</option>
+        <option value="Noturno">Noturno</option>
+        <option value="Integral">Integral</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="fecharTurma()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarTurma()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ───────── MODAL NOVA ESCOLA ───────── -->
 <div class="modal-bg" id="modal-escola">
   <div class="modal">
     <h2 id="modal-escola-title">Nova Escola</h2>
     <div class="field"><label>Nome da escola</label><input type="text" id="esc-nome"></div>
     <div class="field"><label>Cidade</label><input type="text" id="esc-cidade"></div>
-    <div class="field"><label>Horário de entrada</label><input type="time" id="esc-hora" value="07:00"></div>
-    <div class="field"><label>Tolerância (min)</label><input type="number" id="esc-tol" value="10" min="0" max="120"></div>
+    <p class="sec" style="margin-top:10px">Horários de entrada por turno</p>
+    <div class="row" style="gap:8px">
+      <div class="field" style="flex:1;min-width:120px"><label>Matutino</label><input type="time" id="esc-h-mat" value="07:00"></div>
+      <div class="field" style="flex:1;min-width:120px"><label>Vespertino</label><input type="time" id="esc-h-vesp" value="13:00"></div>
+    </div>
+    <div class="row" style="gap:8px">
+      <div class="field" style="flex:1;min-width:120px"><label>Noturno</label><input type="time" id="esc-h-not" value="19:00"></div>
+      <div class="field" style="flex:1;min-width:120px"><label>Integral</label><input type="time" id="esc-h-int" value="07:00"></div>
+    </div>
+    <div class="field"><label>Tolerância de atraso (minutos)</label><input type="number" id="esc-tol" value="10" min="0" max="120"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost btn-sm" onclick="fecharEscola()">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="salvarEscola()">Salvar</button>
@@ -539,6 +598,7 @@ let scanRunning = false;
 let scanTimer = null;
 let localDescriptors = [];
 let alunosCache = [];
+let turmasCache = [];
 let confirmCandidate = null;
 let kioskActive = false;
 let pinBuffer = '';
@@ -771,9 +831,15 @@ async function loadModels() {
 
 async function refreshDescriptors() {
   if (!currentUser || !currentEscola) return;
-  const { data, error } = await db.from('alunos').select('*').eq('ativo',true);
-  if (error) { console.error(error); return; }
-  alunosCache = data || [];
+  const [resTurmas, resAlunos] = await Promise.all([
+    db.from('turmas').select('*').eq('ativo',true).order('nome'),
+    db.from('alunos').select('*').eq('ativo',true).order('nome')
+  ]);
+  turmasCache = resTurmas.data || [];
+  alunosCache = (resAlunos.data || []).map(a => {
+    const t = turmasCache.find(x => x.id === a.turma_id);
+    return { ...a, turma_nome: t?.nome || null, turma_periodo: t?.periodo || null };
+  });
   localDescriptors = [];
   for (const a of alunosCache) {
     if (!a.descriptor) continue;
@@ -781,14 +847,15 @@ async function refreshDescriptors() {
     if (typeof arr === 'string') {
       try { arr = JSON.parse(arr); } catch(e) { continue; }
     }
-    if (!Array.isArray(arr) || arr.length!==128) continue;
+    if (!Array.isArray(arr) || arr.length !== 128) continue;
     localDescriptors.push({
-      id:a.id, nome:a.nome, turma_nome:a.turma_nome,
+      id:a.id, nome:a.nome, turma_id:a.turma_id, turma_nome:a.turma_nome,
+      turma_periodo:a.turma_periodo,
       telefone_resp:a.telefone_resp, nome_resp:a.nome_resp,
-      descriptor:new Float32Array(arr)
+      descriptor: new Float32Array(arr)
     });
   }
-  console.log('Cache:', alunosCache.length, 'alunos /', localDescriptors.length, 'com biometria');
+  console.log('Cache:', alunosCache.length, 'alunos /', turmasCache.length, 'turmas /', localDescriptors.length, 'com biometria');
 }
 
 async function recarregarFaces() {
@@ -807,6 +874,7 @@ function switchTab(el, id) {
   el.classList.add('active');
   document.getElementById('page-'+id).classList.add('active');
   if (id==='alunos')        renderAlunos();
+  if (id==='turmas')        renderTurmas();
   if (id==='presencas')     { loadTurmasFilter(); renderPresencas(); }
   if (id==='relatorios')    renderRelatorios();
   if (id==='config')        loadConfig();
@@ -933,19 +1001,30 @@ async function confirmarPresenca() {
   document.getElementById('confirm-overlay').classList.remove('show');
   confirmCandidate = null;
 
-  // Calcula se está atrasado
+  // Calcula se está atrasado conforme o turno da turma
   const agora = new Date();
   let atrasado = false;
-  if (currentEscola?.hora_entrada) {
-    const [hh,mm] = currentEscola.hora_entrada.split(':');
-    const limite = new Date(); limite.setHours(parseInt(hh), parseInt(mm) + (currentEscola.tolerancia_min||0), 0, 0);
+  const periodo = aluno.turma_periodo || 'Matutino';
+  const horaMap = {
+    'Matutino':   currentEscola?.hora_matutino,
+    'Vespertino': currentEscola?.hora_vespertino,
+    'Noturno':    currentEscola?.hora_noturno,
+    'Integral':   currentEscola?.hora_integral
+  };
+  const horaEntrada = horaMap[periodo];
+  if (horaEntrada) {
+    const [hh,mm] = horaEntrada.split(':');
+    const limite = new Date();
+    limite.setHours(parseInt(hh), parseInt(mm) + (currentEscola.tolerancia_min||0), 0, 0);
     atrasado = agora > limite;
   }
 
   const { error } = await db.from('presencas').insert({
     escola_id: currentEscola.id,
     aluno_id: aluno.id, aluno_nome: aluno.nome,
+    turma_id: aluno.turma_id,
     turma_nome: aluno.turma_nome,
+    periodo: periodo,
     data: todayStr(), hora: timeStr(), atrasado
   });
 
@@ -1040,15 +1119,15 @@ function confirmarAlunoManual(id) {
 // ══════════════════════════════════════
 async function renderAlunos() {
   if (!currentEscola) return;
-  const { data, count } = await db.from('alunos').select('*',{count:'exact'}).eq('ativo',true).order('nome');
+  await refreshDescriptors(); // garante cache atualizado
   const q = (document.getElementById('filter-alunos')?.value||'').toLowerCase().trim();
   const bio = document.getElementById('filter-alunos-bio')?.value;
-  let lista = data||[];
+  let lista = [...alunosCache];
   if (q) lista = lista.filter(a => a.nome.toLowerCase().includes(q) || (a.turma_nome||'').toLowerCase().includes(q));
   if (bio==='sim') lista = lista.filter(a=>a.descriptor);
   if (bio==='nao') lista = lista.filter(a=>!a.descriptor);
 
-  document.getElementById('alunos-count').textContent = (count||0)+' aluno'+(count!==1?'s':'')+' (mostrando '+lista.length+')';
+  document.getElementById('alunos-count').textContent = alunosCache.length+' aluno(s) — '+lista.length+' filtrado(s)';
   const grid = document.getElementById('student-grid');
   if (!lista.length) { grid.innerHTML='<div class="empty" style="grid-column:1/-1"><p>Nenhum aluno encontrado.</p></div>'; return; }
   grid.innerHTML = lista.map(a=>`
@@ -1058,7 +1137,10 @@ async function renderAlunos() {
       <div class="avatar" style="background:${getColor(a.nome)}22;color:${getColor(a.nome)}">${getInit(a.nome)}</div>
       <div class="sname">${a.nome}</div>
       <div class="sturma">${a.turma_nome||'Sem turma'}</div>
-      ${!a.descriptor ? `<button class="cam-btn" onclick="cadastrarBiometria('${a.id}')">📸 Tirar foto</button>` : ''}
+      <div style="display:flex;gap:4px;margin-top:4px">
+        <button class="btn btn-ghost btn-sm" style="padding:4px 10px;font-size:11px" onclick="editarAluno('${a.id}')">✏️ Editar</button>
+        <button class="btn btn-primary btn-sm" style="padding:4px 10px;font-size:11px" onclick="atualizarFoto('${a.id}')">📸 ${a.descriptor?'Refazer':'Tirar'}</button>
+      </div>
     </div>`).join('');
 }
 
@@ -1074,14 +1156,36 @@ async function deleteAluno(id) {
 // ══════════════════════════════════════
 // CADASTRO ALUNO
 // ══════════════════════════════════════
+function popularSelectTurmas(selectedId) {
+  const sel = document.getElementById('f-turma-id');
+  if (!sel) return;
+  if (!turmasCache.length) {
+    sel.innerHTML = '<option value="">— Nenhuma turma cadastrada —</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">— Selecione uma turma —</option>' +
+    turmasCache.map(t => `<option value="${t.id}" ${t.id===selectedId?'selected':''}>${t.nome} · ${t.periodo}</option>`).join('');
+}
+
 async function openAddAluno() {
+  if (!turmasCache.length) await refreshDescriptors();
+  if (!turmasCache.length) {
+    toast('Cadastre uma turma antes de cadastrar alunos.','⚠️',5000);
+    return;
+  }
   editingAlunoId = null;
   document.getElementById('modal-aluno-title').textContent = 'Cadastrar Aluno';
-  ['f-nome','f-turma','f-resp','f-tel'].forEach(id=>document.getElementById(id).value='');
+  ['f-nome','f-resp','f-tel'].forEach(id=>document.getElementById(id).value='');
+  popularSelectTurmas();
   document.getElementById('cap-status').textContent='Câmera iniciando...';
   document.getElementById('btn-capture').disabled=false;
   document.getElementById('btn-capture').textContent='📸 Capturar e Salvar';
+  document.getElementById('f-bio-label').textContent = 'Posicione o rosto e toque em Capturar:';
   document.getElementById('modal-aluno').classList.add('open');
+  iniciarCamModal();
+}
+
+async function iniciarCamModal() {
   try {
     modalStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:320},height:{ideal:320}}});
     const v = document.getElementById('modal-video');
@@ -1092,27 +1196,30 @@ async function openAddAluno() {
   }
 }
 
-async function cadastrarBiometria(alunoId) {
-  const a = alunosCache.find(x=>x.id===alunoId);
+async function editarAluno(id) {
+  const a = alunosCache.find(x=>x.id===id);
   if (!a) return;
-  editingAlunoId = alunoId;
-  document.getElementById('modal-aluno-title').textContent = 'Tirar foto: '+a.nome;
+  editingAlunoId = id;
+  document.getElementById('modal-aluno-title').textContent = 'Editar: '+a.nome;
   document.getElementById('f-nome').value = a.nome;
-  document.getElementById('f-turma').value = a.turma_nome||'';
   document.getElementById('f-resp').value = a.nome_resp||'';
   document.getElementById('f-tel').value = a.telefone_resp||'';
-  document.getElementById('cap-status').textContent='Câmera iniciando...';
+  popularSelectTurmas(a.turma_id);
+  document.getElementById('cap-status').textContent = a.descriptor ? 'Aluno já tem biometria. Capture novamente para atualizar.' : 'Câmera iniciando...';
   document.getElementById('btn-capture').disabled=false;
-  document.getElementById('btn-capture').textContent='📸 Capturar e Salvar';
+  document.getElementById('btn-capture').textContent = a.descriptor ? '📸 Atualizar foto' : '📸 Capturar e Salvar';
+  document.getElementById('f-bio-label').textContent = a.descriptor ? 'Você pode atualizar a foto facial ou só os dados:' : 'Posicione o rosto e toque em Capturar:';
   document.getElementById('modal-aluno').classList.add('open');
-  try {
-    modalStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:320},height:{ideal:320}}});
-    const v = document.getElementById('modal-video');
-    v.srcObject=modalStream; await v.play();
-    document.getElementById('cap-status').textContent='✅ Posicione o rosto';
-  } catch(e) {
-    document.getElementById('cap-status').textContent='⚠️ Câmera indisponível';
-  }
+  iniciarCamModal();
+}
+
+// Atalho para o card: chama editar focando na foto
+async function atualizarFoto(id) {
+  await editarAluno(id);
+}
+
+async function cadastrarBiometria(id) {
+  await editarAluno(id);
 }
 
 function closeAddAluno() {
@@ -1122,17 +1229,22 @@ function closeAddAluno() {
 
 async function salvarSemFoto() {
   const nome = document.getElementById('f-nome').value.trim();
-  const turma = document.getElementById('f-turma').value.trim();
+  const turmaId = document.getElementById('f-turma-id').value;
   const resp = document.getElementById('f-resp').value.trim();
   const tel = document.getElementById('f-tel').value.trim();
-  if (!nome||!turma) { toast('Preencha nome e turma.','⚠️'); return; }
-  const payload = { nome, turma_nome:turma, nome_resp:resp||null, telefone_resp:tel||null, ativo:true, escola_id:currentEscola.id };
+  if (!nome) { toast('Digite o nome.','⚠️'); return; }
+  if (!turmaId) { toast('Selecione a turma.','⚠️'); return; }
+  const payload = {
+    nome, turma_id:turmaId,
+    nome_resp:resp||null, telefone_resp:tel||null,
+    ativo:true, escola_id:currentEscola.id
+  };
   const op = editingAlunoId
     ? db.from('alunos').update(payload).eq('id',editingAlunoId)
     : db.from('alunos').insert(payload);
   const { error } = await op;
   if (error) { toast('Erro: '+error.message,'❌'); return; }
-  toast(nome+' salvo sem biometria.','✅');
+  toast(nome+' salvo.','✅');
   await refreshDescriptors();
   closeAddAluno();
   renderAlunos();
@@ -1140,11 +1252,11 @@ async function salvarSemFoto() {
 
 async function captureAluno() {
   const nome = document.getElementById('f-nome').value.trim();
-  const turma = document.getElementById('f-turma').value.trim();
+  const turmaId = document.getElementById('f-turma-id').value;
   const resp = document.getElementById('f-resp').value.trim();
   const tel = document.getElementById('f-tel').value.trim();
   if (!nome) { toast('Digite o nome.','⚠️'); return; }
-  if (!turma) { toast('Digite a turma.','⚠️'); return; }
+  if (!turmaId) { toast('Selecione a turma.','⚠️'); return; }
 
   const btn = document.getElementById('btn-capture');
   btn.disabled = true; btn.textContent = 'Processando...';
@@ -1177,7 +1289,11 @@ async function captureAluno() {
     }
   }
 
-  const payload = { nome, turma_nome:turma, nome_resp:resp||null, telefone_resp:tel||null, ativo:true, escola_id:currentEscola.id };
+  const payload = {
+    nome, turma_id:turmaId,
+    nome_resp:resp||null, telefone_resp:tel||null,
+    ativo:true, escola_id:currentEscola.id
+  };
   if (descriptor) payload.descriptor = descriptor;
 
   const op = editingAlunoId
@@ -1189,7 +1305,7 @@ async function captureAluno() {
     btn.disabled=false; btn.textContent='📸 Capturar e Salvar';
     return;
   }
-  toast(nome+' salvo com reconhecimento facial.','✅');
+  toast(nome+(descriptor?' atualizado com reconhecimento facial.':' salvo.'),'✅');
   await refreshDescriptors();
   closeAddAluno();
   renderAlunos();
@@ -1205,16 +1321,47 @@ async function importarCSV() {
   const txt = document.getElementById('csv-text').value.trim();
   if (!txt) { toast('Cole os dados.','⚠️'); return; }
   const linhas = txt.split('\n').map(l=>l.trim()).filter(Boolean);
-  const novos = [];
+
+  // Mapa de turmas existentes pelo nome
+  const turmasPorNome = {};
+  turmasCache.forEach(t => { turmasPorNome[t.nome.toLowerCase()] = t.id; });
+
+  const novosAlunos = [];
+  const turmasACriar = new Set();
+
+  for (const l of linhas) {
+    const [nome, turma, resp, tel] = l.split(';').map(x=>(x||'').trim());
+    if (!nome || !turma) continue;
+    if (!turmasPorNome[turma.toLowerCase()]) turmasACriar.add(turma);
+  }
+
+  // Cria turmas faltantes
+  if (turmasACriar.size > 0) {
+    const novasTurmas = [...turmasACriar].map(nome => ({
+      escola_id: currentEscola.id, nome, ano_letivo: '2026', periodo: 'Matutino', ativo: true
+    }));
+    const { data: criadas, error } = await db.from('turmas').insert(novasTurmas).select();
+    if (error) { toast('Erro ao criar turmas: '+error.message,'❌',6000); return; }
+    criadas.forEach(t => turmasPorNome[t.nome.toLowerCase()] = t.id);
+    turmasCache = [...turmasCache, ...criadas];
+  }
+
+  // Agora insere os alunos
   for (const l of linhas) {
     const [nome, turma, resp, tel] = l.split(';').map(x=>(x||'').trim());
     if (!nome) continue;
-    novos.push({ nome, turma_nome:turma||null, nome_resp:resp||null, telefone_resp:tel||null, ativo:true, escola_id:currentEscola.id });
+    const turmaId = turmasPorNome[(turma||'').toLowerCase()] || null;
+    novosAlunos.push({
+      nome, turma_id: turmaId,
+      nome_resp: resp||null, telefone_resp: tel||null,
+      ativo: true, escola_id: currentEscola.id
+    });
   }
-  if (!novos.length) { toast('Nenhuma linha válida.','⚠️'); return; }
-  const { error } = await db.from('alunos').insert(novos);
-  if (error) { toast('Erro: '+error.message,'❌',5000); return; }
-  toast(novos.length+' alunos importados! Tire a foto de cada um depois.','✅',5000);
+
+  if (!novosAlunos.length) { toast('Nenhuma linha válida.','⚠️'); return; }
+  const { error } = await db.from('alunos').insert(novosAlunos);
+  if (error) { toast('Erro: '+error.message,'❌',6000); return; }
+  toast(`${novosAlunos.length} alunos e ${turmasACriar.size} turmas importados!`,'✅',5000);
   fecharImportCSV();
   await refreshDescriptors();
   renderAlunos();
@@ -1224,10 +1371,10 @@ async function importarCSV() {
 // PRESENÇAS
 // ══════════════════════════════════════
 async function loadTurmasFilter() {
-  const { data } = await db.from('alunos').select('turma_nome').eq('ativo',true);
-  const turmas = [...new Set((data||[]).map(a=>a.turma_nome).filter(Boolean))].sort();
+  if (!turmasCache.length) await refreshDescriptors();
   const sel = document.getElementById('filter-turma');
-  sel.innerHTML = '<option value="">Todas as turmas</option>'+turmas.map(t=>`<option value="${t}">${t}</option>`).join('');
+  sel.innerHTML = '<option value="">Todas as turmas</option>' +
+    turmasCache.map(t=>`<option value="${t.nome}">${t.nome} (${t.periodo})</option>`).join('');
 }
 
 async function renderPresencas() {
@@ -1244,7 +1391,7 @@ async function renderPresencas() {
     const msg = encodeURIComponent(`Olá! Confirmamos a presença de ${r.aluno_nome} na escola hoje às ${(r.hora||'').slice(0,5)}.`);
     return `<tr>
       <td><div style="display:flex;align-items:center;gap:8px"><div style="width:26px;height:26px;border-radius:50%;background:${getColor(r.aluno_nome)}22;color:${getColor(r.aluno_nome)};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:'Space Grotesk',sans-serif">${getInit(r.aluno_nome)}</div><span>${r.aluno_nome}</span></div></td>
-      <td>${r.turma_nome||'—'}</td>
+      <td>${r.turma_nome||'—'}${r.periodo?'<br><span style="font-size:10px;color:var(--text3)">'+r.periodo+'</span>':''}</td>
       <td style="font-family:'Space Grotesk',sans-serif;color:var(--accent)">${(r.hora||'').slice(0,5)}</td>
       <td>${r.atrasado?'<span class="badge badge-warning">⚠ Atrasado</span>':'<span class="badge badge-success">✓ Presente</span>'}</td>
       <td>${tel?`<a href="https://wa.me/${tel}?text=${msg}" target="_blank" class="btn btn-wpp btn-sm">📱</a>`:''}</td>
@@ -1286,27 +1433,25 @@ async function avisarAusentes() {
 // ══════════════════════════════════════
 async function renderRelatorios() {
   if (!currentEscola) return;
-  const [r1,r2,r3,r4,r5] = await Promise.all([
+  if (!turmasCache.length) await refreshDescriptors();
+  const [r1,r3,r4] = await Promise.all([
     db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true),
-    db.from('presencas').select('*',{count:'exact',head:true}),
     db.from('presencas').select('*',{count:'exact',head:true}).eq('data',todayStr()),
-    db.from('presencas').select('*',{count:'exact',head:true}).eq('data',todayStr()).eq('atrasado',true),
-    db.from('alunos').select('turma_nome').eq('ativo',true)
+    db.from('presencas').select('*',{count:'exact',head:true}).eq('data',todayStr()).eq('atrasado',true)
   ]);
   const total = r1.count||0, hoje = r3.count||0;
-  const turmas = [...new Set((r5.data||[]).map(a=>a.turma_nome).filter(Boolean))];
   document.getElementById('kpi-alunos').textContent = total;
   document.getElementById('kpi-hoje').textContent = hoje;
   document.getElementById('kpi-atrasados').textContent = r4.count||0;
-  document.getElementById('kpi-turmas').textContent = turmas.length;
+  document.getElementById('kpi-turmas').textContent = turmasCache.length;
   document.getElementById('kpi-pct').textContent = total?Math.round(hoje/total*100)+'% hoje':'—';
 
-  const rows = await Promise.all(turmas.sort().map(async t=>{
+  const rows = await Promise.all(turmasCache.map(async t=>{
     const [a,p] = await Promise.all([
-      db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true).eq('turma_nome',t),
-      db.from('presencas').select('*',{count:'exact',head:true}).eq('turma_nome',t)
+      db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true).eq('turma_id',t.id),
+      db.from('presencas').select('*',{count:'exact',head:true}).eq('turma_id',t.id)
     ]);
-    return `<tr><td>${t}</td><td>${a.count||0}</td><td>${p.count||0}</td></tr>`;
+    return `<tr><td>${t.nome} <span style="font-size:10px;color:var(--text3)">${t.periodo}</span></td><td>${a.count||0}</td><td>${p.count||0}</td></tr>`;
   }));
   document.getElementById('rel-body').innerHTML = rows.join('')||'<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:24px">Nenhuma turma.</td></tr>';
 }
@@ -1325,17 +1470,24 @@ async function exportCSV() {
 // ══════════════════════════════════════
 async function loadConfig() {
   if (!currentEscola) return;
-  document.getElementById('cfg-hora').value = currentEscola.hora_entrada?.slice(0,5) || '07:00';
+  document.getElementById('cfg-h-mat').value  = (currentEscola.hora_matutino||'07:00').slice(0,5);
+  document.getElementById('cfg-h-vesp').value = (currentEscola.hora_vespertino||'13:00').slice(0,5);
+  document.getElementById('cfg-h-not').value  = (currentEscola.hora_noturno||'19:00').slice(0,5);
+  document.getElementById('cfg-h-int').value  = (currentEscola.hora_integral||'07:00').slice(0,5);
   document.getElementById('cfg-tol').value = currentEscola.tolerancia_min ?? 10;
 }
 
 async function salvarConfig() {
-  const hora = document.getElementById('cfg-hora').value;
-  const tol = parseInt(document.getElementById('cfg-tol').value)||0;
-  const { error } = await db.from('escolas').update({hora_entrada:hora, tolerancia_min:tol}).eq('id',currentEscola.id);
+  const payload = {
+    hora_matutino:   document.getElementById('cfg-h-mat').value,
+    hora_vespertino: document.getElementById('cfg-h-vesp').value,
+    hora_noturno:    document.getElementById('cfg-h-not').value,
+    hora_integral:   document.getElementById('cfg-h-int').value,
+    tolerancia_min:  parseInt(document.getElementById('cfg-tol').value)||0
+  };
+  const { error } = await db.from('escolas').update(payload).eq('id',currentEscola.id);
   if (error) { toast('Erro: '+error.message,'❌'); return; }
-  currentEscola.hora_entrada = hora;
-  currentEscola.tolerancia_min = tol;
+  Object.assign(currentEscola, payload);
   toast('Configuração salva.','✅');
 }
 
@@ -1394,26 +1546,105 @@ function pinClear() { pinBuffer=''; document.getElementById('pin-display').textC
 function fecharPin() { document.getElementById('modal-pin').classList.remove('open'); pinBuffer=''; }
 
 // ══════════════════════════════════════
+// TURMAS (gestor)
+// ══════════════════════════════════════
+let editingTurmaId = null;
+
+async function renderTurmas() {
+  if (!currentEscola) return;
+  await refreshDescriptors();
+  document.getElementById('turmas-count').textContent = turmasCache.length+' turma(s)';
+  const rows = await Promise.all(turmasCache.map(async t => {
+    const { count } = await db.from('alunos').select('*',{count:'exact',head:true}).eq('turma_id',t.id).eq('ativo',true);
+    return `<tr>
+      <td><b>${t.nome}</b></td>
+      <td>${t.ano_letivo||'—'}</td>
+      <td><span class="badge badge-success">${t.periodo}</span></td>
+      <td>${count||0}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="editarTurma('${t.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="excluirTurma('${t.id}')">🗑</button>
+      </td>
+    </tr>`;
+  }));
+  document.getElementById('turmas-body').innerHTML = rows.join('')||'<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:30px">Nenhuma turma cadastrada.</td></tr>';
+}
+
+function abrirNovaTurma() {
+  editingTurmaId = null;
+  document.getElementById('modal-turma-title').textContent = 'Nova Turma';
+  document.getElementById('t-nome').value = '';
+  document.getElementById('t-ano').value = '2026';
+  document.getElementById('t-periodo').value = 'Matutino';
+  document.getElementById('modal-turma').classList.add('open');
+}
+
+function editarTurma(id) {
+  const t = turmasCache.find(x=>x.id===id);
+  if (!t) return;
+  editingTurmaId = id;
+  document.getElementById('modal-turma-title').textContent = 'Editar Turma';
+  document.getElementById('t-nome').value = t.nome;
+  document.getElementById('t-ano').value = t.ano_letivo||'2026';
+  document.getElementById('t-periodo').value = t.periodo||'Matutino';
+  document.getElementById('modal-turma').classList.add('open');
+}
+
+function fecharTurma() { document.getElementById('modal-turma').classList.remove('open'); }
+
+async function salvarTurma() {
+  const nome = document.getElementById('t-nome').value.trim();
+  const ano = document.getElementById('t-ano').value.trim();
+  const periodo = document.getElementById('t-periodo').value;
+  if (!nome) { toast('Digite o nome da turma.','⚠️'); return; }
+  const payload = { nome, ano_letivo: ano||'2026', periodo, escola_id: currentEscola.id, ativo: true };
+  const op = editingTurmaId
+    ? db.from('turmas').update(payload).eq('id',editingTurmaId)
+    : db.from('turmas').insert(payload);
+  const { error } = await op;
+  if (error) { toast('Erro: '+error.message,'❌',5000); return; }
+  toast('Turma salva.','✅');
+  fecharTurma();
+  await refreshDescriptors();
+  renderTurmas();
+}
+
+async function excluirTurma(id) {
+  const t = turmasCache.find(x=>x.id===id);
+  const { count } = await db.from('alunos').select('*',{count:'exact',head:true}).eq('turma_id',id).eq('ativo',true);
+  if (count > 0) {
+    if (!confirm(`Esta turma tem ${count} aluno(s). Excluir mesmo assim? Os alunos ficarão sem turma.`)) return;
+  } else {
+    if (!confirm('Excluir esta turma?')) return;
+  }
+  const { error } = await db.from('turmas').update({ativo:false}).eq('id',id);
+  if (error) { toast('Erro: '+error.message,'❌'); return; }
+  toast('Turma removida.','🗑');
+  await refreshDescriptors();
+  renderTurmas();
+}
+
+// ══════════════════════════════════════
 // SUPER-ADMIN: ESCOLAS
 // ══════════════════════════════════════
 async function renderEscolas() {
   const { data } = await db.from('escolas').select('*').order('nome');
   document.getElementById('escolas-count').textContent = (data?.length||0)+' escola(s) cadastrada(s)';
   if (!data?.length) {
-    document.getElementById('escolas-body').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:30px">Nenhuma escola.</td></tr>';
+    document.getElementById('escolas-body').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:30px">Nenhuma escola.</td></tr>';
     return;
   }
   const rows = await Promise.all(data.map(async e=>{
     const { count } = await db.from('alunos').select('*',{count:'exact',head:true}).eq('escola_id',e.id).eq('ativo',true);
+    const turnos = `M:${(e.hora_matutino||'').slice(0,5)} V:${(e.hora_vespertino||'').slice(0,5)} N:${(e.hora_noturno||'').slice(0,5)} I:${(e.hora_integral||'').slice(0,5)}`;
     return `<tr>
       <td><b>${e.nome}</b></td>
       <td>${e.cidade||'—'}</td>
-      <td>${(e.hora_entrada||'').slice(0,5)}</td>
-      <td>${e.tolerancia_min} min</td>
+      <td style="font-size:11px;font-family:'Space Grotesk',sans-serif">${turnos}<br><span style="color:var(--text3)">±${e.tolerancia_min}min</span></td>
       <td>${count||0}</td>
       <td>
         <button class="btn btn-ghost btn-sm" onclick="editarEscola('${e.id}')">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="excluirEscola('${e.id}','${e.nome}')">🗑</button>
+        <button class="btn btn-danger btn-sm" onclick="excluirEscola('${e.id}')">🗑</button>
       </td>
     </tr>`;
   }));
@@ -1425,7 +1656,10 @@ function abrirNovaEscola() {
   editingEscolaId = null;
   document.getElementById('modal-escola-title').textContent = 'Nova Escola';
   ['esc-nome','esc-cidade'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('esc-hora').value = '07:00';
+  document.getElementById('esc-h-mat').value  = '07:00';
+  document.getElementById('esc-h-vesp').value = '13:00';
+  document.getElementById('esc-h-not').value  = '19:00';
+  document.getElementById('esc-h-int').value  = '07:00';
   document.getElementById('esc-tol').value = 10;
   document.getElementById('modal-escola').classList.add('open');
 }
@@ -1436,7 +1670,10 @@ async function editarEscola(id) {
   document.getElementById('modal-escola-title').textContent = 'Editar Escola';
   document.getElementById('esc-nome').value = data.nome;
   document.getElementById('esc-cidade').value = data.cidade||'';
-  document.getElementById('esc-hora').value = (data.hora_entrada||'07:00').slice(0,5);
+  document.getElementById('esc-h-mat').value  = (data.hora_matutino||'07:00').slice(0,5);
+  document.getElementById('esc-h-vesp').value = (data.hora_vespertino||'13:00').slice(0,5);
+  document.getElementById('esc-h-not').value  = (data.hora_noturno||'19:00').slice(0,5);
+  document.getElementById('esc-h-int').value  = (data.hora_integral||'07:00').slice(0,5);
   document.getElementById('esc-tol').value = data.tolerancia_min;
   document.getElementById('modal-escola').classList.add('open');
 }
@@ -1444,11 +1681,16 @@ function fecharEscola() { document.getElementById('modal-escola').classList.remo
 
 async function salvarEscola() {
   const nome = document.getElementById('esc-nome').value.trim();
-  const cidade = document.getElementById('esc-cidade').value.trim();
-  const hora = document.getElementById('esc-hora').value;
-  const tol = parseInt(document.getElementById('esc-tol').value)||0;
   if (!nome) { toast('Digite o nome.','⚠️'); return; }
-  const payload = { nome, cidade, hora_entrada:hora, tolerancia_min:tol };
+  const payload = {
+    nome,
+    cidade: document.getElementById('esc-cidade').value.trim(),
+    hora_matutino:   document.getElementById('esc-h-mat').value,
+    hora_vespertino: document.getElementById('esc-h-vesp').value,
+    hora_noturno:    document.getElementById('esc-h-not').value,
+    hora_integral:   document.getElementById('esc-h-int').value,
+    tolerancia_min:  parseInt(document.getElementById('esc-tol').value)||0
+  };
   const op = editingEscolaId
     ? db.from('escolas').update(payload).eq('id',editingEscolaId)
     : db.from('escolas').insert(payload);
@@ -1459,8 +1701,8 @@ async function salvarEscola() {
   renderEscolas();
 }
 
-async function excluirEscola(id, nome) {
-  if (!confirm(`Excluir "${nome}"? Todos os alunos e presenças desta escola serão perdidos.`)) return;
+async function excluirEscola(id) {
+  if (!confirm('Excluir esta escola? Todos os alunos e presenças serão perdidos.')) return;
   const { error } = await db.from('escolas').delete().eq('id',id);
   if (error) { toast('Erro: '+error.message,'❌'); return; }
   toast('Escola excluída.','🗑');
