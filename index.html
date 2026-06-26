@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0f1117">
 <title>PresençaFácil</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
@@ -517,78 +517,46 @@ tr:last-child td{border-bottom:none}
 const SUPA_URL = 'https://awtzeflakcffshkvtmsf.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3dHplZmxha2NmZnNoa3Z0bXNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzOTMyODEsImV4cCI6MjA5Nzk2OTI4MX0.LgtYZFbcUtC2XwQCxley5uCmPvkueKnf_iB3p7qdVVk';
 
-// LIMPAR TOKENS CORROMPIDOS NA INICIALIZAÇÃO — apenas chaves com conteúdo inválido
+// Remove chaves de auth corrompidas (valores null/undefined/inválidos)
 (function limparTokensCorrompidos() {
   try {
-    const keys = Object.keys(localStorage);
-    for (const k of keys) {
-      if (k.startsWith('sb-') || k.startsWith('pf-auth') || k.startsWith('supabase')) {
-        try {
-          const v = localStorage.getItem(k);
-          if (!v || v === 'undefined' || v === 'null') {
-            localStorage.removeItem(k); continue;
-          }
-          // Tenta fazer parse — se falhar ou tiver deviceAttributes, remove
-          const parsed = JSON.parse(v);
-          if (parsed && typeof parsed === 'object' && 'deviceAttributes' in parsed) {
-            localStorage.removeItem(k);
-            console.log('Token corrompido removido:', k);
-          }
-        } catch(e) {
-          // JSON inválido — remove a chave
-          try { localStorage.removeItem(k); } catch(e2) {}
-        }
-      }
-    }
+    Object.keys(localStorage).forEach(k => {
+      if (!k.startsWith('sb-') && !k.startsWith('pf-auth')) return;
+      const v = localStorage.getItem(k);
+      if (!v || v === 'undefined' || v === 'null') localStorage.removeItem(k);
+    });
   } catch(e) {}
 })();
 
-// Capturar erros globais do Supabase que travam o app
-window.addEventListener('unhandledrejection', function(e) {
-  const msg = e.reason?.message || e.reason || '';
-  if (String(msg).includes('deviceAttributes') || String(msg).includes('Cannot read properties of undefined')) {
-    console.warn('Erro Supabase interno ignorado:', msg);
+// Captura erros não tratados do Supabase
+window.addEventListener('unhandledrejection', e => {
+  const msg = String(e.reason?.message || e.reason || '');
+  if (msg.includes('deviceAttributes') || msg.includes('Web Locks')) {
     e.preventDefault();
+    console.warn('Erro interno Supabase ignorado:', msg);
   }
 });
 
-// Storage seguro — funciona mesmo em aba anônima (localStorage pode ser bloqueado)
-const _pfStorage = {
-  _mem: {},
-  getItem(key) {
-    try {
-      const v = localStorage.getItem(key);
-      // Nunca retorna undefined — só string ou null
-      if (v === undefined || v === null) return this._mem[key] ?? null;
-      // Remove chaves corrompidas com deviceAttributes
-      if (typeof v === 'string' && v.includes('deviceAttributes')) {
-        localStorage.removeItem(key);
-        delete this._mem[key];
-        return null;
-      }
-      return v;
-    } catch(e) { return this._mem[key] ?? null; }
-  },
-  setItem(key, value) {
-    if (value === undefined || value === null) return;
-    this._mem[key] = value;
-    try { localStorage.setItem(key, String(value)); } catch(e) {}
-  },
-  removeItem(key) {
-    delete this._mem[key];
-    try { localStorage.removeItem(key); } catch(e) {}
-  }
-};
+// ── Supabase client ──────────────────────────────────────────────────────────
+// Versão fixada em 2.39.3 (estável, sem bug deviceAttributes do Chrome)
+// Storage com fallback em memória para aba anônima
+const _pfStorage = (() => {
+  const mem = {};
+  const safe = fn => { try { return fn(); } catch(e) { return null; } };
+  return {
+    getItem:    k => safe(() => localStorage.getItem(k))    ?? mem[k] ?? null,
+    setItem:    (k,v) => { mem[k]=v; safe(() => localStorage.setItem(k,v)); },
+    removeItem: k => { delete mem[k]; safe(() => localStorage.removeItem(k)); }
+  };
+})();
 
 const db = supabase.createClient(SUPA_URL, SUPA_KEY, {
   auth: {
-    autoRefreshToken: true,
-    persistSession: true,
+    persistSession:     true,
+    autoRefreshToken:   true,
     detectSessionInUrl: false,
-    storageKey: 'pf-auth-v2',
-    // Desativa Web Locks — causam travamento no signIn (bug #2111)
-    lock: async (name, acquireTimeout, fn) => await fn(),
-    storage: _pfStorage
+    storageKey:         'pf-auth-v2',
+    storage:            _pfStorage
   }
 });
 
@@ -642,111 +610,31 @@ async function doLogin() {
   const err   = document.getElementById('login-error');
   const btn   = document.querySelector('#screen-login .btn-primary');
   const lembrar = document.getElementById('login-lembrar').checked;
-  err.style.display='none';
-  if (!email||!pass) { err.textContent='Preencha e-mail e senha.'; err.style.display=''; return; }
-  btn.disabled = true; btn.textContent='Entrando...';
+  err.style.display = 'none';
+  if (!email || !pass) { err.textContent = 'Preencha e-mail e senha.'; err.style.display = ''; return; }
+  btn.disabled = true; btn.textContent = 'Entrando...';
 
   // Salva ou remove e-mail lembrado
-  if (lembrar) {
-    try { localStorage.setItem('pf-lembrar-email', email); } catch(e) {}
-  } else {
-    try { localStorage.removeItem('pf-lembrar-email'); } catch(e) {}
-  }
-
-  // Limpa tokens corrompidos antes de tentar login
   try {
-    const keys = Object.keys(localStorage);
-    for (const k of keys) {
-      if (k.startsWith('sb-') || k.startsWith('pf-auth')) {
-        try {
-          const v = localStorage.getItem(k);
-          if (!v || v === 'undefined' || v === 'null' || v.includes('deviceAttributes')) {
-            localStorage.removeItem(k);
-          }
-        } catch(e) {}
-      }
-    }
+    if (lembrar) localStorage.setItem('pf-lembrar-email', email);
+    else         localStorage.removeItem('pf-lembrar-email');
   } catch(e) {}
 
-  // Tentativa 1: login normal com timeout de 6s
-  let logado = false;
   try {
-    const result = await Promise.race([
-      db.auth.signInWithPassword({ email, password: pass }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 6000))
-    ]);
-    const { data, error } = result;
+    const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
     if (error) {
       err.textContent = traduzirErro(error.message);
       err.style.display = '';
-      btn.disabled = false; btn.textContent = 'Entrar';
-      return;
+    } else if (data?.user) {
+      currentUser = data.user;
+      await initApp();
     }
-    if (data?.user) { currentUser = data.user; logado = true; }
-  } catch(e1) {
-    console.warn('Tentativa 1 falhou:', e1.message);
-  }
-
-  // Tentativa 2: verifica se a sessão foi criada mesmo assim (caso timeout)
-  if (!logado) {
-    try {
-      await new Promise(r => setTimeout(r, 800));
-      const { data: { session } } = await db.auth.getSession();
-      if (session?.user) { currentUser = session.user; logado = true; }
-    } catch(e2) { console.warn('getSession falhou:', e2.message); }
-  }
-
-  // Tentativa 3: recria o cliente Supabase do zero e tenta de novo
-  if (!logado) {
-    btn.textContent = 'Reconectando...';
-    try {
-      // Limpa TODAS as chaves de auth para forçar estado limpo
-      const keys = Object.keys(localStorage);
-      for (const k of keys) {
-        if (k.startsWith('sb-') || k.startsWith('pf-auth')) localStorage.removeItem(k);
-      }
-      // Recria cliente com nova instância
-      window._dbFresh = supabase.createClient(SUPA_URL, SUPA_KEY, {
-        auth: {
-          autoRefreshToken: true,
-          persistSession: true,
-          detectSessionInUrl: false,
-          storageKey: 'pf-auth-v3',
-          lock: async (name, acquireTimeout, fn) => await fn(),
-        }
-      });
-      const result2 = await Promise.race([
-        window._dbFresh.auth.signInWithPassword({ email, password: pass }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT2')), 8000))
-      ]);
-      const { data: d2, error: e2 } = result2;
-      if (e2) {
-        err.textContent = traduzirErro(e2.message);
-        err.style.display = '';
-        btn.disabled = false; btn.textContent = 'Entrar';
-        return;
-      }
-      if (d2?.user) {
-        // Migra sessão para o cliente principal
-        window.db = window._dbFresh;
-        currentUser = d2.user;
-        logado = true;
-      }
-    } catch(e3) {
-      console.warn('Tentativa 3 falhou:', e3.message);
-      err.textContent = 'Não foi possível conectar. Verifique sua internet e tente novamente.';
-      err.style.display = '';
-      btn.disabled = false; btn.textContent = 'Entrar';
-      return;
-    }
-  }
-
-  if (logado) {
-    await initApp();
-  } else {
-    err.textContent = 'Falha ao entrar. Tente recarregar a página (F5).';
+  } catch(e) {
+    console.error('doLogin erro:', e);
+    err.textContent = 'Erro ao conectar. Verifique sua internet e tente novamente.';
     err.style.display = '';
   }
+
   btn.disabled = false; btn.textContent = 'Entrar';
 }
 
