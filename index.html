@@ -142,6 +142,10 @@ tr:last-child td{border-bottom:none}
 #toast{position:fixed;bottom:14px;right:14px;left:14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:11px 14px;font-size:12px;font-weight:500;z-index:999;display:flex;align-items:center;gap:7px;box-shadow:0 8px 24px rgba(0,0,0,.5);transform:translateY(20px);opacity:0;transition:opacity .25s,transform .25s}
 #toast.show{opacity:1;transform:none}
 @media(min-width:600px){#toast{left:auto;max-width:320px}.kpi-row{grid-template-columns:repeat(4,1fr)}.cards-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}header{padding:12px 18px}.tab{padding:12px 16px;font-size:13px}.page{padding:18px}}
+.offline-banner{display:none;position:fixed;top:0;left:0;right:0;background:#f59e0b;color:#000;font-size:11px;font-weight:700;text-align:center;padding:5px;z-index:9998;letter-spacing:.04em}
+.offline-banner.show{display:block}
+.conn-dot{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 5px var(--success);flex-shrink:0;transition:background .3s,box-shadow .3s}
+.conn-dot.offline{background:var(--warning);box-shadow:0 0 5px var(--warning)}
 @keyframes flashSuccess{0%{background:rgba(34,197,94,.3)}100%{background:transparent}}
 .flash-success{animation:flashSuccess .8s ease-out}
 </style>
@@ -149,6 +153,7 @@ tr:last-child td{border-bottom:none}
 <body>
 <div id="loading-bar"></div>
 <div id="toast"></div>
+<div class="offline-banner" id="offline-banner">📵 SEM CONEXÃO — presenças sendo salvas localmente e sincronizadas ao reconectar</div>
 <button class="kiosk-exit" onclick="askExitKiosk()">✕</button>
 
 <div id="screen-login">
@@ -168,6 +173,7 @@ tr:last-child td{border-bottom:none}
   <header>
     <div class="logo"><div class="logo-dot"></div>PresençaFácil</div>
     <div class="header-right">
+      <div class="conn-dot" id="conn-dot" title="Online"></div>
       <span class="role-chip" id="role-chip">...</span>
       <div class="user-chip" id="user-chip">...</div>
       <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sair</button>
@@ -386,11 +392,22 @@ tr:last-child td{border-bottom:none}
   <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="fecharAluno()">Cancelar</button><button class="btn btn-ghost btn-sm" onclick="salvarAlunoSemFoto()">Só dados</button><button class="btn btn-success btn-sm" id="btn-cap-aluno" onclick="capturarAluno()">📸 Capturar</button></div>
 </div></div>
 
-<div class="modal-bg" id="modal-import"><div class="modal">
-  <h2>Importar Alunos</h2>
+<div class="modal-bg" id="modal-import"><div class="modal" style="max-width:540px">
+  <h2>Importar Alunos via CSV</h2>
   <p style="font-size:11px;color:var(--text2);margin-bottom:10px">Formato: <code style="background:var(--bg);padding:2px 5px;border-radius:4px;font-size:10px">nome;turma;responsavel;telefone</code></p>
-  <div class="field"><textarea id="csv-text" rows="8" style="font-family:monospace;font-size:11px"></textarea></div>
-  <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="fecharImport()">Cancelar</button><button class="btn btn-success btn-sm" onclick="importarCSV()">Importar</button></div>
+  <div id="import-step-1">
+    <div class="field"><textarea id="csv-text" rows="8" placeholder="Ana Silva;7A;Maria Silva;65999990001&#10;João Souza;7B;Pedro Souza;65999990002" style="font-family:monospace;font-size:11px"></textarea></div>
+    <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="fecharImport()">Cancelar</button><button class="btn btn-primary btn-sm" onclick="previewCSV()">👁 Pré-visualizar</button></div>
+  </div>
+  <div id="import-step-2" style="display:none">
+    <div id="import-resumo" style="margin-bottom:12px"></div>
+    <div id="import-preview-wrap" style="max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--rs);margin-bottom:10px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="voltarImport()">← Voltar</button>
+      <button class="btn btn-ghost btn-sm" onclick="fecharImport()">Cancelar</button>
+      <button class="btn btn-success btn-sm" id="btn-confirmar-import" onclick="importarCSV()">✅ Importar</button>
+    </div>
+  </div>
 </div></div>
 
 <div class="modal-bg" id="modal-lista"><div class="modal">
@@ -1108,17 +1125,42 @@ async function confirmarPresenca() {
     limite.setHours(parseInt(hh), parseInt(mm)+(currentEscola.tolerancia_min||0), 0, 0);
     atrasado = new Date() > limite;
   }
-  const { error } = await db.from('presencas').insert({
+  const registro = {
     escola_id: currentEscola.id,
     aluno_id: aluno.id, aluno_nome: aluno.nome,
     turma_id: aluno.turma_id, turma_nome: aluno.turma_nome,
     periodo, data: todayStr(), hora: timeStr(), atrasado
-  });
+  };
+
+  // Verifica duplicata local (fila pendente)
+  const filaLocal = offlineQueue.get();
+  const jaNaFila = filaLocal.some(p => p.aluno_id === aluno.id && p.data === registro.data);
+  if (jaNaFila) {
+    toast(aluno.nome+' já registrou presença hoje.','⚠️',4000);
+    beep(330,200);
+    recentlyConfirmedIds.set(aluno.id, Date.now());
+    lastConfirmedAt = Date.now();
+    return;
+  }
+
+  if (!navigator.onLine) {
+    // Salva na fila offline
+    offlineQueue.add(registro);
+    beep(880,120); setTimeout(()=>beep(1100,100),130);
+    document.body.classList.add('flash-success');
+    setTimeout(()=>document.body.classList.remove('flash-success'),800);
+    showResultCard(aluno, registro.hora, atrasado, true);
+    renderTodayList();
+    recentlyConfirmedIds.set(aluno.id, Date.now());
+    lastConfirmedAt = Date.now();
+    return;
+  }
+
+  const { error } = await db.from('presencas').insert(registro);
   if (error) {
     if (error.code === '23505' || (error.message||'').includes('duplicate')) {
       toast(aluno.nome+' já registrou presença hoje.','⚠️',4000);
       beep(330,200);
-      // Bloqueia este aluno para não ficar pedindo confirmação repetida
       recentlyConfirmedIds.set(aluno.id, Date.now());
       lastConfirmedAt = Date.now();
     } else {
@@ -1129,24 +1171,25 @@ async function confirmarPresenca() {
   beep(880,120); setTimeout(()=>beep(1320,150),130);
   document.body.classList.add('flash-success');
   setTimeout(()=>document.body.classList.remove('flash-success'),800);
-  showResultCard(aluno, timeStr(), atrasado);
+  showResultCard(aluno, registro.hora, atrasado);
   renderTodayList();
-  // Anti-duplicação: bloqueia este aluno por 60s e ativa cooldown geral de 3s
   recentlyConfirmedIds.set(aluno.id, Date.now());
   lastConfirmedAt = Date.now();
 }
 
-function showResultCard(aluno, hora, atrasado) {
+function showResultCard(aluno, hora, atrasado, offline=false) {
   const area = document.getElementById('result-area');
   const tel = formatTel(aluno.telefone_resp);
   const msg = encodeURIComponent('Olá! Confirmamos a presença de '+aluno.nome+' na escola hoje às '+hora.slice(0,5)+'.');
   const wppLink = tel ? 'https://wa.me/'+tel+'?text='+msg : null;
-  area.innerHTML = '<div class="result-card"><div class="result-avatar" style="background:'+getColor(aluno.nome)+'22;color:'+getColor(aluno.nome)+';border:2px solid '+getColor(aluno.nome)+'44">'+getInit(aluno.nome)+'</div><div class="result-info"><h3>'+aluno.nome+'</h3><p>'+(aluno.turma_nome?'Turma '+aluno.turma_nome+' · ':'')+(atrasado?'⚠️ ATRASADO':'✅ Presente')+'</p></div><div class="result-time"><div class="time-big">'+hora.slice(0,5)+'</div></div>'+(wppLink ? '<a href="'+wppLink+'" target="_blank" class="btn btn-wpp btn-sm">📱 Avisar</a>' : '')+'</div>';
+  const statusTxt = offline ? '📵 Salvo offline' : (atrasado ? '⚠️ ATRASADO' : '✅ Presente');
+  const statusColor = offline ? 'var(--warning)' : '';
+  area.innerHTML = '<div class="result-card"><div class="result-avatar" style="background:'+getColor(aluno.nome)+'22;color:'+getColor(aluno.nome)+';border:2px solid '+getColor(aluno.nome)+'44">'+getInit(aluno.nome)+'</div><div class="result-info"><h3>'+aluno.nome+'</h3><p style="color:'+statusColor+'">'+(aluno.turma_nome?'Turma '+aluno.turma_nome+' · ':'')+statusTxt+'</p></div><div class="result-time"><div class="time-big">'+hora.slice(0,5)+'</div></div>'+(wppLink && !offline ? '<a href="'+wppLink+'" target="_blank" class="btn btn-wpp btn-sm">📱 Avisar</a>' : '')+'</div>';
 }
 
 async function renderTodayList() {
   if (!currentEscola) return;
-  const { data } = await db.from('presencas').select('*').eq('data',todayStr()).order('created_at',{ascending:false}).limit(10);
+  const { data } = await db.from('presencas').select('*').eq('escola_id',currentEscola.id).eq('data',todayStr()).order('created_at',{ascending:false}).limit(10);
   const el = document.getElementById('today-list');
   if (!el) return;
   if (!data?.length) { el.innerHTML='<div class="empty"><p>Nenhuma presença hoje.</p></div>'; return; }
@@ -1379,44 +1422,116 @@ async function capturarAluno() {
 </script>
 
 <script>
-function abrirImportCSV() { document.getElementById('csv-text').value=''; document.getElementById('modal-import').classList.add('open'); }
+function abrirImportCSV() { document.getElementById('csv-text').value=''; document.getElementById('import-step-1').style.display=''; document.getElementById('import-step-2').style.display='none'; document.getElementById('modal-import').classList.add('open'); }
 function fecharImport() { document.getElementById('modal-import').classList.remove('open'); }
-async function importarCSV() {
+function voltarImport() { document.getElementById('import-step-1').style.display=''; document.getElementById('import-step-2').style.display='none'; }
+
+// Dados do preview (usados na confirmação)
+let _importPreviewData = null;
+
+async function previewCSV() {
   const txt = document.getElementById('csv-text').value.trim();
-  if (!txt) { toast('Cole os dados.','⚠️'); return; }
+  if (!txt) { toast('Cole os dados antes.','⚠️'); return; }
   await refreshCache();
-  const linhas = txt.split('\n').map(l=>l.trim()).filter(Boolean);
+
+  const nomesExistentes = new Set(alunosCache.map(a => a.nome.toLowerCase().trim()));
   const turmasMap = {};
-  turmasCache.forEach(t=>turmasMap[t.nome.toLowerCase()]=t.id);
-  const turmasNovas = new Set();
+  turmasCache.forEach(t => turmasMap[t.nome.toLowerCase().trim()] = t.id);
+
+  const linhas = txt.split('\n').map(l=>l.trim()).filter(Boolean);
+  const novos = [], duplicados = [], invalidos = [], turmasNovas = new Set();
+
   for (const l of linhas) {
-    const [nome,turma] = l.split(';').map(x=>(x||'').trim());
-    if (!nome||!turma) continue;
-    if (!turmasMap[turma.toLowerCase()]) turmasNovas.add(turma);
+    const parts = l.split(';').map(x=>(x||'').trim());
+    const [nome, turma, resp, tel] = parts;
+    if (!nome) { invalidos.push(l); continue; }
+    if (!turma) { invalidos.push(nome+' (sem turma)'); continue; }
+    if (nomesExistentes.has(nome.toLowerCase())) {
+      duplicados.push({nome, turma, resp, tel});
+    } else {
+      novos.push({nome, turma, resp, tel});
+      if (!turmasMap[turma.toLowerCase()]) turmasNovas.add(turma);
+    }
   }
-  if (turmasNovas.size>0) {
-    const novas = [...turmasNovas].map(nome=>({escola_id:currentEscola.id,nome,ano_letivo:'2026',periodo:'Matutino',ativo:true}));
+
+  _importPreviewData = { novos, duplicados, invalidos, turmasNovas };
+
+  // Resumo
+  const r = document.getElementById('import-resumo');
+  r.innerHTML = `
+    <div class="kpi-row" style="margin-bottom:8px">
+      <div class="kpi-card" style="background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.25)">
+        <div class="kpi-label">Novos</div>
+        <div class="kpi-value" style="color:var(--success);font-size:18px">${novos.length}</div>
+      </div>
+      <div class="kpi-card" style="background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.25)">
+        <div class="kpi-label">Duplicados (ignorar)</div>
+        <div class="kpi-value" style="color:var(--warning);font-size:18px">${duplicados.length}</div>
+      </div>
+      <div class="kpi-card" style="background:rgba(79,142,247,.08);border-color:rgba(79,142,247,.25)">
+        <div class="kpi-label">Turmas novas</div>
+        <div class="kpi-value" style="color:var(--accent);font-size:18px">${turmasNovas.size}</div>
+      </div>
+      ${invalidos.length ? `<div class="kpi-card" style="background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.25)"><div class="kpi-label">Inválidos</div><div class="kpi-value" style="color:var(--danger);font-size:18px">${invalidos.length}</div></div>` : ''}
+    </div>
+    ${turmasNovas.size ? `<p style="font-size:11px;color:var(--accent);margin-bottom:6px">🎓 Turmas que serão criadas: <b>${[...turmasNovas].join(', ')}</b></p>` : ''}
+    ${duplicados.length ? `<p style="font-size:11px;color:var(--warning);margin-bottom:6px">⚠️ Duplicados não serão reimportados: <b>${duplicados.map(d=>d.nome).join(', ')}</b></p>` : ''}
+    ${invalidos.length ? `<p style="font-size:11px;color:var(--danger);margin-bottom:6px">❌ Linhas inválidas ignoradas: <b>${invalidos.join(', ')}</b></p>` : ''}`;
+
+  // Tabela de preview dos NOVOS
+  const wrap = document.getElementById('import-preview-wrap');
+  if (!novos.length) {
+    wrap.innerHTML = '<div class="empty" style="padding:20px"><p>Nenhum aluno novo para importar.</p></div>';
+    document.getElementById('btn-confirmar-import').disabled = true;
+  } else {
+    document.getElementById('btn-confirmar-import').disabled = false;
+    wrap.innerHTML = `<table><thead><tr><th>Nome</th><th>Turma</th><th>Responsável</th><th>Telefone</th></tr></thead><tbody>
+      ${novos.map(a=>`<tr><td>${a.nome}</td><td>${a.turma}${!turmasMap[a.turma.toLowerCase()]?'<span style="font-size:9px;background:var(--accent);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px">NOVA</span>':''}</td><td style="font-size:11px;color:var(--text2)">${a.resp||'—'}</td><td style="font-size:11px;color:var(--text2)">${a.tel||'—'}</td></tr>`).join('')}
+    </tbody></table>`;
+  }
+
+  document.getElementById('import-step-1').style.display = 'none';
+  document.getElementById('import-step-2').style.display = '';
+}
+
+async function importarCSV() {
+  if (!_importPreviewData || !_importPreviewData.novos.length) { toast('Nada para importar.','⚠️'); return; }
+  const btn = document.getElementById('btn-confirmar-import');
+  btn.disabled = true; btn.textContent = 'Importando...';
+
+  await refreshCache();
+  const turmasMap = {};
+  turmasCache.forEach(t => turmasMap[t.nome.toLowerCase().trim()] = t.id);
+
+  // Criar turmas novas
+  if (_importPreviewData.turmasNovas.size > 0) {
+    const novas = [..._importPreviewData.turmasNovas].map(nome=>({
+      escola_id: currentEscola.id, nome, ano_letivo:'2026', periodo:'Matutino', ativo:true
+    }));
     const { data: criadas, error } = await db.from('turmas').insert(novas).select();
-    if (error) { toast('Erro turmas: '+error.message,'❌',5000); return; }
-    criadas.forEach(t=>turmasMap[t.nome.toLowerCase()]=t.id);
+    if (error) { toast('Erro ao criar turmas: '+error.message,'❌',5000); btn.disabled=false; btn.textContent='✅ Importar'; return; }
+    criadas.forEach(t => turmasMap[t.nome.toLowerCase().trim()] = t.id);
   }
-  const novosAlunos = [];
-  for (const l of linhas) {
-    const [nome,turma,resp,tel] = l.split(';').map(x=>(x||'').trim());
-    if (!nome) continue;
-    novosAlunos.push({
-      nome, turma_id: turmasMap[(turma||'').toLowerCase()]||null,
-      nome_resp: resp||null, telefone_resp: tel||null,
-      ativo:true, escola_id: currentEscola.id
-    });
-  }
-  if (!novosAlunos.length) { toast('Nada para importar.','⚠️'); return; }
-  const { error } = await db.from('alunos').insert(novosAlunos);
-  if (error) { toast('Erro: '+error.message,'❌',5000); return; }
-  toast(novosAlunos.length+' aluno(s) e '+turmasNovas.size+' turma(s) importados!','✅',5000);
+
+  // Inserir alunos novos
+  const payload = _importPreviewData.novos.map(a => ({
+    nome: a.nome,
+    turma_id: turmasMap[a.turma.toLowerCase().trim()] || null,
+    nome_resp: a.resp || null,
+    telefone_resp: a.tel || null,
+    ativo: true,
+    escola_id: currentEscola.id
+  }));
+
+  const { error } = await db.from('alunos').insert(payload);
+  if (error) { toast('Erro: '+error.message,'❌',5000); btn.disabled=false; btn.textContent='✅ Importar'; return; }
+
+  toast(`${payload.length} aluno(s) importado(s)!`,'✅',5000);
   fecharImport();
+  _importPreviewData = null;
   await refreshCache();
   renderAlunos();
+  btn.disabled=false; btn.textContent='✅ Importar';
 }
 
 async function loadTurmaFilter() {
@@ -1426,9 +1541,10 @@ async function loadTurmaFilter() {
 }
 
 async function renderPresencas() {
+  if (!currentEscola) return;
   const date = document.getElementById('filter-date').value || todayStr();
   const turma = document.getElementById('filter-turma').value;
-  let q = db.from('presencas').select('*').eq('data',date).order('hora',{ascending:false});
+  let q = db.from('presencas').select('*').eq('escola_id',currentEscola.id).eq('data',date).order('hora',{ascending:false});
   if (turma) q = q.eq('turma_nome',turma);
   const { data } = await q;
   const tbody = document.getElementById('presencas-body');
@@ -1444,8 +1560,8 @@ async function renderPresencas() {
 async function avisarAusentes() {
   const date = document.getElementById('filter-date').value || todayStr();
   const turmaFilter = document.getElementById('filter-turma').value;
-  const { data: alunos } = await db.from('alunos').select('*').eq('ativo',true);
-  const { data: pres } = await db.from('presencas').select('aluno_id').eq('data',date);
+  const { data: alunos } = await db.from('alunos').select('*').eq('ativo',true).eq('escola_id',currentEscola.id);
+  const { data: pres } = await db.from('presencas').select('aluno_id').eq('escola_id',currentEscola.id).eq('data',date);
   const presentes = new Set((pres||[]).map(p=>p.aluno_id));
   let ausentes = (alunos||[]).filter(a=>!presentes.has(a.id)).map(a=>{
     const t = turmasCache.find(x=>x.id===a.turma_id);
@@ -1464,32 +1580,9 @@ async function avisarAusentes() {
   document.body.insertAdjacentHTML('beforeend', '<div style="position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:400;display:flex;align-items:center;justify-content:center;padding:14px" onclick="if(event.target===this)this.remove()"><div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:440px;width:100%;max-height:80vh;overflow-y:auto"><h2 style="font-family:Space Grotesk,sans-serif;font-size:15px;margin-bottom:12px">Ausentes em '+dt+' ('+comTel.length+')</h2>'+links+'<div style="margin-top:12px;text-align:right"><button class="btn btn-ghost btn-sm" onclick="this.closest(\'div[style*=fixed]\').remove()">Fechar</button></div></div></div>');
 }
 
-async function renderRelatorios() {
-  if (!currentEscola) return;
-  await refreshCache();
-  const [r1,r3,r4] = await Promise.all([
-    db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true),
-    db.from('presencas').select('*',{count:'exact',head:true}).eq('data',todayStr()),
-    db.from('presencas').select('*',{count:'exact',head:true}).eq('data',todayStr()).eq('atrasado',true)
-  ]);
-  const total = r1.count||0, hoje = r3.count||0;
-  document.getElementById('kpi-alunos').textContent = total;
-  document.getElementById('kpi-hoje').textContent = hoje;
-  document.getElementById('kpi-atrasados').textContent = r4.count||0;
-  document.getElementById('kpi-turmas').textContent = turmasCache.length;
-  document.getElementById('kpi-pct').textContent = total?Math.round(hoje/total*100)+'% hoje':'—';
-  const rows = await Promise.all(turmasCache.map(async t=>{
-    const [a,p] = await Promise.all([
-      db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true).eq('turma_id',t.id),
-      db.from('presencas').select('*',{count:'exact',head:true}).eq('turma_id',t.id)
-    ]);
-    return '<tr><td>'+t.nome+' <span style="font-size:9px;color:var(--text3)">'+t.periodo+'</span></td><td>'+(a.count||0)+'</td><td>'+(p.count||0)+'</td></tr>';
-  }));
-  document.getElementById('rel-body').innerHTML = rows.join('')||'<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:20px">Nada.</td></tr>';
-}
-
 async function exportCSV() {
-  const { data } = await db.from('presencas').select('*').order('data',{ascending:false});
+  if (!currentEscola) return;
+  const { data } = await db.from('presencas').select('*').eq('escola_id',currentEscola.id).order('data',{ascending:false});
   if (!data?.length) { toast('Sem dados.','⚠️'); return; }
   const csv = 'Data;Hora;Nome;Turma;Periodo;Atrasado\n'+data.map(r=>r.data+';'+r.hora+';'+r.aluno_nome+';'+(r.turma_nome||'')+';'+(r.periodo||'')+';'+(r.atrasado?'sim':'nao')).join('\n');
   const a = Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),download:'presencas.csv'});
@@ -1651,9 +1744,9 @@ async function renderAnalises() {
   if (!currentEscola) return;
   await refreshCache();
   const [r1,r3,r4] = await Promise.all([
-    db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true),
-    db.from('presencas').select('*',{count:'exact',head:true}).eq('data',todayStr()),
-    db.from('presencas').select('*',{count:'exact',head:true}).eq('data',todayStr()).eq('atrasado',true)
+    db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true).eq('escola_id',currentEscola.id),
+    db.from('presencas').select('*',{count:'exact',head:true}).eq('escola_id',currentEscola.id).eq('data',todayStr()),
+    db.from('presencas').select('*',{count:'exact',head:true}).eq('escola_id',currentEscola.id).eq('data',todayStr()).eq('atrasado',true)
   ]);
   const total = r1.count||0, hoje = r3.count||0;
   document.getElementById('kpi-alunos').textContent = total;
@@ -1672,7 +1765,7 @@ async function relFrequenciaMensal() {
   const hoje = new Date();
   const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0,10);
   const fim    = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).toISOString().slice(0,10);
-  const { data: pres } = await db.from('presencas').select('*').gte('data',inicio).lte('data',fim);
+  const { data: pres } = await db.from('presencas').select('*').eq('escola_id',currentEscola.id).gte('data',inicio).lte('data',fim);
   const mapa = {};
   (pres||[]).forEach(p => {
     if (!mapa[p.aluno_id]) mapa[p.aluno_id] = { presencas:0, atrasos:0 };
@@ -1699,7 +1792,7 @@ async function relFrequenciaMensal() {
 // ════════════════════════════════════════════════
 async function relAtrasos() {
   await refreshCache();
-  const { data: pres } = await db.from('presencas').select('*').eq('atrasado',true);
+  const { data: pres } = await db.from('presencas').select('*').eq('escola_id',currentEscola.id).eq('atrasado',true);
   const mapa = {};
   (pres||[]).forEach(p => { mapa[p.aluno_id] = (mapa[p.aluno_id]||0) + 1; });
   const rows = Object.entries(mapa).map(([alunoId, count]) => {
@@ -1717,7 +1810,7 @@ async function relFaltasConsecutivas() {
   // últimos 30 dias úteis
   const hoje = new Date();
   const inicio = new Date(); inicio.setDate(inicio.getDate()-45);
-  const { data: pres } = await db.from('presencas').select('aluno_id,data').gte('data',inicio.toISOString().slice(0,10));
+  const { data: pres } = await db.from('presencas').select('aluno_id,data').eq('escola_id',currentEscola.id).gte('data',inicio.toISOString().slice(0,10));
 
   // Mapa: aluno -> set de datas presentes
   const presPorAluno = {};
@@ -1777,7 +1870,7 @@ function filtrarHistBusca() {
 async function verHistorico(alunoId) {
   const aluno = alunosCache.find(a=>a.id===alunoId);
   if (!aluno) return;
-  const { data: pres } = await db.from('presencas').select('*').eq('aluno_id',alunoId).order('data',{ascending:false});
+  const { data: pres } = await db.from('presencas').select('*').eq('escola_id',currentEscola.id).eq('aluno_id',alunoId).order('data',{ascending:false});
   const total = pres?.length || 0;
   const atrasos = (pres||[]).filter(p=>p.atrasado).length;
   const rows = (pres||[]).map(p => {
@@ -1800,7 +1893,7 @@ async function relRankingMes() {
   const hoje = new Date();
   const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0,10);
   const fim    = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).toISOString().slice(0,10);
-  const { data: pres } = await db.from('presencas').select('aluno_id').gte('data',inicio).lte('data',fim);
+  const { data: pres } = await db.from('presencas').select('aluno_id').eq('escola_id',currentEscola.id).gte('data',inicio).lte('data',fim);
   const mapa = {};
   (pres||[]).forEach(p => { mapa[p.aluno_id] = (mapa[p.aluno_id]||0) + 1; });
   const rows = alunosCache.map(a => [a.nome, a.turma_nome||'—', mapa[a.id]||0])
@@ -1819,7 +1912,7 @@ async function relComparativoTurmas() {
   await refreshCache();
   const hoje = new Date();
   const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0,10);
-  const { data: pres } = await db.from('presencas').select('turma_id,atrasado').gte('data',inicio);
+  const { data: pres } = await db.from('presencas').select('turma_id,atrasado').eq('escola_id',currentEscola.id).gte('data',inicio);
   let diasUteis = 0;
   for (let d = new Date(inicio); d <= hoje; d.setDate(d.getDate()+1)) {
     if (d.getDay() !== 0 && d.getDay() !== 6) diasUteis++;
@@ -1842,7 +1935,7 @@ async function relHorarioMedio() {
   await refreshCache();
   const hoje = new Date();
   const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0,10);
-  const { data: pres } = await db.from('presencas').select('turma_id,hora').gte('data',inicio);
+  const { data: pres } = await db.from('presencas').select('turma_id,hora').eq('escola_id',currentEscola.id).gte('data',inicio);
   const rows = turmasCache.map(t => {
     const presTurma = (pres||[]).filter(p => p.turma_id === t.id && p.hora);
     if (!presTurma.length) return [t.nome, t.periodo, '—', '—'];
@@ -1865,8 +1958,8 @@ async function relFrequenciaTurma() {
   await refreshCache();
   const rows = await Promise.all(turmasCache.map(async t => {
     const [a,p] = await Promise.all([
-      db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true).eq('turma_id',t.id),
-      db.from('presencas').select('*',{count:'exact',head:true}).eq('turma_id',t.id)
+      db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true).eq('escola_id',currentEscola.id).eq('turma_id',t.id),
+      db.from('presencas').select('*',{count:'exact',head:true}).eq('escola_id',currentEscola.id).eq('turma_id',t.id)
     ]);
     return [t.nome, t.ano_letivo||'—', t.periodo, a.count||0, p.count||0];
   }));
@@ -1929,15 +2022,13 @@ async function restaurarBackup() {
     const bk = JSON.parse(txt);
     if (!bk.escolas || !bk.alunos) { toast('Arquivo de backup inválido.','❌'); return; }
     toast('Restaurando... aguarde.','⏳',5000);
-    // Limpa em ordem reversa
     await db.from('presencas').delete().neq('id','00000000-0000-0000-0000-000000000000');
     await db.from('alunos').delete().neq('id','00000000-0000-0000-0000-000000000000');
     await db.from('turmas').delete().neq('id','00000000-0000-0000-0000-000000000000');
     await db.from('escolas').delete().neq('id','00000000-0000-0000-0000-000000000000');
-    // Restaura em ordem
-    if (bk.escolas.length)  await db.from('escolas').insert(bk.escolas);
-    if (bk.turmas.length)   await db.from('turmas').insert(bk.turmas);
-    if (bk.alunos.length)   await db.from('alunos').insert(bk.alunos);
+    if (bk.escolas.length)   await db.from('escolas').insert(bk.escolas);
+    if (bk.turmas.length)    await db.from('turmas').insert(bk.turmas);
+    if (bk.alunos.length)    await db.from('alunos').insert(bk.alunos);
     if (bk.presencas.length) await db.from('presencas').insert(bk.presencas);
     toast('Backup restaurado com sucesso!','✅',5000);
     renderBackup();
@@ -1945,6 +2036,88 @@ async function restaurarBackup() {
     toast('Erro ao restaurar: '+e.message,'❌',5000);
   }
 }
+
+// ════════════════════════════════════════════════
+// SISTEMA OFFLINE — fila local + sync automático
+// ════════════════════════════════════════════════
+const OFFLINE_KEY = 'pf-offline-queue';
+
+const offlineQueue = {
+  get() {
+    try { return JSON.parse(localStorage.getItem(OFFLINE_KEY)||'[]'); } catch(e) { return []; }
+  },
+  add(registro) {
+    const q = this.get();
+    q.push({...registro, _offlineId: Date.now()+'_'+Math.random().toString(36).slice(2,7)});
+    try { localStorage.setItem(OFFLINE_KEY, JSON.stringify(q)); } catch(e) {}
+    updateConnStatus();
+  },
+  clear() {
+    try { localStorage.removeItem(OFFLINE_KEY); } catch(e) {}
+    updateConnStatus();
+  },
+  size() { return this.get().length; }
+};
+
+function updateConnStatus() {
+  const online = navigator.onLine;
+  const pending = offlineQueue.size();
+  const dot = document.getElementById('conn-dot');
+  const banner = document.getElementById('offline-banner');
+  if (dot) {
+    dot.classList.toggle('offline', !online || pending > 0);
+    dot.title = online
+      ? (pending > 0 ? `Online — ${pending} presença(s) pendente(s)` : 'Online')
+      : `Offline — ${pending} presença(s) na fila`;
+  }
+  if (banner) {
+    if (!online) {
+      banner.textContent = `📵 SEM CONEXÃO — ${pending} presença(s) salvas localmente, serão sincronizadas ao reconectar`;
+      banner.classList.add('show');
+    } else if (pending > 0) {
+      banner.textContent = `🔄 Sincronizando ${pending} presença(s) offline...`;
+      banner.classList.add('show');
+    } else {
+      banner.classList.remove('show');
+    }
+  }
+}
+
+async function syncOfflineQueue() {
+  const q = offlineQueue.get();
+  if (!q.length || !navigator.onLine) return;
+  updateConnStatus();
+  let sincronizados = 0, erros = 0;
+  const falhas = [];
+  for (const reg of q) {
+    const { _offlineId, ...payload } = reg;
+    const { error } = await db.from('presencas').insert(payload);
+    if (!error || error.code === '23505' || (error.message||'').includes('duplicate')) {
+      sincronizados++;
+    } else {
+      erros++;
+      falhas.push(reg);
+    }
+  }
+  // Mantém só as falhas reais (não duplicatas)
+  try { localStorage.setItem(OFFLINE_KEY, JSON.stringify(falhas)); } catch(e) {}
+  updateConnStatus();
+  if (sincronizados > 0) {
+    toast(`✅ ${sincronizados} presença(s) offline sincronizada(s)!`, '🔄', 5000);
+    renderTodayList();
+  }
+  if (erros > 0) toast(`⚠️ ${erros} presença(s) não puderam ser sincronizadas.`, '❌', 6000);
+}
+
+// Detectar mudança de conexão
+window.addEventListener('online',  () => { updateConnStatus(); setTimeout(syncOfflineQueue, 1500); });
+window.addEventListener('offline', () => { updateConnStatus(); });
+
+// Sync ao carregar se houver fila pendente
+window.addEventListener('load', () => {
+  updateConnStatus();
+  if (navigator.onLine && offlineQueue.size() > 0) setTimeout(syncOfflineQueue, 3000);
+});
 </script>
 </body>
 </html>
