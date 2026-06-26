@@ -1,5 +1,5 @@
 // PresençaFácil — Service Worker v1
-const CACHE = 'presencafacil-v1';
+const CACHE = 'presencafacil-v2';
 
 // Arquivos essenciais para funcionar offline
 const PRECACHE = [
