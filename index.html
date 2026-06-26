@@ -218,7 +218,6 @@ tr:last-child td{border-bottom:none}
       <label for="login-lembrar" style="font-size:12px;color:var(--text2);cursor:pointer">Lembrar e-mail</label>
     </div>
     <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">Entrar</button>
-    <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:8px" onclick="loginRapido()">⚡ Acesso rápido (teste)</button>
     <p style="font-size:11px;color:var(--text2);text-align:center;margin-top:14px">Não tem conta? Solicite ao consultor.</p>
   </div>
 </div>
@@ -685,12 +684,6 @@ async function doLogin() {
   btn.disabled = false; btn.textContent = 'Entrar';
 }
 
-function loginRapido() {
-  document.getElementById('login-email').value = 'paulo@hotmail.com';
-  document.getElementById('login-pass').value = 'paulo123';
-  doLogin();
-}
-
 function traduzirErro(msg) {
   if (!msg) return 'Erro desconhecido.';
   if (msg.includes('Invalid login')) return 'E-mail ou senha incorretos.';
@@ -787,10 +780,6 @@ async function initApp() {
 function showLogin() {
   document.getElementById('screen-login').style.display='flex';
   document.getElementById('screen-app').style.display='none';
-  // ── TESTE RÁPIDO — remover antes de produção ──
-  document.getElementById('login-email').value = 'paulo@hotmail.com';
-  document.getElementById('login-pass').value = 'paulo123';
-  // ─────────────────────────────────────────────
   try {
     const emailSalvo = localStorage.getItem('pf-lembrar-email');
     if (emailSalvo) {
@@ -798,7 +787,7 @@ function showLogin() {
       document.getElementById('login-lembrar').checked = true;
       setTimeout(() => document.getElementById('login-pass').focus(), 100);
     } else {
-      setTimeout(() => document.getElementById('login-pass').focus(), 100);
+      setTimeout(() => document.getElementById('login-email').focus(), 100);
     }
   } catch(e) {}
 }
@@ -1249,7 +1238,7 @@ async function confirmarPresenca() {
     periodo, data: todayStr(), hora: timeStr(), atrasado
   };
 
-  // Verifica duplicata local (fila pendente)
+  // 1. Verifica duplicata na fila offline local
   const filaLocal = offlineQueue.get();
   const jaNaFila = filaLocal.some(p => p.aluno_id === aluno.id && p.data === registro.data);
   if (jaNaFila) {
@@ -1260,8 +1249,31 @@ async function confirmarPresenca() {
     return;
   }
 
+  // 2. Verifica duplicata no banco (fonte da verdade)
+  if (navigator.onLine) {
+    const { data: jaExiste } = await db.from('presencas')
+      .select('id', { count: 'exact', head: true })
+      .eq('escola_id', currentEscola.id)
+      .eq('aluno_id', aluno.id)
+      .eq('data', todayStr());
+    if (jaExiste !== null && jaExiste !== undefined) {
+      // count vem em .count quando head:true — testa de outra forma
+    }
+    const { count } = await db.from('presencas')
+      .select('*', { count: 'exact', head: true })
+      .eq('escola_id', currentEscola.id)
+      .eq('aluno_id', aluno.id)
+      .eq('data', todayStr());
+    if (count > 0) {
+      toast(aluno.nome+' já registrou presença hoje.','⚠️',4000);
+      beep(330,200);
+      recentlyConfirmedIds.set(aluno.id, Date.now());
+      lastConfirmedAt = Date.now();
+      return;
+    }
+  }
+
   if (!navigator.onLine) {
-    // Salva na fila offline
     offlineQueue.add(registro);
     beep(880,120); setTimeout(()=>beep(1100,100),130);
     document.body.classList.add('flash-success');
@@ -1292,7 +1304,6 @@ async function confirmarPresenca() {
   renderTodayList();
   recentlyConfirmedIds.set(aluno.id, Date.now());
   lastConfirmedAt = Date.now();
-  // Atualiza badge da aba Tarefas
   setTimeout(atualizarBadgeTarefas, 500);
 }
 
