@@ -375,8 +375,58 @@ tr:last-child td{border-bottom:none}
 <script>
 const SUPA_URL = 'https://awtzeflakcffshkvtmsf.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3dHplZmxha2NmZnNoa3Z0bXNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzOTMyODEsImV4cCI6MjA5Nzk2OTI4MX0.LgtYZFbcUtC2XwQCxley5uCmPvkueKnf_iB3p7qdVVk';
+
+// LIMPAR TOKENS ANTIGOS NA INICIALIZAÇÃO - força login limpo sempre
+(function limparTokensCorrompidos() {
+  try {
+    const keys = Object.keys(localStorage);
+    for (const k of keys) {
+      if (k.startsWith('sb-') || k.startsWith('pf-auth') || k.startsWith('supabase')) {
+        try {
+          const v = localStorage.getItem(k);
+          if (v && v.includes('deviceAttributes')) {
+            localStorage.removeItem(k);
+            console.log('Token corrompido removido:', k);
+          }
+        } catch(e) { localStorage.removeItem(k); }
+      }
+    }
+  } catch(e) {}
+})();
+
+// Capturar erros globais do Supabase que travam o app
+window.addEventListener('unhandledrejection', function(e) {
+  if (e.reason && e.reason.message && e.reason.message.includes('deviceAttributes')) {
+    console.warn('Ignorando erro deviceAttributes:', e.reason.message);
+    e.preventDefault();
+  }
+});
+
 const db = supabase.createClient(SUPA_URL, SUPA_KEY, {
-  auth: { autoRefreshToken:true, persistSession:true, detectSessionInUrl:false, storageKey:'pf-auth' }
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+    storageKey: 'pf-auth-v2',
+    storage: {
+      getItem: (key) => {
+        try {
+          const v = localStorage.getItem(key);
+          if (v && v.includes('deviceAttributes')) {
+            localStorage.removeItem(key);
+            return null;
+          }
+          return v;
+        } catch(e) { return null; }
+      },
+      setItem: (key, value) => {
+        try { localStorage.setItem(key, value); } catch(e) {}
+      },
+      removeItem: (key) => {
+        try { localStorage.removeItem(key); } catch(e) {}
+      }
+    }
+  }
 });
 
 let currentUser = null, currentProfile = null, currentEscola = null;
@@ -474,8 +524,13 @@ async function doLogout() {
   document.body.classList.remove('kiosk-mode');
   kioskActive = false;
   try { await db.auth.signOut(); } catch(e) {}
-  Object.keys(localStorage).forEach(k => { if(k.startsWith('sb-')||k.startsWith('pf-auth')) localStorage.removeItem(k); });
-  showLogin();
+  // Limpa TUDO do localStorage e sessionStorage
+  try {
+    localStorage.clear();
+    sessionStorage.clear();
+  } catch(e) {}
+  // Força reload limpo
+  setTimeout(() => { location.href = location.pathname; }, 100);
 }
 
 db.auth.onAuthStateChange(async (event, session) => {
