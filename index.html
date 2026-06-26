@@ -20,6 +20,31 @@
     });
   }
 </script>
+<script>
+// Limpa dados corrompidos ANTES do Supabase carregar
+(function() {
+  try {
+    var keys = Object.keys(localStorage);
+    keys.forEach(function(k) {
+      try {
+        var v = localStorage.getItem(k);
+        if (!v || v === 'undefined' || v === 'null') {
+          localStorage.removeItem(k);
+          return;
+        }
+        if (v.indexOf('deviceAttributes') !== -1) {
+          localStorage.removeItem(k);
+          return;
+        }
+        // Testa se é JSON válido nas chaves de auth
+        if (k.indexOf('sb-') === 0 || k.indexOf('pf-auth') === 0) {
+          try { JSON.parse(v); } catch(e) { localStorage.removeItem(k); }
+        }
+      } catch(e) { try { localStorage.removeItem(k); } catch(e2) {} }
+    });
+  } catch(e) {}
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.26.0/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
