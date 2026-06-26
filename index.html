@@ -7,6 +7,8 @@
 <title>PresençaFácil</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
 :root{--bg:#0f1117;--surface:#181c27;--surface2:#1e2333;--border:#2a3044;--accent:#4f8ef7;--success:#22c55e;--warning:#f59e0b;--danger:#ef4444;--text:#e8ecf4;--text2:#8892aa;--text3:#556070;--r:12px;--rs:8px}
@@ -175,13 +177,14 @@ tr:last-child td{border-bottom:none}
     <button class="tab active" onclick="switchTab(this,'dono-escolas')">🏫 Escolas</button>
     <button class="tab" onclick="switchTab(this,'dono-gestores')">👥 Gestores</button>
     <button class="tab" onclick="switchTab(this,'dono-stats')">📊 Estatísticas</button>
+    <button class="tab" onclick="switchTab(this,'dono-backup')">💾 Backup</button>
   </nav>
   <nav class="tabs" id="tabs-gestor" style="display:none">
     <button class="tab active" onclick="switchTab(this,'scanner')">📷 Scanner</button>
     <button class="tab" onclick="switchTab(this,'alunos')">👤 Alunos</button>
     <button class="tab" onclick="switchTab(this,'turmas')">🎓 Turmas</button>
     <button class="tab" onclick="switchTab(this,'presencas')">📋 Presenças</button>
-    <button class="tab" onclick="switchTab(this,'relatorios')">📊 Relatórios</button>
+    <button class="tab" onclick="switchTab(this,'analises')">📊 Análises</button>
     <button class="tab" onclick="switchTab(this,'config')">⚙️ Config</button>
   </nav>
 
@@ -263,15 +266,47 @@ tr:last-child td{border-bottom:none}
     <div class="table-wrap"><table><thead><tr><th>Aluno</th><th>Turma</th><th>Hora</th><th>Status</th><th></th></tr></thead><tbody id="presencas-body"></tbody></table></div>
   </div>
 
-  <div class="page" id="page-relatorios">
+  <div class="page" id="page-analises">
+    <p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;margin-bottom:4px">Análises e Relatórios</p>
+    <p style="font-size:11px;color:var(--text2);margin-bottom:16px">Escolha um relatório para visualizar e exportar em PDF.</p>
+
     <div class="kpi-row">
       <div class="kpi-card"><div class="kpi-label">Alunos</div><div class="kpi-value" id="kpi-alunos">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Hoje</div><div class="kpi-value" id="kpi-hoje" style="color:var(--success)">—</div><div class="kpi-sub" id="kpi-pct">—</div></div>
-      <div class="kpi-card"><div class="kpi-label">Atrasados</div><div class="kpi-value" id="kpi-atrasados" style="color:var(--warning)">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Atrasados hoje</div><div class="kpi-value" id="kpi-atrasados" style="color:var(--warning)">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Turmas</div><div class="kpi-value" id="kpi-turmas">—</div></div>
     </div>
-    <p class="sec">Frequência por turma</p>
-    <div class="table-wrap"><table><thead><tr><th>Turma</th><th>Alunos</th><th>Registros</th></tr></thead><tbody id="rel-body"></tbody></table></div>
+
+    <p class="sec">Relatórios disponíveis</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:18px">
+      <div class="kpi-card" style="cursor:pointer" onclick="relFrequenciaMensal()"><div style="font-size:24px;margin-bottom:4px">📈</div><div style="font-size:13px;font-weight:700;font-family:'Space Grotesk',sans-serif">Frequência Mensal</div><div style="font-size:11px;color:var(--text2);margin-top:2px">% de presença de cada aluno no mês</div></div>
+      <div class="kpi-card" style="cursor:pointer" onclick="relAtrasos()"><div style="font-size:24px;margin-bottom:4px">🕐</div><div style="font-size:13px;font-weight:700;font-family:'Space Grotesk',sans-serif">Ranking de Atrasos</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Quem mais se atrasa</div></div>
+      <div class="kpi-card" style="cursor:pointer" onclick="relFaltasConsecutivas()"><div style="font-size:24px;margin-bottom:4px">⚠️</div><div style="font-size:13px;font-weight:700;font-family:'Space Grotesk',sans-serif">Faltas Consecutivas</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Alunos com 3+ faltas seguidas</div></div>
+      <div class="kpi-card" style="cursor:pointer" onclick="abrirHistoricoAluno()"><div style="font-size:24px;margin-bottom:4px">👤</div><div style="font-size:13px;font-weight:700;font-family:'Space Grotesk',sans-serif">Histórico Individual</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Buscar aluno e ver histórico</div></div>
+      <div class="kpi-card" style="cursor:pointer" onclick="relRankingMes()"><div style="font-size:24px;margin-bottom:4px">🏆</div><div style="font-size:13px;font-weight:700;font-family:'Space Grotesk',sans-serif">Ranking de Presenças</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Mais frequentes do mês</div></div>
+      <div class="kpi-card" style="cursor:pointer" onclick="relComparativoTurmas()"><div style="font-size:24px;margin-bottom:4px">📊</div><div style="font-size:13px;font-weight:700;font-family:'Space Grotesk',sans-serif">Comparativo Turmas</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Qual turma é mais frequente</div></div>
+      <div class="kpi-card" style="cursor:pointer" onclick="relHorarioMedio()"><div style="font-size:24px;margin-bottom:4px">🕒</div><div style="font-size:13px;font-weight:700;font-family:'Space Grotesk',sans-serif">Horário Médio</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Quando cada turma chega</div></div>
+      <div class="kpi-card" style="cursor:pointer" onclick="relFrequenciaTurma()"><div style="font-size:24px;margin-bottom:4px">🎓</div><div style="font-size:13px;font-weight:700;font-family:'Space Grotesk',sans-serif">Frequência por Turma</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Resumo geral</div></div>
+    </div>
+
+    <div id="rel-area"></div>
+  </div>
+
+  <div class="page" id="page-dono-backup">
+    <p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;margin-bottom:4px">Backup do Sistema</p>
+    <p style="font-size:11px;color:var(--text2);margin-bottom:18px">Exporte todos os dados (escolas, gestores, turmas, alunos, presenças) em um arquivo JSON. Guarde-o em local seguro.</p>
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-label">Último backup</div><div class="kpi-value" id="bk-data" style="font-size:14px">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Registros totais</div><div class="kpi-value" id="bk-total">—</div></div>
+    </div>
+    <p class="sec">Exportar</p>
+    <button class="btn btn-primary" onclick="exportarBackup()">💾 Baixar Backup Completo (.json)</button>
+    <div class="divider"></div>
+    <p class="sec">Restaurar</p>
+    <p style="font-size:11px;color:var(--warning);margin-bottom:8px">⚠️ Restaurar substitui os dados atuais. Faça backup antes!</p>
+    <input type="file" id="bk-file" accept=".json" style="font-size:12px;color:var(--text2);margin-bottom:8px">
+    <br>
+    <button class="btn btn-danger btn-sm" onclick="restaurarBackup()">⚠️ Restaurar Backup</button>
   </div>
 
   <div class="page" id="page-config">
@@ -309,6 +344,11 @@ tr:last-child td{border-bottom:none}
   <h2 id="m-esc-title">Nova Escola</h2>
   <div class="field"><label>Nome</label><input type="text" id="esc-nome"></div>
   <div class="field"><label>Cidade</label><input type="text" id="esc-cidade"></div>
+  <div class="field">
+    <label>Logo (opcional)</label>
+    <input type="file" id="esc-logo-file" accept="image/*" onchange="previewLogo()">
+    <div id="esc-logo-preview" style="margin-top:8px"></div>
+  </div>
   <p class="sec">Horários</p>
   <div class="row" style="gap:6px"><div class="field" style="flex:1;min-width:110px"><label>Matutino</label><input type="time" id="esc-mat" value="07:00"></div><div class="field" style="flex:1;min-width:110px"><label>Vespertino</label><input type="time" id="esc-vesp" value="13:00"></div></div>
   <div class="row" style="gap:6px"><div class="field" style="flex:1;min-width:110px"><label>Noturno</label><input type="time" id="esc-not" value="19:00"></div><div class="field" style="flex:1;min-width:110px"><label>Integral</label><input type="time" id="esc-int" value="07:00"></div></div>
@@ -669,10 +709,11 @@ function switchTab(el, id) {
   if (id==='dono-escolas')  renderEscolasDono();
   if (id==='dono-gestores') renderGestoresDono();
   if (id==='dono-stats')    renderStatsDono();
+  if (id==='dono-backup')   renderBackup();
   if (id==='alunos')        renderAlunos();
   if (id==='turmas')        renderTurmas();
   if (id==='presencas')     { loadTurmaFilter(); renderPresencas(); }
-  if (id==='relatorios')    renderRelatorios();
+  if (id==='analises')      renderAnalises();
   if (id==='config')        loadConfig();
 }
 </script>
@@ -704,6 +745,9 @@ function abrirEscola() {
   document.getElementById('esc-not').value = '19:00';
   document.getElementById('esc-int').value = '07:00';
   document.getElementById('esc-tol').value = 10;
+  document.getElementById('esc-logo-preview').innerHTML = '';
+  document.getElementById('esc-logo-file').value = '';
+  window._escLogoBase64 = null;
   document.getElementById('modal-escola').classList.add('open');
 }
 
@@ -719,7 +763,30 @@ async function editarEscola(id) {
   document.getElementById('esc-not').value = (data.hora_noturno||'19:00').slice(0,5);
   document.getElementById('esc-int').value = (data.hora_integral||'07:00').slice(0,5);
   document.getElementById('esc-tol').value = data.tolerancia_min;
+  document.getElementById('esc-logo-file').value = '';
+  window._escLogoBase64 = data.logo || null;
+  document.getElementById('esc-logo-preview').innerHTML = data.logo
+    ? '<img src="'+data.logo+'" style="max-height:60px;border-radius:6px;border:1px solid var(--border)"><button class="btn btn-ghost btn-sm" style="margin-left:8px" onclick="removerLogo()">Remover</button>'
+    : '<span style="font-size:11px;color:var(--text3)">Sem logo</span>';
   document.getElementById('modal-escola').classList.add('open');
+}
+
+function previewLogo() {
+  const file = document.getElementById('esc-logo-file').files[0];
+  if (!file) return;
+  if (file.size > 200000) { toast('Logo muito grande. Máximo 200KB.','⚠️',5000); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    window._escLogoBase64 = e.target.result;
+    document.getElementById('esc-logo-preview').innerHTML = '<img src="'+e.target.result+'" style="max-height:60px;border-radius:6px;border:1px solid var(--border)"><button class="btn btn-ghost btn-sm" style="margin-left:8px" onclick="removerLogo()">Remover</button>';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removerLogo() {
+  window._escLogoBase64 = null;
+  document.getElementById('esc-logo-file').value = '';
+  document.getElementById('esc-logo-preview').innerHTML = '<span style="font-size:11px;color:var(--text3)">Sem logo</span>';
 }
 
 function fecharEscola() { document.getElementById('modal-escola').classList.remove('open'); }
@@ -733,7 +800,8 @@ async function salvarEscola() {
     hora_vespertino: document.getElementById('esc-vesp').value,
     hora_noturno: document.getElementById('esc-not').value,
     hora_integral: document.getElementById('esc-int').value,
-    tolerancia_min: parseInt(document.getElementById('esc-tol').value)||0
+    tolerancia_min: parseInt(document.getElementById('esc-tol').value)||0,
+    logo: window._escLogoBase64 || null
   };
   const op = editingEscola ? db.from('escolas').update(payload).eq('id',editingEscola) : db.from('escolas').insert(payload);
   const { error } = await op;
@@ -1414,6 +1482,393 @@ function pinDigit(d) {
 function pinBack()  { pinBuffer = pinBuffer.slice(0,-1); document.getElementById('pin-display').textContent = '•'.repeat(pinBuffer.length); }
 function pinClear() { pinBuffer=''; document.getElementById('pin-display').textContent=''; }
 function fecharPin(){ document.getElementById('modal-pin').classList.remove('open'); pinBuffer=''; }
+</script>
+
+<script>
+// ════════════════════════════════════════════════
+// HELPERS DE PDF
+// ════════════════════════════════════════════════
+async function gerarPDF(titulo, columns, rows, opcoes={}) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = 18;
+
+  // Logo da escola
+  if (currentEscola?.logo) {
+    try {
+      doc.addImage(currentEscola.logo, 'PNG', 15, 10, 22, 22);
+    } catch(e) { console.warn('logo PDF:', e); }
+  }
+
+  // Cabeçalho
+  doc.setFontSize(11);
+  doc.setTextColor(80,80,80);
+  doc.text(currentEscola?.nome || 'PresençaFácil', currentEscola?.logo ? 42 : 15, 16);
+  if (currentEscola?.cidade) {
+    doc.setFontSize(9);
+    doc.setTextColor(140,140,140);
+    doc.text(currentEscola.cidade, currentEscola?.logo ? 42 : 15, 21);
+  }
+
+  doc.setFontSize(15);
+  doc.setTextColor(40,40,40);
+  doc.text(titulo, 15, 38);
+  if (opcoes.subtitulo) {
+    doc.setFontSize(10);
+    doc.setTextColor(120,120,120);
+    doc.text(opcoes.subtitulo, 15, 44);
+  }
+
+  // Tabela
+  doc.autoTable({
+    startY: opcoes.subtitulo ? 48 : 44,
+    head: [columns],
+    body: rows,
+    theme: 'grid',
+    headStyles: { fillColor: [79,142,247], textColor: 255, fontSize: 9 },
+    bodyStyles: { fontSize: 9 },
+    alternateRowStyles: { fillColor: [245,247,251] },
+    margin: { left: 15, right: 15 }
+  });
+
+  // Rodapé
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(160,160,160);
+    const dt = new Date().toLocaleString('pt-BR');
+    doc.text('PresençaFácil · '+dt, 15, doc.internal.pageSize.height - 8);
+    doc.text('Página '+i+' de '+pageCount, doc.internal.pageSize.width - 35, doc.internal.pageSize.height - 8);
+  }
+
+  const fname = titulo.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'-'+todayStr()+'.pdf';
+  doc.save(fname);
+  toast('PDF gerado: '+fname,'📄');
+}
+
+function resultadoTabela(titulo, columns, rows, opcoes={}) {
+  const subtitulo = opcoes.subtitulo || '';
+  const html = `
+    <div class="kpi-card" style="margin-top:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <p style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700">${titulo}</p>
+          ${subtitulo?'<p style="font-size:11px;color:var(--text2);margin-top:2px">'+subtitulo+'</p>':''}
+        </div>
+        <button class="btn btn-primary btn-sm" onclick='gerarPDF("${titulo.replace(/"/g,'')}", ${JSON.stringify(columns)}, ${JSON.stringify(rows)}, {subtitulo:"${subtitulo}"})'>📄 Exportar PDF</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>${columns.map(c=>'<th>'+c+'</th>').join('')}</tr></thead>
+          <tbody>${rows.length ? rows.map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('') : '<tr><td colspan="'+columns.length+'" style="text-align:center;color:var(--text3);padding:20px">Sem dados.</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>`;
+  document.getElementById('rel-area').innerHTML = html;
+}
+
+// ════════════════════════════════════════════════
+// PÁGINA ANÁLISES — KPIs iniciais
+// ════════════════════════════════════════════════
+async function renderAnalises() {
+  if (!currentEscola) return;
+  await refreshCache();
+  const [r1,r3,r4] = await Promise.all([
+    db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true),
+    db.from('presencas').select('*',{count:'exact',head:true}).eq('data',todayStr()),
+    db.from('presencas').select('*',{count:'exact',head:true}).eq('data',todayStr()).eq('atrasado',true)
+  ]);
+  const total = r1.count||0, hoje = r3.count||0;
+  document.getElementById('kpi-alunos').textContent = total;
+  document.getElementById('kpi-hoje').textContent = hoje;
+  document.getElementById('kpi-atrasados').textContent = r4.count||0;
+  document.getElementById('kpi-turmas').textContent = turmasCache.length;
+  document.getElementById('kpi-pct').textContent = total?Math.round(hoje/total*100)+'% hoje':'—';
+  document.getElementById('rel-area').innerHTML = '<div class="empty" style="padding:30px"><p>Escolha um relatório acima para visualizar.</p></div>';
+}
+
+// ════════════════════════════════════════════════
+// RELATÓRIO 1: Frequência Mensal por Aluno
+// ════════════════════════════════════════════════
+async function relFrequenciaMensal() {
+  await refreshCache();
+  const hoje = new Date();
+  const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0,10);
+  const fim    = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).toISOString().slice(0,10);
+  const { data: pres } = await db.from('presencas').select('*').gte('data',inicio).lte('data',fim);
+  const mapa = {};
+  (pres||[]).forEach(p => {
+    if (!mapa[p.aluno_id]) mapa[p.aluno_id] = { presencas:0, atrasos:0 };
+    mapa[p.aluno_id].presencas++;
+    if (p.atrasado) mapa[p.aluno_id].atrasos++;
+  });
+  // dias úteis aproximados do mês (seg a sex)
+  let diasUteis = 0;
+  for (let d = new Date(inicio); d <= new Date(fim); d.setDate(d.getDate()+1)) {
+    const dow = d.getDay();
+    if (dow !== 0 && dow !== 6) diasUteis++;
+  }
+  const rows = alunosCache.map(a => {
+    const m = mapa[a.id] || { presencas:0, atrasos:0 };
+    const pct = diasUteis ? Math.round(m.presencas/diasUteis*100) : 0;
+    return [a.nome, a.turma_nome||'—', m.presencas+'/'+diasUteis, pct+'%', m.atrasos];
+  }).sort((a,b) => parseInt(b[3]) - parseInt(a[3]));
+  const mes = hoje.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  resultadoTabela('Frequência Mensal', ['Aluno','Turma','Presenças','% Frequência','Atrasos'], rows, {subtitulo:'Mês: '+mes+' · '+diasUteis+' dias úteis'});
+}
+
+// ════════════════════════════════════════════════
+// RELATÓRIO 2: Ranking de Atrasos
+// ════════════════════════════════════════════════
+async function relAtrasos() {
+  await refreshCache();
+  const { data: pres } = await db.from('presencas').select('*').eq('atrasado',true);
+  const mapa = {};
+  (pres||[]).forEach(p => { mapa[p.aluno_id] = (mapa[p.aluno_id]||0) + 1; });
+  const rows = Object.entries(mapa).map(([alunoId, count]) => {
+    const a = alunosCache.find(x => x.id === alunoId);
+    return [a?.nome || '?', a?.turma_nome || '—', count];
+  }).sort((a,b) => b[2] - a[2]);
+  resultadoTabela('Ranking de Atrasos', ['Aluno','Turma','Total Atrasos'], rows, {subtitulo:'Alunos que mais chegaram atrasados (histórico completo)'});
+}
+
+// ════════════════════════════════════════════════
+// RELATÓRIO 3: Faltas Consecutivas
+// ════════════════════════════════════════════════
+async function relFaltasConsecutivas() {
+  await refreshCache();
+  // últimos 30 dias úteis
+  const hoje = new Date();
+  const inicio = new Date(); inicio.setDate(inicio.getDate()-45);
+  const { data: pres } = await db.from('presencas').select('aluno_id,data').gte('data',inicio.toISOString().slice(0,10));
+
+  // Mapa: aluno -> set de datas presentes
+  const presPorAluno = {};
+  (pres||[]).forEach(p => {
+    if (!presPorAluno[p.aluno_id]) presPorAluno[p.aluno_id] = new Set();
+    presPorAluno[p.aluno_id].add(p.data);
+  });
+
+  // Conta faltas consecutivas até hoje (dias úteis)
+  const rows = [];
+  for (const a of alunosCache) {
+    const datas = presPorAluno[a.id] || new Set();
+    let consec = 0;
+    const d = new Date(hoje);
+    while (consec < 30) {
+      const dow = d.getDay();
+      if (dow !== 0 && dow !== 6) {
+        const ds = d.toISOString().slice(0,10);
+        if (datas.has(ds)) break;
+        consec++;
+      }
+      d.setDate(d.getDate()-1);
+    }
+    if (consec >= 3) {
+      let nivel = consec >= 5 ? '🔴 CRÍTICO' : '🟡 ALERTA';
+      rows.push([a.nome, a.turma_nome||'—', consec, nivel]);
+    }
+  }
+  rows.sort((a,b) => b[2] - a[2]);
+  resultadoTabela('Faltas Consecutivas', ['Aluno','Turma','Faltas seguidas','Nível'], rows, {subtitulo:'🟡 Alerta: 3-4 faltas · 🔴 Crítico: 5+ faltas'});
+}
+
+// ════════════════════════════════════════════════
+// RELATÓRIO 4: Histórico Individual
+// ════════════════════════════════════════════════
+function abrirHistoricoAluno() {
+  const area = document.getElementById('rel-area');
+  area.innerHTML = `
+    <div class="kpi-card" style="margin-top:14px">
+      <p style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;margin-bottom:10px">Histórico Individual</p>
+      <input type="text" id="hist-busca" placeholder="Digite o nome do aluno..." oninput="filtrarHistBusca()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px;color:var(--text);font-size:13px;outline:none">
+      <div id="hist-lista" style="margin-top:10px;max-height:280px;overflow-y:auto"></div>
+    </div>`;
+  filtrarHistBusca();
+}
+
+function filtrarHistBusca() {
+  const q = (document.getElementById('hist-busca')?.value||'').toLowerCase().trim();
+  const f = alunosCache.filter(a => !q || a.nome.toLowerCase().includes(q)).slice(0,20);
+  document.getElementById('hist-lista').innerHTML = f.map(a => `
+    <div class="search-item" onclick="verHistorico('${a.id}')">
+      <div style="width:30px;height:30px;border-radius:50%;background:${getColor(a.nome)}22;color:${getColor(a.nome)};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:'Space Grotesk',sans-serif">${getInit(a.nome)}</div>
+      <div style="flex:1"><div style="font-size:12px;font-weight:600">${a.nome}</div><div style="font-size:10px;color:var(--text2)">${a.turma_nome||'—'}</div></div>
+    </div>`).join('') || '<p style="font-size:12px;color:var(--text3);padding:14px;text-align:center">Nenhum aluno encontrado.</p>';
+}
+
+async function verHistorico(alunoId) {
+  const aluno = alunosCache.find(a=>a.id===alunoId);
+  if (!aluno) return;
+  const { data: pres } = await db.from('presencas').select('*').eq('aluno_id',alunoId).order('data',{ascending:false});
+  const total = pres?.length || 0;
+  const atrasos = (pres||[]).filter(p=>p.atrasado).length;
+  const rows = (pres||[]).map(p => {
+    const dt = new Date(p.data+'T12:00:00').toLocaleDateString('pt-BR');
+    return [dt, (p.hora||'').slice(0,5), p.periodo||'—', p.atrasado?'⚠ Atrasado':'✓ OK'];
+  });
+  resultadoTabela(
+    'Histórico de '+aluno.nome,
+    ['Data','Hora','Período','Status'],
+    rows,
+    {subtitulo:'Turma '+(aluno.turma_nome||'—')+' · '+total+' presenças · '+atrasos+' atrasos'}
+  );
+}
+
+// ════════════════════════════════════════════════
+// RELATÓRIO 5: Ranking de Presenças do Mês
+// ════════════════════════════════════════════════
+async function relRankingMes() {
+  await refreshCache();
+  const hoje = new Date();
+  const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0,10);
+  const fim    = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).toISOString().slice(0,10);
+  const { data: pres } = await db.from('presencas').select('aluno_id').gte('data',inicio).lte('data',fim);
+  const mapa = {};
+  (pres||[]).forEach(p => { mapa[p.aluno_id] = (mapa[p.aluno_id]||0) + 1; });
+  const rows = alunosCache.map(a => [a.nome, a.turma_nome||'—', mapa[a.id]||0])
+    .filter(r => r[2] > 0)
+    .sort((a,b) => b[2] - a[2])
+    .slice(0, 50)
+    .map((r,i) => [(i+1)+'º', ...r]);
+  const mes = hoje.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  resultadoTabela('Ranking de Presenças do Mês', ['Posição','Aluno','Turma','Presenças'], rows, {subtitulo:mes+' · Top 50 alunos mais frequentes'});
+}
+
+// ════════════════════════════════════════════════
+// RELATÓRIO 6: Comparativo entre Turmas
+// ════════════════════════════════════════════════
+async function relComparativoTurmas() {
+  await refreshCache();
+  const hoje = new Date();
+  const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0,10);
+  const { data: pres } = await db.from('presencas').select('turma_id,atrasado').gte('data',inicio);
+  let diasUteis = 0;
+  for (let d = new Date(inicio); d <= hoje; d.setDate(d.getDate()+1)) {
+    if (d.getDay() !== 0 && d.getDay() !== 6) diasUteis++;
+  }
+  const rows = turmasCache.map(t => {
+    const alunosTurma = alunosCache.filter(a => a.turma_id === t.id).length;
+    const presTurma = (pres||[]).filter(p => p.turma_id === t.id);
+    const atrasos = presTurma.filter(p => p.atrasado).length;
+    const esperado = alunosTurma * diasUteis;
+    const pct = esperado ? Math.round(presTurma.length / esperado * 100) : 0;
+    return [t.nome, t.periodo, alunosTurma, presTurma.length, pct+'%', atrasos];
+  }).sort((a,b) => parseInt(b[4]) - parseInt(a[4]));
+  resultadoTabela('Comparativo entre Turmas', ['Turma','Período','Alunos','Presenças','% Frequência','Atrasos'], rows, {subtitulo:'Mês atual · '+diasUteis+' dias úteis'});
+}
+
+// ════════════════════════════════════════════════
+// RELATÓRIO 7: Horário Médio de Chegada
+// ════════════════════════════════════════════════
+async function relHorarioMedio() {
+  await refreshCache();
+  const hoje = new Date();
+  const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0,10);
+  const { data: pres } = await db.from('presencas').select('turma_id,hora').gte('data',inicio);
+  const rows = turmasCache.map(t => {
+    const presTurma = (pres||[]).filter(p => p.turma_id === t.id && p.hora);
+    if (!presTurma.length) return [t.nome, t.periodo, '—', '—'];
+    const totalMin = presTurma.reduce((sum, p) => {
+      const [h,m] = p.hora.split(':');
+      return sum + parseInt(h)*60 + parseInt(m);
+    }, 0);
+    const mediaMin = Math.round(totalMin / presTurma.length);
+    const hh = String(Math.floor(mediaMin/60)).padStart(2,'0');
+    const mm = String(mediaMin%60).padStart(2,'0');
+    return [t.nome, t.periodo, presTurma.length, hh+':'+mm];
+  });
+  resultadoTabela('Horário Médio de Chegada', ['Turma','Período','Registros','Horário médio'], rows, {subtitulo:'Mês atual'});
+}
+
+// ════════════════════════════════════════════════
+// RELATÓRIO 8: Frequência por Turma (resumo)
+// ════════════════════════════════════════════════
+async function relFrequenciaTurma() {
+  await refreshCache();
+  const rows = await Promise.all(turmasCache.map(async t => {
+    const [a,p] = await Promise.all([
+      db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true).eq('turma_id',t.id),
+      db.from('presencas').select('*',{count:'exact',head:true}).eq('turma_id',t.id)
+    ]);
+    return [t.nome, t.ano_letivo||'—', t.periodo, a.count||0, p.count||0];
+  }));
+  resultadoTabela('Frequência por Turma', ['Turma','Ano','Período','Alunos','Total Registros'], rows, {subtitulo:'Resumo geral (histórico completo)'});
+}
+
+// ════════════════════════════════════════════════
+// BACKUP (Dono)
+// ════════════════════════════════════════════════
+async function renderBackup() {
+  const ultimoBk = localStorage.getItem('pf-last-backup');
+  document.getElementById('bk-data').textContent = ultimoBk ? new Date(ultimoBk).toLocaleString('pt-BR') : 'Nunca';
+  const [e,t,a,p] = await Promise.all([
+    db.from('escolas').select('*',{count:'exact',head:true}),
+    db.from('turmas').select('*',{count:'exact',head:true}),
+    db.from('alunos').select('*',{count:'exact',head:true}),
+    db.from('presencas').select('*',{count:'exact',head:true})
+  ]);
+  const total = (e.count||0)+(t.count||0)+(a.count||0)+(p.count||0);
+  document.getElementById('bk-total').textContent = total.toLocaleString('pt-BR');
+}
+
+async function exportarBackup() {
+  toast('Exportando backup...','⏳',2000);
+  const [escolas, profiles, turmas, alunos, presencas] = await Promise.all([
+    db.from('escolas').select('*'),
+    db.from('profiles').select('*'),
+    db.from('turmas').select('*'),
+    db.from('alunos').select('*'),
+    db.from('presencas').select('*')
+  ]);
+  const backup = {
+    versao: '1.0',
+    data_backup: new Date().toISOString(),
+    escolas: escolas.data||[],
+    profiles: profiles.data||[],
+    turmas: turmas.data||[],
+    alunos: alunos.data||[],
+    presencas: presencas.data||[]
+  };
+  const json = JSON.stringify(backup, null, 2);
+  const blob = new Blob([json], {type:'application/json;charset=utf-8;'});
+  const link = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(blob),
+    download: 'presencafacil-backup-'+todayStr()+'.json'
+  });
+  link.click();
+  localStorage.setItem('pf-last-backup', new Date().toISOString());
+  toast('Backup salvo: '+link.download,'💾',4000);
+  renderBackup();
+}
+
+async function restaurarBackup() {
+  const file = document.getElementById('bk-file').files[0];
+  if (!file) { toast('Selecione um arquivo JSON.','⚠️'); return; }
+  if (!confirm('⚠️ ATENÇÃO: Restaurar substitui TODOS os dados atuais. Continuar?')) return;
+  if (!confirm('Confirma a restauração? Esta ação NÃO PODE ser desfeita.')) return;
+  try {
+    const txt = await file.text();
+    const bk = JSON.parse(txt);
+    if (!bk.escolas || !bk.alunos) { toast('Arquivo de backup inválido.','❌'); return; }
+    toast('Restaurando... aguarde.','⏳',5000);
+    // Limpa em ordem reversa
+    await db.from('presencas').delete().neq('id','00000000-0000-0000-0000-000000000000');
+    await db.from('alunos').delete().neq('id','00000000-0000-0000-0000-000000000000');
+    await db.from('turmas').delete().neq('id','00000000-0000-0000-0000-000000000000');
+    await db.from('escolas').delete().neq('id','00000000-0000-0000-0000-000000000000');
+    // Restaura em ordem
+    if (bk.escolas.length)  await db.from('escolas').insert(bk.escolas);
+    if (bk.turmas.length)   await db.from('turmas').insert(bk.turmas);
+    if (bk.alunos.length)   await db.from('alunos').insert(bk.alunos);
+    if (bk.presencas.length) await db.from('presencas').insert(bk.presencas);
+    toast('Backup restaurado com sucesso!','✅',5000);
+    renderBackup();
+  } catch(e) {
+    toast('Erro ao restaurar: '+e.message,'❌',5000);
+  }
+}
 </script>
 </body>
 </html>
