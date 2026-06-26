@@ -425,16 +425,34 @@ async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pass  = document.getElementById('login-pass').value;
   const err   = document.getElementById('login-error');
+  const btn   = document.querySelector('#screen-login .btn-primary');
   err.style.display='none';
   if (!email||!pass) { err.textContent='Preencha e-mail e senha.'; err.style.display=''; return; }
-  const btn = event.currentTarget;
   btn.disabled = true; btn.textContent='Entrando...';
+  // Limpar qualquer token preso antes de logar
+  try {
+    Object.keys(localStorage).forEach(k => { if(k.startsWith('sb-')||k.startsWith('pf-auth')) localStorage.removeItem(k); });
+  } catch(e) {}
   try {
     const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
     if (error) { err.textContent = traduzirErro(error.message); err.style.display=''; }
     else if (data?.user) { currentUser = data.user; await initApp(); }
+    else { err.textContent='Resposta inesperada do servidor.'; err.style.display=''; }
   } catch(e) {
-    err.textContent = 'Erro de conexão.'; err.style.display='';
+    console.error('login:', e);
+    // Erro deviceAttributes é interno do Supabase mas o login funciona
+    if (e?.message?.includes('deviceAttributes')) {
+      // Tenta pegar a sessão que foi criada apesar do erro
+      const { data: { session } } = await db.auth.getSession();
+      if (session?.user) {
+        currentUser = session.user;
+        await initApp();
+      } else {
+        err.textContent = 'Erro técnico. Tente novamente.'; err.style.display='';
+      }
+    } else {
+      err.textContent = 'Erro de conexão. Tente novamente.'; err.style.display='';
+    }
   }
   btn.disabled = false; btn.textContent='Entrar';
 }
