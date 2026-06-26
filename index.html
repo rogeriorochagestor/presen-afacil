@@ -193,6 +193,7 @@ tr:last-child td{border-bottom:none}
       <label for="login-lembrar" style="font-size:12px;color:var(--text2);cursor:pointer">Lembrar e-mail</label>
     </div>
     <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">Entrar</button>
+    <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:8px" onclick="loginRapido()">⚡ Acesso rápido (teste)</button>
     <p style="font-size:11px;color:var(--text2);text-align:center;margin-top:14px">Não tem conta? Solicite ao consultor.</p>
   </div>
 </div>
@@ -541,6 +542,37 @@ window.addEventListener('unhandledrejection', e => {
   }
 });
 
+// ── LIMPEZA DE DADOS ANTIGOS ─────────────────────────────────────────────────
+// Versões anteriores usavam storageKeys customizados (pf-auth-v1, pf-auth-v2, etc)
+// que conflitam com o login atual. Remove SOMENTE chaves antigas, preserva a sessão atual.
+(function limparDadosAntigos() {
+  try {
+    // Chave que o Supabase usa por padrão (sem storageKey customizado)
+    const chaveAtual = 'sb-awtzeflakcffshkvtmsf-auth-token';
+    const keysParaRemover = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k) continue;
+      // Remove chaves de versões antigas do app
+      if (k.startsWith('pf-auth') || k === 'sb-auth-token') {
+        keysParaRemover.push(k);
+        continue;
+      }
+      // Remove chaves sb- corrompidas (vazias, null, com deviceAttributes)
+      if (k.startsWith('sb-') && k !== chaveAtual) {
+        try {
+          const v = localStorage.getItem(k);
+          if (!v || v === 'undefined' || v === 'null' || v.includes('deviceAttributes')) {
+            keysParaRemover.push(k);
+          }
+        } catch(e) { keysParaRemover.push(k); }
+      }
+    }
+    keysParaRemover.forEach(k => { try { localStorage.removeItem(k); } catch(e) {} });
+    if (keysParaRemover.length) console.log('Dados antigos removidos:', keysParaRemover);
+  } catch(e) {}
+})();
+
 // Cliente Supabase — configuração mínima, sem storageKey customizado
 const db = supabase.createClient(SUPA_URL, SUPA_KEY, {
   auth: {
@@ -626,6 +658,12 @@ async function doLogin() {
   }
 
   btn.disabled = false; btn.textContent = 'Entrar';
+}
+
+function loginRapido() {
+  document.getElementById('login-email').value = 'paulo@hotmail.com';
+  document.getElementById('login-pass').value = 'paulo123';
+  doLogin();
 }
 
 function traduzirErro(msg) {
@@ -714,16 +752,18 @@ async function initApp() {
 function showLogin() {
   document.getElementById('screen-login').style.display='flex';
   document.getElementById('screen-app').style.display='none';
-  // Restaura e-mail lembrado
+  // ── TESTE RÁPIDO — remover antes de produção ──
+  document.getElementById('login-email').value = 'paulo@hotmail.com';
+  document.getElementById('login-pass').value = 'paulo123';
+  // ─────────────────────────────────────────────
   try {
     const emailSalvo = localStorage.getItem('pf-lembrar-email');
     if (emailSalvo) {
       document.getElementById('login-email').value = emailSalvo;
       document.getElementById('login-lembrar').checked = true;
-      // Foca na senha direto já que e-mail já está preenchido
       setTimeout(() => document.getElementById('login-pass').focus(), 100);
     } else {
-      setTimeout(() => document.getElementById('login-email').focus(), 100);
+      setTimeout(() => document.getElementById('login-pass').focus(), 100);
     }
   } catch(e) {}
 }
