@@ -545,32 +545,35 @@ window.addEventListener('unhandledrejection', function(e) {
   }
 });
 
+// Storage seguro — funciona mesmo em aba anônima (localStorage pode ser bloqueado)
+const _pfStorage = {
+  _mem: {},
+  getItem(key) {
+    try {
+      const v = localStorage.getItem(key);
+      if (v && v.includes('deviceAttributes')) { localStorage.removeItem(key); return null; }
+      return v ?? this._mem[key] ?? null;
+    } catch(e) { return this._mem[key] ?? null; }
+  },
+  setItem(key, value) {
+    this._mem[key] = value;
+    try { localStorage.setItem(key, value); } catch(e) {}
+  },
+  removeItem(key) {
+    delete this._mem[key];
+    try { localStorage.removeItem(key); } catch(e) {}
+  }
+};
+
 const db = supabase.createClient(SUPA_URL, SUPA_KEY, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
     storageKey: 'pf-auth-v2',
-    // SOLUÇÃO BUG #2111: desativa Web Locks que causam travamento no signIn
+    // Desativa Web Locks — causam travamento no signIn (bug #2111)
     lock: async (name, acquireTimeout, fn) => await fn(),
-    storage: {
-      getItem: (key) => {
-        try {
-          const v = localStorage.getItem(key);
-          if (v && v.includes('deviceAttributes')) {
-            localStorage.removeItem(key);
-            return null;
-          }
-          return v;
-        } catch(e) { return null; }
-      },
-      setItem: (key, value) => {
-        try { localStorage.setItem(key, value); } catch(e) {}
-      },
-      removeItem: (key) => {
-        try { localStorage.removeItem(key); } catch(e) {}
-      }
-    }
+    storage: _pfStorage
   }
 });
 
@@ -635,72 +638,101 @@ async function doLogin() {
     try { localStorage.removeItem('pf-lembrar-email'); } catch(e) {}
   }
 
-  // Liberar Web Locks órfãos do Supabase (bug conhecido issue #2111)
+  // Limpa tokens corrompidos antes de tentar login
   try {
     const keys = Object.keys(localStorage);
     for (const k of keys) {
-      if (k.startsWith('sb-') || k.startsWith('pf-auth') || k.startsWith('supabase')) {
+      if (k.startsWith('sb-') || k.startsWith('pf-auth')) {
         try {
           const v = localStorage.getItem(k);
-          if (v && (v.includes('deviceAttributes') || v === 'undefined' || v === 'null')) {
+          if (!v || v === 'undefined' || v === 'null' || v.includes('deviceAttributes')) {
             localStorage.removeItem(k);
           }
-        } catch(e) { localStorage.removeItem(k); }
+        } catch(e) {}
       }
     }
   } catch(e) {}
 
+  // Tentativa 1: login normal com timeout de 6s
+  let logado = false;
   try {
-    // SOLUÇÃO PARA TRAVAMENTO: race com timeout de 8s
-    // Se signInWithPassword travar, verificamos getSession() — frequentemente a sessão JÁ existe
-    const loginPromise = db.auth.signInWithPassword({ email, password: pass });
-    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 8000));
-
-    let result;
-    try {
-      result = await Promise.race([loginPromise, timeoutPromise]);
-    } catch(timeoutErr) {
-      // Login travou — verifica se a sessão foi criada mesmo assim
-      console.warn('signInWithPassword travou, verificando sessão...');
-      await new Promise(r => setTimeout(r, 500));
-      const { data: { session } } = await db.auth.getSession();
-      if (session?.user) {
-        console.log('Sessão criada apesar do travamento');
-        currentUser = session.user;
-        await initApp();
-        btn.disabled = false; btn.textContent='Entrar';
-        return;
-      }
-      throw new Error('Tempo esgotado. Tente novamente.');
-    }
-
+    const result = await Promise.race([
+      db.auth.signInWithPassword({ email, password: pass }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 6000))
+    ]);
     const { data, error } = result;
-    if (error) { err.textContent = traduzirErro(error.message); err.style.display=''; }
-    else if (data?.user) { currentUser = data.user; await initApp(); }
-    else { err.textContent='Resposta inesperada do servidor.'; err.style.display=''; }
-  } catch(e) {
-    console.error('login:', e);
-    // Fallback: verifica sessão direto
+    if (error) {
+      err.textContent = traduzirErro(error.message);
+      err.style.display = '';
+      btn.disabled = false; btn.textContent = 'Entrar';
+      return;
+    }
+    if (data?.user) { currentUser = data.user; logado = true; }
+  } catch(e1) {
+    console.warn('Tentativa 1 falhou:', e1.message);
+  }
+
+  // Tentativa 2: verifica se a sessão foi criada mesmo assim (caso timeout)
+  if (!logado) {
     try {
+      await new Promise(r => setTimeout(r, 800));
       const { data: { session } } = await db.auth.getSession();
-      if (session?.user) {
-        currentUser = session.user;
-        await initApp();
-        btn.disabled = false; btn.textContent='Entrar';
+      if (session?.user) { currentUser = session.user; logado = true; }
+    } catch(e2) { console.warn('getSession falhou:', e2.message); }
+  }
+
+  // Tentativa 3: recria o cliente Supabase do zero e tenta de novo
+  if (!logado) {
+    btn.textContent = 'Reconectando...';
+    try {
+      // Limpa TODAS as chaves de auth para forçar estado limpo
+      const keys = Object.keys(localStorage);
+      for (const k of keys) {
+        if (k.startsWith('sb-') || k.startsWith('pf-auth')) localStorage.removeItem(k);
+      }
+      // Recria cliente com nova instância
+      window._dbFresh = supabase.createClient(SUPA_URL, SUPA_KEY, {
+        auth: {
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: false,
+          storageKey: 'pf-auth-v3',
+          lock: async (name, acquireTimeout, fn) => await fn(),
+        }
+      });
+      const result2 = await Promise.race([
+        window._dbFresh.auth.signInWithPassword({ email, password: pass }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT2')), 8000))
+      ]);
+      const { data: d2, error: e2 } = result2;
+      if (e2) {
+        err.textContent = traduzirErro(e2.message);
+        err.style.display = '';
+        btn.disabled = false; btn.textContent = 'Entrar';
         return;
       }
-    } catch(e2) {}
-
-    if (e?.message?.includes('TIMEOUT') || e?.message?.includes('Tempo')) {
-      err.textContent = 'Servidor travou. Tente novamente em 5 segundos.';
-    } else if (e?.message?.includes('deviceAttributes')) {
-      err.textContent = 'Erro técnico. Recarregue a página (F5) e tente novamente.';
-    } else {
-      err.textContent = 'Erro: '+(e.message||'desconhecido');
+      if (d2?.user) {
+        // Migra sessão para o cliente principal
+        window.db = window._dbFresh;
+        currentUser = d2.user;
+        logado = true;
+      }
+    } catch(e3) {
+      console.warn('Tentativa 3 falhou:', e3.message);
+      err.textContent = 'Não foi possível conectar. Verifique sua internet e tente novamente.';
+      err.style.display = '';
+      btn.disabled = false; btn.textContent = 'Entrar';
+      return;
     }
-    err.style.display='';
   }
-  btn.disabled = false; btn.textContent='Entrar';
+
+  if (logado) {
+    await initApp();
+  } else {
+    err.textContent = 'Falha ao entrar. Tente recarregar a página (F5).';
+    err.style.display = '';
+  }
+  btn.disabled = false; btn.textContent = 'Entrar';
 }
 
 function traduzirErro(msg) {
