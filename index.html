@@ -448,6 +448,8 @@ const db = supabase.createClient(SUPA_URL, SUPA_KEY, {
     persistSession: true,
     detectSessionInUrl: false,
     storageKey: 'pf-auth-v2',
+    // SOLUÇÃO BUG #2111: desativa Web Locks que causam travamento no signIn
+    lock: async (name, acquireTimeout, fn) => await fn(),
     storage: {
       getItem: (key) => {
         try {
@@ -519,30 +521,71 @@ async function doLogin() {
   err.style.display='none';
   if (!email||!pass) { err.textContent='Preencha e-mail e senha.'; err.style.display=''; return; }
   btn.disabled = true; btn.textContent='Entrando...';
-  // Limpar qualquer token preso antes de logar
+
+  // Liberar Web Locks órfãos do Supabase (bug conhecido issue #2111)
   try {
-    Object.keys(localStorage).forEach(k => { if(k.startsWith('sb-')||k.startsWith('pf-auth')) localStorage.removeItem(k); });
+    const keys = Object.keys(localStorage);
+    for (const k of keys) {
+      if (k.startsWith('sb-') || k.startsWith('pf-auth') || k.startsWith('supabase')) {
+        try {
+          const v = localStorage.getItem(k);
+          if (v && (v.includes('deviceAttributes') || v === 'undefined' || v === 'null')) {
+            localStorage.removeItem(k);
+          }
+        } catch(e) { localStorage.removeItem(k); }
+      }
+    }
   } catch(e) {}
+
   try {
-    const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
+    // SOLUÇÃO PARA TRAVAMENTO: race com timeout de 8s
+    // Se signInWithPassword travar, verificamos getSession() — frequentemente a sessão JÁ existe
+    const loginPromise = db.auth.signInWithPassword({ email, password: pass });
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 8000));
+
+    let result;
+    try {
+      result = await Promise.race([loginPromise, timeoutPromise]);
+    } catch(timeoutErr) {
+      // Login travou — verifica se a sessão foi criada mesmo assim
+      console.warn('signInWithPassword travou, verificando sessão...');
+      await new Promise(r => setTimeout(r, 500));
+      const { data: { session } } = await db.auth.getSession();
+      if (session?.user) {
+        console.log('Sessão criada apesar do travamento');
+        currentUser = session.user;
+        await initApp();
+        btn.disabled = false; btn.textContent='Entrar';
+        return;
+      }
+      throw new Error('Tempo esgotado. Tente novamente.');
+    }
+
+    const { data, error } = result;
     if (error) { err.textContent = traduzirErro(error.message); err.style.display=''; }
     else if (data?.user) { currentUser = data.user; await initApp(); }
     else { err.textContent='Resposta inesperada do servidor.'; err.style.display=''; }
   } catch(e) {
     console.error('login:', e);
-    // Erro deviceAttributes é interno do Supabase mas o login funciona
-    if (e?.message?.includes('deviceAttributes')) {
-      // Tenta pegar a sessão que foi criada apesar do erro
+    // Fallback: verifica sessão direto
+    try {
       const { data: { session } } = await db.auth.getSession();
       if (session?.user) {
         currentUser = session.user;
         await initApp();
-      } else {
-        err.textContent = 'Erro técnico. Tente novamente.'; err.style.display='';
+        btn.disabled = false; btn.textContent='Entrar';
+        return;
       }
+    } catch(e2) {}
+
+    if (e?.message?.includes('TIMEOUT') || e?.message?.includes('Tempo')) {
+      err.textContent = 'Servidor travou. Tente novamente em 5 segundos.';
+    } else if (e?.message?.includes('deviceAttributes')) {
+      err.textContent = 'Erro técnico. Recarregue a página (F5) e tente novamente.';
     } else {
-      err.textContent = 'Erro de conexão. Tente novamente.'; err.style.display='';
+      err.textContent = 'Erro: '+(e.message||'desconhecido');
     }
+    err.style.display='';
   }
   btn.disabled = false; btn.textContent='Entrar';
 }
