@@ -173,6 +173,10 @@ tr:last-child td{border-bottom:none}
     <div class="field"><label>E-mail</label><input type="email" id="login-email" autocomplete="email"></div>
     <div class="field"><label>Senha</label><input type="password" id="login-pass" autocomplete="current-password"></div>
     <div id="login-error" style="font-size:11px;color:var(--danger);margin-bottom:10px;display:none"></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <input type="checkbox" id="login-lembrar" style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer">
+      <label for="login-lembrar" style="font-size:12px;color:var(--text2);cursor:pointer">Lembrar e-mail</label>
+    </div>
     <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">Entrar</button>
     <p style="font-size:11px;color:var(--text2);text-align:center;margin-top:14px">Não tem conta? Solicite ao consultor.</p>
   </div>
@@ -513,7 +517,7 @@ tr:last-child td{border-bottom:none}
 const SUPA_URL = 'https://awtzeflakcffshkvtmsf.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3dHplZmxha2NmZnNoa3Z0bXNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzOTMyODEsImV4cCI6MjA5Nzk2OTI4MX0.LgtYZFbcUtC2XwQCxley5uCmPvkueKnf_iB3p7qdVVk';
 
-// LIMPAR TOKENS ANTIGOS NA INICIALIZAÇÃO - força login limpo sempre
+// LIMPAR TOKENS CORROMPIDOS NA INICIALIZAÇÃO — apenas chaves com conteúdo inválido
 (function limparTokensCorrompidos() {
   try {
     const keys = Object.keys(localStorage);
@@ -521,11 +525,13 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
       if (k.startsWith('sb-') || k.startsWith('pf-auth') || k.startsWith('supabase')) {
         try {
           const v = localStorage.getItem(k);
+          // Remove APENAS se o conteúdo tiver deviceAttributes (bug conhecido do Supabase)
           if (v && v.includes('deviceAttributes')) {
             localStorage.removeItem(k);
             console.log('Token corrompido removido:', k);
           }
-        } catch(e) { localStorage.removeItem(k); }
+          // Não remove no catch — pode ser uma chave válida com erro de leitura pontual
+        } catch(e) { console.warn('Erro ao ler chave', k, e); }
       }
     }
   } catch(e) {}
@@ -617,9 +623,17 @@ async function doLogin() {
   const pass  = document.getElementById('login-pass').value;
   const err   = document.getElementById('login-error');
   const btn   = document.querySelector('#screen-login .btn-primary');
+  const lembrar = document.getElementById('login-lembrar').checked;
   err.style.display='none';
   if (!email||!pass) { err.textContent='Preencha e-mail e senha.'; err.style.display=''; return; }
   btn.disabled = true; btn.textContent='Entrando...';
+
+  // Salva ou remove e-mail lembrado
+  if (lembrar) {
+    try { localStorage.setItem('pf-lembrar-email', email); } catch(e) {}
+  } else {
+    try { localStorage.removeItem('pf-lembrar-email'); } catch(e) {}
+  }
 
   // Liberar Web Locks órfãos do Supabase (bug conhecido issue #2111)
   try {
@@ -706,9 +720,14 @@ async function doLogout() {
   document.body.classList.remove('kiosk-mode');
   kioskActive = false;
   try { await db.auth.signOut(); } catch(e) {}
-  // Limpa TUDO do localStorage e sessionStorage
+  // Remove APENAS chaves de autenticação — preserva tarefas, fila offline, config
   try {
-    localStorage.clear();
+    const keys = Object.keys(localStorage);
+    for (const k of keys) {
+      if (k.startsWith('sb-') || k.startsWith('pf-auth') || k.startsWith('supabase')) {
+        localStorage.removeItem(k);
+      }
+    }
     sessionStorage.clear();
   } catch(e) {}
   // Força reload limpo
@@ -722,6 +741,20 @@ db.auth.onAuthStateChange(async (event, session) => {
     await initApp();
   }
 });
+
+// Restaura sessão existente ao carregar/recarregar a página
+(async function restaurarSessao() {
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (session?.user) {
+      currentUser = session.user;
+      await initApp();
+    }
+    // Se não tiver sessão, onAuthStateChange vai cuidar do fluxo
+  } catch(e) {
+    console.warn('Erro ao restaurar sessão:', e);
+  }
+})();
 
 async function initApp() {
   let { data: profile } = await db.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
@@ -765,6 +798,18 @@ async function initApp() {
 function showLogin() {
   document.getElementById('screen-login').style.display='flex';
   document.getElementById('screen-app').style.display='none';
+  // Restaura e-mail lembrado
+  try {
+    const emailSalvo = localStorage.getItem('pf-lembrar-email');
+    if (emailSalvo) {
+      document.getElementById('login-email').value = emailSalvo;
+      document.getElementById('login-lembrar').checked = true;
+      // Foca na senha direto já que e-mail já está preenchido
+      setTimeout(() => document.getElementById('login-pass').focus(), 100);
+    } else {
+      setTimeout(() => document.getElementById('login-email').focus(), 100);
+    }
+  } catch(e) {}
 }
 function showApp() {
   document.getElementById('screen-login').style.display='none';
