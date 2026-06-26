@@ -9,23 +9,14 @@
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
-:root{
-  --bg:#0f1117;--surface:#181c27;--surface2:#1e2333;--border:#2a3044;
-  --accent:#4f8ef7;--success:#22c55e;--warning:#f59e0b;--danger:#ef4444;
-  --text:#e8ecf4;--text2:#8892aa;--text3:#556070;
-  --r:12px;--rs:8px;
-}
+:root{--bg:#0f1117;--surface:#181c27;--surface2:#1e2333;--border:#2a3044;--accent:#4f8ef7;--success:#22c55e;--warning:#f59e0b;--danger:#ef4444;--text:#e8ecf4;--text2:#8892aa;--text3:#556070;--r:12px;--rs:8px}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden}
-
-/* LOGIN */
 #screen-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
 .login-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:32px 24px;width:100%;max-width:360px}
 .login-logo{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:10px}
 .ldot{width:10px;height:10px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent)}
 .login-sub{font-size:12px;color:var(--text2);margin-bottom:24px}
-
-/* APP */
 #screen-app{display:none}
 header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:100;gap:8px}
 .logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px;flex-shrink:0}
@@ -35,25 +26,17 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 .role-chip{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-radius:14px;padding:3px 8px}
 .role-dono{background:rgba(124,58,237,.15);color:#a78bfa;border:1px solid rgba(124,58,237,.3)}
 .role-gestor{background:rgba(34,197,94,.12);color:var(--success);border:1px solid rgba(34,197,94,.3)}
-
-/* TABS */
 .tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{padding:10px 12px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;flex-shrink:0}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-
-/* PAGES */
 .page{display:none;padding:14px;max-width:1000px;margin:0 auto}
 .page.active{display:block}
-
-/* FIELDS */
 .field{margin-bottom:12px}
 .field label{display:block;font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500}
 .field input,.field select,.field textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
-
-/* BTNS */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:opacity .15s}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:'DM Sans',sans-serif}
 .btn:active{transform:scale(.97)}
 .btn-primary{background:var(--accent);color:#fff}
 .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2)}
@@ -64,8 +47,6 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 .btn-sm{padding:5px 10px;font-size:11px}
 .btn-lg{padding:14px 26px;font-size:15px}
 .btn:disabled{opacity:.45;cursor:not-allowed}
-
-/* SCANNER */
 .scanner-wrapper{position:relative;width:100%;max-width:460px;margin:0 auto 14px;border-radius:var(--r);overflow:hidden;background:#000;aspect-ratio:4/3}
 #video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
 #overlay{position:absolute;top:0;left:0;width:100%;height:100%;transform:scaleX(-1);pointer-events:none}
@@ -85,8 +66,6 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 .status-badge.error{color:var(--danger);border:1px solid rgba(239,68,68,.3)}
 .pulse{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 1.5s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
-
-/* CONFIRM */
 .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .25s}
 .confirm-overlay.show{opacity:1;pointer-events:all}
 .confirm-card{background:var(--surface);border:2px solid var(--accent);border-radius:18px;padding:24px 20px;width:100%;max-width:400px;text-align:center}
@@ -96,8 +75,6 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 .confirm-card .turma{font-size:13px;color:var(--text2);margin-bottom:18px}
 .confirm-actions{display:flex;flex-direction:column;gap:8px}
 .confirm-actions .btn{width:100%;justify-content:center}
-
-/* RESULT */
 .result-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .result-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;font-weight:700;font-family:'Space Grotesk',sans-serif}
 .result-info{flex:1;min-width:130px}
@@ -105,11 +82,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 .result-info p{font-size:11px;color:var(--text2)}
 .result-time{text-align:right;flex-shrink:0}
 .result-time .time-big{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--accent)}
-
-/* SECTION */
 .sec{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;margin-top:18px}
-
-/* CARDS */
 .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .s-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative}
 .s-card.no-bio{border-color:rgba(245,158,11,.3)}
@@ -122,28 +95,20 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 .del-btn:hover{color:var(--danger)}
 .card-actions{display:flex;gap:4px;margin-top:4px}
 .card-actions .btn{padding:4px 9px;font-size:10px}
-
-/* TABLE */
 .table-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border)}
 table{width:100%;border-collapse:collapse;font-size:12px}
 th{text-align:left;padding:9px 11px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border)}
 td{padding:9px 11px;border-bottom:1px solid var(--border)}
 tr:last-child td{border-bottom:none}
-
-/* BADGE */
 .badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:14px;font-size:10px;font-weight:600}
 .badge-success{background:rgba(34,197,94,.12);color:var(--success)}
 .badge-warning{background:rgba(245,158,11,.12);color:var(--warning)}
 .badge-info{background:rgba(79,142,247,.12);color:var(--accent)}
-
-/* KPI */
 .kpi-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:20px}
 .kpi-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px}
 .kpi-label{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
 .kpi-value{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700}
 .kpi-sub{font-size:10px;color:var(--text2);margin-top:2px}
-
-/* MODAL */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;padding:14px}
 .modal-bg.open{opacity:1;pointer-events:all}
 .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px 18px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto}
@@ -151,34 +116,22 @@ tr:last-child td{border-bottom:none}
 .modal-cam{width:100%;aspect-ratio:1;background:#000;border-radius:var(--rs);overflow:hidden;margin-bottom:10px}
 #modal-video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
 .modal-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
-
-/* KIOSK */
 .kiosk-mode header,.kiosk-mode .tabs,.kiosk-mode .scanner-controls,.kiosk-mode .kiosk-banner{display:none !important}
 .kiosk-mode .page{padding:6px}
 .kiosk-mode .scanner-wrapper{max-width:600px;margin:16px auto}
 .kiosk-exit{position:fixed;top:8px;right:8px;z-index:50;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);color:#666;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:13px;display:none}
 .kiosk-mode .kiosk-exit{display:flex;align-items:center;justify-content:center}
-
-/* PIN */
 .pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
 .pin-key{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:14px;font-size:18px;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;color:var(--text)}
 .pin-key:active{background:var(--accent);color:#fff}
 .pin-display{text-align:center;font-size:26px;letter-spacing:10px;font-family:'Space Grotesk',sans-serif;color:var(--accent);min-height:34px;margin:6px 0 12px;font-weight:700}
-
-/* SEARCH */
 .search-list{max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--rs);margin-top:8px}
 .search-item{padding:9px 12px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:9px}
 .search-item:last-child{border-bottom:none}
 .search-item:hover{background:var(--surface2)}
-
-/* FILTERS */
 .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
 .filters input,.filters select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:6px 9px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;outline:none;flex:1;min-width:110px}
-
-/* BANNER */
 .kiosk-banner{background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:var(--rs);padding:7px 11px;font-size:11px;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-
-/* MISC */
 .row{display:flex;gap:6px;flex-wrap:wrap}
 .divider{height:1px;background:var(--border);margin:16px 0}
 .empty{text-align:center;padding:36px 14px;color:var(--text3)}
@@ -186,16 +139,7 @@ tr:last-child td{border-bottom:none}
 #loading-bar{position:fixed;top:0;left:0;height:2px;background:var(--accent);width:0%;z-index:9999;transition:width .3s ease}
 #toast{position:fixed;bottom:14px;right:14px;left:14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:11px 14px;font-size:12px;font-weight:500;z-index:999;display:flex;align-items:center;gap:7px;box-shadow:0 8px 24px rgba(0,0,0,.5);transform:translateY(20px);opacity:0;transition:opacity .25s,transform .25s}
 #toast.show{opacity:1;transform:none}
-
-@media(min-width:600px){
-  #toast{left:auto;max-width:320px}
-  .kpi-row{grid-template-columns:repeat(4,1fr)}
-  .cards-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
-  header{padding:12px 18px}
-  .tab{padding:12px 16px;font-size:13px}
-  .page{padding:18px}
-}
-
+@media(min-width:600px){#toast{left:auto;max-width:320px}.kpi-row{grid-template-columns:repeat(4,1fr)}.cards-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}header{padding:12px 18px}.tab{padding:12px 16px;font-size:13px}.page{padding:18px}}
 @keyframes flashSuccess{0%{background:rgba(34,197,94,.3)}100%{background:transparent}}
 .flash-success{animation:flashSuccess .8s ease-out}
 </style>
@@ -203,25 +147,21 @@ tr:last-child td{border-bottom:none}
 <body>
 <div id="loading-bar"></div>
 <div id="toast"></div>
-<button class="kiosk-exit" onclick="askExitKiosk()" title="Sair do modo portaria">✕</button>
+<button class="kiosk-exit" onclick="askExitKiosk()">✕</button>
 
-<!-- LOGIN -->
 <div id="screen-login">
   <div class="login-box">
     <div class="login-logo"><div class="ldot"></div>PresençaFácil</div>
     <p class="login-sub">Controle de presença escolar</p>
     <h2 style="font-size:15px;margin-bottom:16px;font-family:'Space Grotesk',sans-serif">Entrar</h2>
-    <div class="field"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@email.com" autocomplete="email"></div>
-    <div class="field"><label>Senha</label><input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
+    <div class="field"><label>E-mail</label><input type="email" id="login-email" autocomplete="email"></div>
+    <div class="field"><label>Senha</label><input type="password" id="login-pass" autocomplete="current-password"></div>
     <div id="login-error" style="font-size:11px;color:var(--danger);margin-bottom:10px;display:none"></div>
     <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">Entrar</button>
-    <p style="font-size:11px;color:var(--text2);text-align:center;margin-top:14px">
-      Não tem conta? Solicite ao consultor do sistema.
-    </p>
+    <p style="font-size:11px;color:var(--text2);text-align:center;margin-top:14px">Não tem conta? Solicite ao consultor.</p>
   </div>
 </div>
 
-<!-- APP -->
 <div id="screen-app">
   <header>
     <div class="logo"><div class="logo-dot"></div>PresençaFácil</div>
@@ -231,60 +171,37 @@ tr:last-child td{border-bottom:none}
       <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sair</button>
     </div>
   </header>
-
-  <!-- Tabs DONO -->
   <nav class="tabs" id="tabs-dono" style="display:none">
-    <button class="tab active" data-page="dono-escolas" onclick="switchTab(this,'dono-escolas')">🏫 Escolas</button>
-    <button class="tab" data-page="dono-gestores" onclick="switchTab(this,'dono-gestores')">👥 Gestores</button>
-    <button class="tab" data-page="dono-stats" onclick="switchTab(this,'dono-stats')">📊 Estatísticas</button>
+    <button class="tab active" onclick="switchTab(this,'dono-escolas')">🏫 Escolas</button>
+    <button class="tab" onclick="switchTab(this,'dono-gestores')">👥 Gestores</button>
+    <button class="tab" onclick="switchTab(this,'dono-stats')">📊 Estatísticas</button>
   </nav>
-
-  <!-- Tabs GESTOR -->
   <nav class="tabs" id="tabs-gestor" style="display:none">
-    <button class="tab active" data-page="scanner" onclick="switchTab(this,'scanner')">📷 Scanner</button>
-    <button class="tab" data-page="alunos" onclick="switchTab(this,'alunos')">👤 Alunos</button>
-    <button class="tab" data-page="turmas" onclick="switchTab(this,'turmas')">🎓 Turmas</button>
-    <button class="tab" data-page="presencas" onclick="switchTab(this,'presencas')">📋 Presenças</button>
-    <button class="tab" data-page="relatorios" onclick="switchTab(this,'relatorios')">📊 Relatórios</button>
-    <button class="tab" data-page="config" onclick="switchTab(this,'config')">⚙️ Config</button>
+    <button class="tab active" onclick="switchTab(this,'scanner')">📷 Scanner</button>
+    <button class="tab" onclick="switchTab(this,'alunos')">👤 Alunos</button>
+    <button class="tab" onclick="switchTab(this,'turmas')">🎓 Turmas</button>
+    <button class="tab" onclick="switchTab(this,'presencas')">📋 Presenças</button>
+    <button class="tab" onclick="switchTab(this,'relatorios')">📊 Relatórios</button>
+    <button class="tab" onclick="switchTab(this,'config')">⚙️ Config</button>
   </nav>
 
-  <!-- ═══ DONO: ESCOLAS ═══ -->
   <div class="page" id="page-dono-escolas">
     <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div>
-        <p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700">Escolas</p>
-        <p style="font-size:11px;color:var(--text2)" id="escolas-count">...</p>
-      </div>
+      <div><p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700">Escolas</p><p style="font-size:11px;color:var(--text2)" id="escolas-count">...</p></div>
       <button class="btn btn-primary btn-sm" onclick="abrirEscola()">+ Nova Escola</button>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Nome</th><th>Cidade</th><th>Turnos</th><th>Alunos</th><th>Gestores</th><th></th></tr></thead>
-        <tbody id="escolas-body"></tbody>
-      </table>
-    </div>
+    <div class="table-wrap"><table><thead><tr><th>Nome</th><th>Cidade</th><th>Turnos</th><th>Alunos</th><th>Gestores</th><th></th></tr></thead><tbody id="escolas-body"></tbody></table></div>
   </div>
 
-  <!-- ═══ DONO: GESTORES ═══ -->
   <div class="page" id="page-dono-gestores">
     <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div>
-        <p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700">Gestores</p>
-        <p style="font-size:11px;color:var(--text2)" id="gestores-count">...</p>
-      </div>
+      <div><p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700">Gestores</p><p style="font-size:11px;color:var(--text2)" id="gestores-count">...</p></div>
       <button class="btn btn-primary btn-sm" onclick="abrirGestor()">+ Novo Gestor</button>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Nome</th><th>E-mail</th><th>Escola</th><th></th></tr></thead>
-        <tbody id="gestores-body"></tbody>
-      </table>
-    </div>
-    <p style="font-size:11px;color:var(--text2);margin-top:10px">Ao criar um gestor, anote a senha provisória e repasse para ele. Ele poderá trocá-la nas configurações.</p>
+    <div class="table-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Escola</th><th></th></tr></thead><tbody id="gestores-body"></tbody></table></div>
+    <p style="font-size:11px;color:var(--text2);margin-top:10px">⚠️ Ao criar um gestor, você será deslogado automaticamente. Faça login novamente como dono.</p>
   </div>
 
-  <!-- ═══ DONO: STATS ═══ -->
   <div class="page" id="page-dono-stats">
     <div class="kpi-row">
       <div class="kpi-card"><div class="kpi-label">Escolas</div><div class="kpi-value" id="st-escolas">—</div></div>
@@ -294,136 +211,87 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
-  <!-- ═══ GESTOR: SCANNER ═══ -->
   <div class="page" id="page-scanner">
-    <div class="kiosk-banner">🔒 <span id="gestor-banner">...</span>
-      <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="ativarKiosk()">🔐 Modo Portaria</button>
-    </div>
+    <div class="kiosk-banner">🔒 <span id="gestor-banner">...</span><button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="ativarKiosk()">🔐 Modo Portaria</button></div>
     <p class="sec">Câmera ao vivo</p>
     <div class="scanner-wrapper">
       <video id="video" autoplay muted playsinline></video>
       <canvas id="overlay"></canvas>
       <div class="scan-frame"><span></span></div>
       <div class="scan-line"></div>
-      <div class="scanner-status">
-        <span class="status-badge idle" id="scan-badge">
-          <span class="pulse"></span>
-          <span id="scan-txt">Aguardando...</span>
-        </span>
-      </div>
+      <div class="scanner-status"><span class="status-badge idle" id="scan-badge"><span class="pulse"></span><span id="scan-txt">Aguardando...</span></span></div>
     </div>
     <div class="row scanner-controls" style="justify-content:center;margin-bottom:6px">
       <button class="btn btn-primary" id="btn-start" onclick="startScanner()">▶ Iniciar Scanner</button>
       <button class="btn btn-ghost" id="btn-stop" onclick="stopScanner()" style="display:none">⏹ Parar</button>
-      <button class="btn btn-ghost btn-sm" onclick="recarregarFaces()" title="Atualizar">🔄</button>
+      <button class="btn btn-ghost btn-sm" onclick="recarregarFaces()">🔄</button>
       <button class="btn btn-ghost btn-sm" onclick="abrirListaManual()">📋 Manual</button>
     </div>
     <div id="result-area"></div>
     <div class="divider"></div>
     <p class="sec">Últimas presenças hoje</p>
-    <div id="today-list"><div class="empty"><p>Nenhuma presença registrada hoje.</p></div></div>
+    <div id="today-list"><div class="empty"><p>Nenhuma presença hoje.</p></div></div>
   </div>
 
-  <!-- ═══ GESTOR: ALUNOS ═══ -->
   <div class="page" id="page-alunos">
     <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div>
-        <p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700">Alunos</p>
-        <p style="font-size:11px;color:var(--text2)" id="alunos-count">...</p>
-      </div>
-      <div class="row">
-        <button class="btn btn-ghost btn-sm" onclick="abrirImportCSV()">📥 Importar CSV</button>
-        <button class="btn btn-primary btn-sm" onclick="abrirAluno()">+ Cadastrar</button>
-      </div>
+      <div><p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700">Alunos</p><p style="font-size:11px;color:var(--text2)" id="alunos-count">...</p></div>
+      <div class="row"><button class="btn btn-ghost btn-sm" onclick="abrirImportCSV()">📥 CSV</button><button class="btn btn-primary btn-sm" onclick="abrirAluno()">+ Cadastrar</button></div>
     </div>
     <div class="filters">
-      <input type="text" id="filter-alunos" placeholder="Buscar por nome..." oninput="renderAlunos()">
-      <select id="filter-alunos-bio" onchange="renderAlunos()">
-        <option value="">Todos</option>
-        <option value="sim">Com foto</option>
-        <option value="nao">Sem foto</option>
-      </select>
+      <input type="text" id="filter-alunos" placeholder="Buscar..." oninput="renderAlunos()">
+      <select id="filter-alunos-bio" onchange="renderAlunos()"><option value="">Todos</option><option value="sim">Com foto</option><option value="nao">Sem foto</option></select>
     </div>
     <div class="cards-grid" id="alunos-grid"><div class="empty" style="grid-column:1/-1"><p>Carregando...</p></div></div>
   </div>
 
-  <!-- ═══ GESTOR: TURMAS ═══ -->
   <div class="page" id="page-turmas">
     <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div>
-        <p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700">Turmas</p>
-        <p style="font-size:11px;color:var(--text2)" id="turmas-count">...</p>
-      </div>
+      <div><p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700">Turmas</p><p style="font-size:11px;color:var(--text2)" id="turmas-count">...</p></div>
       <button class="btn btn-primary btn-sm" onclick="abrirTurma()">+ Nova Turma</button>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Nome</th><th>Ano</th><th>Período</th><th>Alunos</th><th></th></tr></thead>
-        <tbody id="turmas-body"></tbody>
-      </table>
-    </div>
+    <div class="table-wrap"><table><thead><tr><th>Nome</th><th>Ano</th><th>Período</th><th>Alunos</th><th></th></tr></thead><tbody id="turmas-body"></tbody></table></div>
   </div>
 
-  <!-- ═══ GESTOR: PRESENÇAS ═══ -->
   <div class="page" id="page-presencas">
     <div class="filters">
       <input type="date" id="filter-date" onchange="renderPresencas()">
       <select id="filter-turma" onchange="renderPresencas()"><option value="">Todas as turmas</option></select>
       <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ CSV</button>
-      <button class="btn btn-sm" style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:var(--warning)" onclick="avisarAusentes()">📱 Avisar ausentes</button>
+      <button class="btn btn-sm" style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:var(--warning)" onclick="avisarAusentes()">📱 Ausentes</button>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Aluno</th><th>Turma</th><th>Hora</th><th>Status</th><th></th></tr></thead>
-        <tbody id="presencas-body"></tbody>
-      </table>
-    </div>
+    <div class="table-wrap"><table><thead><tr><th>Aluno</th><th>Turma</th><th>Hora</th><th>Status</th><th></th></tr></thead><tbody id="presencas-body"></tbody></table></div>
   </div>
 
-  <!-- ═══ GESTOR: RELATÓRIOS ═══ -->
   <div class="page" id="page-relatorios">
     <div class="kpi-row">
       <div class="kpi-card"><div class="kpi-label">Alunos</div><div class="kpi-value" id="kpi-alunos">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Hoje</div><div class="kpi-value" id="kpi-hoje" style="color:var(--success)">—</div><div class="kpi-sub" id="kpi-pct">—</div></div>
-      <div class="kpi-card"><div class="kpi-label">Atrasados hoje</div><div class="kpi-value" id="kpi-atrasados" style="color:var(--warning)">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Atrasados</div><div class="kpi-value" id="kpi-atrasados" style="color:var(--warning)">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Turmas</div><div class="kpi-value" id="kpi-turmas">—</div></div>
     </div>
     <p class="sec">Frequência por turma</p>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Turma</th><th>Alunos</th><th>Registros</th></tr></thead>
-        <tbody id="rel-body"></tbody>
-      </table>
-    </div>
+    <div class="table-wrap"><table><thead><tr><th>Turma</th><th>Alunos</th><th>Registros</th></tr></thead><tbody id="rel-body"></tbody></table></div>
   </div>
 
-  <!-- ═══ GESTOR: CONFIG ═══ -->
   <div class="page" id="page-config">
     <p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;margin-bottom:14px">Configurações</p>
-    <p class="sec">Horários de entrada por turno</p>
-    <div class="row" style="gap:6px">
-      <div class="field" style="flex:1;min-width:110px"><label>Matutino</label><input type="time" id="cfg-h-mat"></div>
-      <div class="field" style="flex:1;min-width:110px"><label>Vespertino</label><input type="time" id="cfg-h-vesp"></div>
-    </div>
-    <div class="row" style="gap:6px">
-      <div class="field" style="flex:1;min-width:110px"><label>Noturno</label><input type="time" id="cfg-h-not"></div>
-      <div class="field" style="flex:1;min-width:110px"><label>Integral</label><input type="time" id="cfg-h-int"></div>
-    </div>
-    <div class="field"><label>Tolerância de atraso (minutos)</label><input type="number" id="cfg-tol" min="0" max="120"></div>
+    <p class="sec">Horários por turno</p>
+    <div class="row" style="gap:6px"><div class="field" style="flex:1;min-width:110px"><label>Matutino</label><input type="time" id="cfg-h-mat"></div><div class="field" style="flex:1;min-width:110px"><label>Vespertino</label><input type="time" id="cfg-h-vesp"></div></div>
+    <div class="row" style="gap:6px"><div class="field" style="flex:1;min-width:110px"><label>Noturno</label><input type="time" id="cfg-h-not"></div><div class="field" style="flex:1;min-width:110px"><label>Integral</label><input type="time" id="cfg-h-int"></div></div>
+    <div class="field"><label>Tolerância (min)</label><input type="number" id="cfg-tol" min="0" max="120"></div>
     <button class="btn btn-primary btn-sm" onclick="salvarConfig()">Salvar Horários</button>
     <div class="divider"></div>
     <p class="sec">PIN do modo portaria</p>
-    <p style="font-size:11px;color:var(--text2);margin-bottom:8px">PIN de 4 dígitos para sair do modo portaria.</p>
-    <div class="field"><label>Novo PIN</label><input type="password" id="cfg-pin" maxlength="4" placeholder="0000"></div>
+    <div class="field"><label>Novo PIN (4 dígitos)</label><input type="password" id="cfg-pin" maxlength="4"></div>
     <button class="btn btn-primary btn-sm" onclick="salvarPin()">Salvar PIN</button>
     <div class="divider"></div>
-    <p class="sec">Trocar minha senha</p>
+    <p class="sec">Trocar senha</p>
     <div class="field"><label>Nova senha</label><input type="password" id="cfg-senha" placeholder="mín. 6 caracteres"></div>
     <button class="btn btn-primary btn-sm" onclick="trocarSenha()">Trocar Senha</button>
   </div>
 </div>
 
-<!-- ═══ MODAL CONFIRMAÇÃO ═══ -->
 <div class="confirm-overlay" id="confirm-overlay">
   <div class="confirm-card">
     <div class="big-avatar" id="conf-avatar">?</div>
@@ -437,146 +305,80 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-<!-- ═══ MODAL ESCOLA ═══ -->
-<div class="modal-bg" id="modal-escola">
-  <div class="modal">
-    <h2 id="m-esc-title">Nova Escola</h2>
-    <div class="field"><label>Nome da escola</label><input type="text" id="esc-nome"></div>
-    <div class="field"><label>Cidade</label><input type="text" id="esc-cidade"></div>
-    <p class="sec">Horários por turno</p>
-    <div class="row" style="gap:6px">
-      <div class="field" style="flex:1;min-width:110px"><label>Matutino</label><input type="time" id="esc-mat" value="07:00"></div>
-      <div class="field" style="flex:1;min-width:110px"><label>Vespertino</label><input type="time" id="esc-vesp" value="13:00"></div>
-    </div>
-    <div class="row" style="gap:6px">
-      <div class="field" style="flex:1;min-width:110px"><label>Noturno</label><input type="time" id="esc-not" value="19:00"></div>
-      <div class="field" style="flex:1;min-width:110px"><label>Integral</label><input type="time" id="esc-int" value="07:00"></div>
-    </div>
-    <div class="field"><label>Tolerância de atraso (min)</label><input type="number" id="esc-tol" value="10" min="0" max="120"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost btn-sm" onclick="fecharEscola()">Cancelar</button>
-      <button class="btn btn-primary btn-sm" onclick="salvarEscola()">Salvar</button>
-    </div>
-  </div>
-</div>
+<div class="modal-bg" id="modal-escola"><div class="modal">
+  <h2 id="m-esc-title">Nova Escola</h2>
+  <div class="field"><label>Nome</label><input type="text" id="esc-nome"></div>
+  <div class="field"><label>Cidade</label><input type="text" id="esc-cidade"></div>
+  <p class="sec">Horários</p>
+  <div class="row" style="gap:6px"><div class="field" style="flex:1;min-width:110px"><label>Matutino</label><input type="time" id="esc-mat" value="07:00"></div><div class="field" style="flex:1;min-width:110px"><label>Vespertino</label><input type="time" id="esc-vesp" value="13:00"></div></div>
+  <div class="row" style="gap:6px"><div class="field" style="flex:1;min-width:110px"><label>Noturno</label><input type="time" id="esc-not" value="19:00"></div><div class="field" style="flex:1;min-width:110px"><label>Integral</label><input type="time" id="esc-int" value="07:00"></div></div>
+  <div class="field"><label>Tolerância (min)</label><input type="number" id="esc-tol" value="10"></div>
+  <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="fecharEscola()">Cancelar</button><button class="btn btn-primary btn-sm" onclick="salvarEscola()">Salvar</button></div>
+</div></div>
 
-<!-- ═══ MODAL GESTOR ═══ -->
-<div class="modal-bg" id="modal-gestor">
-  <div class="modal">
-    <h2 id="m-gest-title">Novo Gestor</h2>
-    <div class="field"><label>Nome completo</label><input type="text" id="g-nome"></div>
-    <div class="field"><label>E-mail (será o login)</label><input type="email" id="g-email" placeholder="gestor@escola.com"></div>
-    <div class="field"><label>Senha provisória</label><input type="text" id="g-senha" placeholder="ex.: presenca123"></div>
-    <div class="field"><label>Escola vinculada</label><select id="g-escola"></select></div>
-    <p style="font-size:11px;color:var(--warning);margin-bottom:8px">⚠️ Anote o e-mail e senha! Você precisará passar para o gestor.</p>
-    <div class="modal-actions">
-      <button class="btn btn-ghost btn-sm" onclick="fecharGestor()">Cancelar</button>
-      <button class="btn btn-primary btn-sm" id="btn-salvar-gestor" onclick="salvarGestor()">Criar Gestor</button>
-    </div>
-  </div>
-</div>
+<div class="modal-bg" id="modal-gestor"><div class="modal">
+  <h2 id="m-gest-title">Novo Gestor</h2>
+  <div class="field"><label>Nome completo</label><input type="text" id="g-nome"></div>
+  <div class="field"><label>E-mail (login)</label><input type="email" id="g-email"></div>
+  <div class="field"><label>Senha provisória</label><input type="text" id="g-senha"></div>
+  <div class="field"><label>Escola</label><select id="g-escola"></select></div>
+  <p style="font-size:11px;color:var(--warning);margin-bottom:8px">⚠️ Anote o e-mail e senha! Você será deslogado após criar.</p>
+  <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="fecharGestor()">Cancelar</button><button class="btn btn-primary btn-sm" id="btn-salvar-gestor" onclick="salvarGestor()">Criar Gestor</button></div>
+</div></div>
 
-<!-- ═══ MODAL TURMA ═══ -->
-<div class="modal-bg" id="modal-turma">
-  <div class="modal">
-    <h2 id="m-turma-title">Nova Turma</h2>
-    <div class="field"><label>Nome (ex.: 7º A)</label><input type="text" id="t-nome"></div>
-    <div class="field"><label>Ano letivo</label><input type="text" id="t-ano" value="2026"></div>
-    <div class="field"><label>Período</label>
-      <select id="t-periodo">
-        <option value="Matutino">Matutino</option>
-        <option value="Vespertino">Vespertino</option>
-        <option value="Noturno">Noturno</option>
-        <option value="Integral">Integral</option>
-      </select>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost btn-sm" onclick="fecharTurma()">Cancelar</button>
-      <button class="btn btn-primary btn-sm" onclick="salvarTurma()">Salvar</button>
-    </div>
-  </div>
-</div>
+<div class="modal-bg" id="modal-turma"><div class="modal">
+  <h2 id="m-turma-title">Nova Turma</h2>
+  <div class="field"><label>Nome (ex.: 7º A)</label><input type="text" id="t-nome"></div>
+  <div class="field"><label>Ano letivo</label><input type="text" id="t-ano" value="2026"></div>
+  <div class="field"><label>Período</label><select id="t-periodo"><option value="Matutino">Matutino</option><option value="Vespertino">Vespertino</option><option value="Noturno">Noturno</option><option value="Integral">Integral</option></select></div>
+  <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="fecharTurma()">Cancelar</button><button class="btn btn-primary btn-sm" onclick="salvarTurma()">Salvar</button></div>
+</div></div>
 
-<!-- ═══ MODAL ALUNO ═══ -->
-<div class="modal-bg" id="modal-aluno">
-  <div class="modal">
-    <h2 id="m-aluno-title">Cadastrar Aluno</h2>
-    <div class="field"><label>Nome completo</label><input type="text" id="a-nome"></div>
-    <div class="field"><label>Turma</label><select id="a-turma"></select></div>
-    <div class="field"><label>Nome do responsável (opcional)</label><input type="text" id="a-resp"></div>
-    <div class="field"><label>WhatsApp do responsável (opcional)</label><input type="tel" id="a-tel" placeholder="65 99999-9999"></div>
-    <p class="sec" id="a-cam-label">Foto facial</p>
-    <div class="modal-cam"><video id="modal-video" autoplay muted playsinline></video></div>
-    <div id="a-status" style="font-size:11px;color:var(--text2);min-height:16px">Câmera iniciando...</div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost btn-sm" onclick="fecharAluno()">Cancelar</button>
-      <button class="btn btn-ghost btn-sm" onclick="salvarAlunoSemFoto()">Só dados</button>
-      <button class="btn btn-success btn-sm" id="btn-cap-aluno" onclick="capturarAluno()">📸 Capturar e Salvar</button>
-    </div>
-  </div>
-</div>
+<div class="modal-bg" id="modal-aluno"><div class="modal">
+  <h2 id="m-aluno-title">Cadastrar Aluno</h2>
+  <div class="field"><label>Nome</label><input type="text" id="a-nome"></div>
+  <div class="field"><label>Turma</label><select id="a-turma"></select></div>
+  <div class="field"><label>Responsável (opcional)</label><input type="text" id="a-resp"></div>
+  <div class="field"><label>WhatsApp do responsável (opcional)</label><input type="tel" id="a-tel" placeholder="65 99999-9999"></div>
+  <p class="sec" id="a-cam-label">Foto facial</p>
+  <div class="modal-cam"><video id="modal-video" autoplay muted playsinline></video></div>
+  <div id="a-status" style="font-size:11px;color:var(--text2);min-height:16px">Câmera iniciando...</div>
+  <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="fecharAluno()">Cancelar</button><button class="btn btn-ghost btn-sm" onclick="salvarAlunoSemFoto()">Só dados</button><button class="btn btn-success btn-sm" id="btn-cap-aluno" onclick="capturarAluno()">📸 Capturar</button></div>
+</div></div>
 
-<!-- ═══ MODAL IMPORT CSV ═══ -->
-<div class="modal-bg" id="modal-import">
-  <div class="modal">
-    <h2>Importar Alunos</h2>
-    <p style="font-size:11px;color:var(--text2);margin-bottom:10px">Formato (uma linha por aluno, separado por ponto-e-vírgula):<br><code style="background:var(--bg);padding:2px 5px;border-radius:4px;font-size:10px">nome;turma;responsavel;telefone</code><br>Turmas novas serão criadas automaticamente.</p>
-    <div class="field"><textarea id="csv-text" rows="8" style="font-family:monospace;font-size:11px"></textarea></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost btn-sm" onclick="fecharImport()">Cancelar</button>
-      <button class="btn btn-success btn-sm" onclick="importarCSV()">Importar</button>
-    </div>
-  </div>
-</div>
+<div class="modal-bg" id="modal-import"><div class="modal">
+  <h2>Importar Alunos</h2>
+  <p style="font-size:11px;color:var(--text2);margin-bottom:10px">Formato: <code style="background:var(--bg);padding:2px 5px;border-radius:4px;font-size:10px">nome;turma;responsavel;telefone</code></p>
+  <div class="field"><textarea id="csv-text" rows="8" style="font-family:monospace;font-size:11px"></textarea></div>
+  <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="fecharImport()">Cancelar</button><button class="btn btn-success btn-sm" onclick="importarCSV()">Importar</button></div>
+</div></div>
 
-<!-- ═══ MODAL LISTA MANUAL ═══ -->
-<div class="modal-bg" id="modal-lista">
-  <div class="modal">
-    <h2>Selecionar aluno</h2>
-    <input type="text" id="lista-busca" placeholder="Digite o nome..." oninput="filtrarLista()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:8px 10px;color:var(--text);font-size:13px;outline:none">
-    <div class="search-list" id="lista-result"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost btn-sm" onclick="fecharListaManual()">Fechar</button>
-    </div>
-  </div>
-</div>
+<div class="modal-bg" id="modal-lista"><div class="modal">
+  <h2>Selecionar aluno</h2>
+  <input type="text" id="lista-busca" placeholder="Digite o nome..." oninput="filtrarLista()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:8px 10px;color:var(--text);font-size:13px;outline:none">
+  <div class="search-list" id="lista-result"></div>
+  <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="fecharListaManual()">Fechar</button></div>
+</div></div>
 
-<!-- ═══ MODAL PIN ═══ -->
-<div class="modal-bg" id="modal-pin">
-  <div class="modal" style="max-width:300px">
-    <h2 id="pin-title">Digite o PIN</h2>
-    <div class="pin-display" id="pin-display"></div>
-    <div class="pin-pad">
-      <button class="pin-key" onclick="pinDigit(1)">1</button>
-      <button class="pin-key" onclick="pinDigit(2)">2</button>
-      <button class="pin-key" onclick="pinDigit(3)">3</button>
-      <button class="pin-key" onclick="pinDigit(4)">4</button>
-      <button class="pin-key" onclick="pinDigit(5)">5</button>
-      <button class="pin-key" onclick="pinDigit(6)">6</button>
-      <button class="pin-key" onclick="pinDigit(7)">7</button>
-      <button class="pin-key" onclick="pinDigit(8)">8</button>
-      <button class="pin-key" onclick="pinDigit(9)">9</button>
-      <button class="pin-key" onclick="pinClear()">✕</button>
-      <button class="pin-key" onclick="pinDigit(0)">0</button>
-      <button class="pin-key" onclick="pinBack()">⌫</button>
-    </div>
-    <button class="btn btn-ghost btn-sm" onclick="fecharPin()" style="width:100%;justify-content:center">Cancelar</button>
+<div class="modal-bg" id="modal-pin"><div class="modal" style="max-width:300px">
+  <h2 id="pin-title">Digite o PIN</h2>
+  <div class="pin-display" id="pin-display"></div>
+  <div class="pin-pad">
+    <button class="pin-key" onclick="pinDigit(1)">1</button><button class="pin-key" onclick="pinDigit(2)">2</button><button class="pin-key" onclick="pinDigit(3)">3</button>
+    <button class="pin-key" onclick="pinDigit(4)">4</button><button class="pin-key" onclick="pinDigit(5)">5</button><button class="pin-key" onclick="pinDigit(6)">6</button>
+    <button class="pin-key" onclick="pinDigit(7)">7</button><button class="pin-key" onclick="pinDigit(8)">8</button><button class="pin-key" onclick="pinDigit(9)">9</button>
+    <button class="pin-key" onclick="pinClear()">✕</button><button class="pin-key" onclick="pinDigit(0)">0</button><button class="pin-key" onclick="pinBack()">⌫</button>
   </div>
-</div>
+  <button class="btn btn-ghost btn-sm" onclick="fecharPin()" style="width:100%;justify-content:center">Cancelar</button>
+</div></div>
 
 <script>
-// ════════════════════════════════════════════════
-// CONFIG
-// ════════════════════════════════════════════════
 const SUPA_URL = 'https://awtzeflakcffshkvtmsf.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3dHplZmxha2NmZnNoa3Z0bXNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzOTMyODEsImV4cCI6MjA5Nzk2OTI4MX0.LgtYZFbcUtC2XwQCxley5uCmPvkueKnf_iB3p7qdVVk';
 const db = supabase.createClient(SUPA_URL, SUPA_KEY, {
   auth: { autoRefreshToken:true, persistSession:true, detectSessionInUrl:false, storageKey:'pf-auth' }
 });
 
-// ════════════════════════════════════════════════
-// STATE
-// ════════════════════════════════════════════════
 let currentUser = null, currentProfile = null, currentEscola = null;
 let modelsLoaded = false, appReady = false;
 let scanStream = null, modalStream = null;
@@ -587,7 +389,6 @@ let kioskActive = false, pinBuffer = '';
 const COLORS = ['#4f8ef7','#7c3aed','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16'];
 let editingAluno=null, editingTurma=null, editingEscola=null, editingGestor=null;
 
-// AUDIO BEEP
 let audioCtx = null;
 function beep(freq=880, dur=120) {
   try {
@@ -601,14 +402,13 @@ function beep(freq=880, dur=120) {
   } catch(e) {}
 }
 
-// HELPERS
 const getColor = n => { let h=0; for(let c of (n||'X')) h=(h*31+c.charCodeAt(0))%COLORS.length; return COLORS[h]; };
 const getInit  = n => (n||'?').trim().split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
 const todayStr = () => new Date().toISOString().slice(0,10);
 const timeStr  = () => new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 function toast(msg, icon='✓', dur=3500) {
   const t = document.getElementById('toast');
-  t.innerHTML = `<span style="font-size:14px">${icon}</span><span>${msg}</span>`;
+  t.innerHTML = '<span style="font-size:14px">'+icon+'</span><span>'+msg+'</span>';
   t.classList.add('show');
   clearTimeout(t._t);
   t._t = setTimeout(()=>t.classList.remove('show'), dur);
@@ -621,9 +421,6 @@ function formatTel(t) {
   return d;
 }
 
-// ════════════════════════════════════════════════
-// AUTH
-// ════════════════════════════════════════════════
 async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pass  = document.getElementById('login-pass').value;
@@ -672,7 +469,6 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 async function initApp() {
-  // Carrega perfil
   let { data: profile } = await db.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
   if (!profile) {
     toast('Conta sem perfil. Contate o administrador.','⚠️',6000);
@@ -681,7 +477,6 @@ async function initApp() {
   currentProfile = profile;
   appReady = true;
   showApp();
-
   document.getElementById('user-chip').textContent = profile.nome;
   const rc = document.getElementById('role-chip');
   if (profile.role === 'dono') {
@@ -696,7 +491,7 @@ async function initApp() {
     rc.textContent = '🏫 Gestor';
     rc.className = 'role-chip role-gestor';
     if (!profile.escola_id) {
-      toast('Sua conta ainda não foi vinculada a uma escola. Contate o consultor.','⚠️',6000);
+      toast('Sua conta ainda não foi vinculada a uma escola.','⚠️',6000);
       return;
     }
     const { data: escola } = await db.from('escolas').select('*').eq('id', profile.escola_id).maybeSingle();
@@ -721,21 +516,15 @@ function showApp() {
   document.getElementById('screen-app').style.display='block';
 }
 
-// ════════════════════════════════════════════════
-// TROCAR SENHA
-// ════════════════════════════════════════════════
 async function trocarSenha() {
   const nova = document.getElementById('cfg-senha').value;
   if (!nova || nova.length < 6) { toast('Senha precisa ter 6+ caracteres.','⚠️'); return; }
   const { error } = await db.auth.updateUser({ password: nova });
   if (error) { toast('Erro: '+error.message,'❌'); return; }
   document.getElementById('cfg-senha').value = '';
-  toast('Senha alterada com sucesso!','✅');
+  toast('Senha alterada!','✅');
 }
 
-// ════════════════════════════════════════════════
-// FACE API
-// ════════════════════════════════════════════════
 async function waitFaceApi(t=0) {
   if (typeof faceapi!=='undefined' && faceapi.nets) return true;
   if (t>30) return false;
@@ -794,12 +583,9 @@ async function refreshCache() {
 
 async function recarregarFaces() {
   await refreshCache();
-  toast(`${localDescriptors.length} aluno(s) com foto carregado(s).`,'🔄');
+  toast(localDescriptors.length+' aluno(s) com foto carregado(s).','🔄');
 }
 
-// ════════════════════════════════════════════════
-// TABS
-// ════════════════════════════════════════════════
 function switchTab(el, id) {
   const isDono = currentProfile?.role === 'dono';
   const cont = isDono ? '#tabs-dono' : '#tabs-gestor';
@@ -816,33 +602,22 @@ function switchTab(el, id) {
   if (id==='relatorios')    renderRelatorios();
   if (id==='config')        loadConfig();
 }
+</script>
 
-// ════════════════════════════════════════════════
-// DONO: ESCOLAS
-// ════════════════════════════════════════════════
+<script>
 async function renderEscolasDono() {
   const { data } = await db.from('escolas').select('*').order('nome');
   document.getElementById('escolas-count').textContent = (data?.length||0)+' escola(s)';
   if (!data?.length) {
-    document.getElementById('escolas-body').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">Nenhuma escola. Clique em "Nova Escola".</td></tr>';
+    document.getElementById('escolas-body').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">Nenhuma escola.</td></tr>';
     return;
   }
   const rows = await Promise.all(data.map(async e => {
-    const [{count:cAl},{count:cGest}] = await Promise.all([
+    const [ra,rg] = await Promise.all([
       db.from('alunos').select('*',{count:'exact',head:true}).eq('escola_id',e.id).eq('ativo',true),
       db.from('profiles').select('*',{count:'exact',head:true}).eq('escola_id',e.id).eq('role','gestor')
     ]);
-    return `<tr>
-      <td><b>${e.nome}</b></td>
-      <td>${e.cidade||'—'}</td>
-      <td style="font-size:10px;font-family:'Space Grotesk',sans-serif">M ${(e.hora_matutino||'').slice(0,5)}<br>V ${(e.hora_vespertino||'').slice(0,5)}<br>N ${(e.hora_noturno||'').slice(0,5)}<br><span style="color:var(--text3)">±${e.tolerancia_min}min</span></td>
-      <td>${cAl||0}</td>
-      <td>${cGest||0}</td>
-      <td>
-        <button class="btn btn-ghost btn-sm" onclick="editarEscola('${e.id}')">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="excluirEscola('${e.id}')">🗑</button>
-      </td>
-    </tr>`;
+    return '<tr><td><b>'+e.nome+'</b></td><td>'+(e.cidade||'—')+'</td><td style="font-size:10px;font-family:Space Grotesk,sans-serif">M '+(e.hora_matutino||'').slice(0,5)+'<br>V '+(e.hora_vespertino||'').slice(0,5)+'<br>N '+(e.hora_noturno||'').slice(0,5)+'<br><span style="color:var(--text3)">±'+e.tolerancia_min+'min</span></td><td>'+(ra.count||0)+'</td><td>'+(rg.count||0)+'</td><td><button class="btn btn-ghost btn-sm" onclick="editarEscola(\''+e.id+'\')">✏️</button> <button class="btn btn-danger btn-sm" onclick="excluirEscola(\''+e.id+'\')">🗑</button></td></tr>';
   }));
   document.getElementById('escolas-body').innerHTML = rows.join('');
 }
@@ -880,17 +655,14 @@ async function salvarEscola() {
   const nome = document.getElementById('esc-nome').value.trim();
   if (!nome) { toast('Digite o nome.','⚠️'); return; }
   const payload = {
-    nome,
-    cidade: document.getElementById('esc-cidade').value.trim(),
+    nome, cidade: document.getElementById('esc-cidade').value.trim(),
     hora_matutino: document.getElementById('esc-mat').value,
     hora_vespertino: document.getElementById('esc-vesp').value,
     hora_noturno: document.getElementById('esc-not').value,
     hora_integral: document.getElementById('esc-int').value,
     tolerancia_min: parseInt(document.getElementById('esc-tol').value)||0
   };
-  const op = editingEscola
-    ? db.from('escolas').update(payload).eq('id',editingEscola)
-    : db.from('escolas').insert(payload);
+  const op = editingEscola ? db.from('escolas').update(payload).eq('id',editingEscola) : db.from('escolas').insert(payload);
   const { error } = await op;
   if (error) { toast('Erro: '+error.message,'❌'); return; }
   toast('Escola salva.','✅');
@@ -899,36 +671,25 @@ async function salvarEscola() {
 }
 
 async function excluirEscola(id) {
-  if (!confirm('Excluir esta escola? Todos os dados serão perdidos.')) return;
+  if (!confirm('Excluir esta escola?')) return;
   const { error } = await db.from('escolas').delete().eq('id',id);
   if (error) { toast('Erro: '+error.message,'❌'); return; }
   toast('Escola excluída.','🗑');
   renderEscolasDono();
 }
 
-// ════════════════════════════════════════════════
-// DONO: GESTORES
-// ════════════════════════════════════════════════
 async function renderGestoresDono() {
-  const [{data: profs}, {data: escs}] = await Promise.all([
+  const [pr, es] = await Promise.all([
     db.from('profiles').select('*').eq('role','gestor').order('nome'),
     db.from('escolas').select('id,nome').order('nome')
   ]);
-  document.getElementById('gestores-count').textContent = (profs?.length||0)+' gestor(es)';
-  if (!profs?.length) {
-    document.getElementById('gestores-body').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:24px">Nenhum gestor. Clique em "Novo Gestor".</td></tr>';
+  document.getElementById('gestores-count').textContent = (pr.data?.length||0)+' gestor(es)';
+  if (!pr.data?.length) {
+    document.getElementById('gestores-body').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:24px">Nenhum gestor.</td></tr>';
     return;
   }
-  const escMap = {}; (escs||[]).forEach(e=>escMap[e.id]=e.nome);
-  document.getElementById('gestores-body').innerHTML = profs.map(p => `<tr>
-    <td>${p.nome}</td>
-    <td style="font-size:11px;color:var(--text2)">${p.email||'—'}</td>
-    <td>${p.escola_id ? '<span class="badge badge-info">'+(escMap[p.escola_id]||'?')+'</span>' : '<span class="badge badge-warning">sem escola</span>'}</td>
-    <td>
-      <button class="btn btn-ghost btn-sm" onclick="editarGestor('${p.id}')">✏️</button>
-      <button class="btn btn-danger btn-sm" onclick="excluirGestor('${p.id}','${p.nome.replace(/'/g,'')}')">🗑</button>
-    </td>
-  </tr>`).join('');
+  const escMap = {}; (es.data||[]).forEach(e=>escMap[e.id]=e.nome);
+  document.getElementById('gestores-body').innerHTML = pr.data.map(p => '<tr><td>'+p.nome+'</td><td style="font-size:11px;color:var(--text2)">'+(p.email||'—')+'</td><td>'+(p.escola_id ? '<span class="badge badge-info">'+(escMap[p.escola_id]||'?')+'</span>' : '<span class="badge badge-warning">sem escola</span>')+'</td><td><button class="btn btn-ghost btn-sm" onclick="editarGestor(\''+p.id+'\')">✏️</button> <button class="btn btn-danger btn-sm" onclick="excluirGestor(\''+p.id+'\')">🗑</button></td></tr>').join('');
 }
 
 async function abrirGestor() {
@@ -950,10 +711,9 @@ async function editarGestor(id) {
   document.getElementById('m-gest-title').textContent = 'Editar Gestor';
   document.getElementById('g-nome').value = data.nome;
   document.getElementById('g-email').value = data.email||'';
-  document.getElementById('g-email').disabled = true; // não editar e-mail
+  document.getElementById('g-email').disabled = true;
   document.getElementById('g-senha').value = '';
-  document.getElementById('g-senha').disabled = true; // só pelo gestor
-  document.getElementById('g-senha').placeholder = '(o gestor altera nas configurações)';
+  document.getElementById('g-senha').disabled = true;
   await preencherEscolasSelect('g-escola', data.escola_id);
   document.getElementById('btn-salvar-gestor').textContent = 'Salvar';
   document.getElementById('modal-gestor').classList.add('open');
@@ -963,72 +723,46 @@ async function preencherEscolasSelect(selectId, selectedId) {
   const { data } = await db.from('escolas').select('id,nome').order('nome');
   const sel = document.getElementById(selectId);
   sel.innerHTML = '<option value="">— Selecione uma escola —</option>' +
-    (data||[]).map(e=>`<option value="${e.id}" ${e.id===selectedId?'selected':''}>${e.nome}</option>`).join('');
+    (data||[]).map(e=>'<option value="'+e.id+'"'+(e.id===selectedId?' selected':'')+'>'+e.nome+'</option>').join('');
 }
 
 function fecharGestor() { document.getElementById('modal-gestor').classList.remove('open'); }
 
 async function salvarGestor() {
-  const nome   = document.getElementById('g-nome').value.trim();
-  const email  = document.getElementById('g-email').value.trim();
-  const senha  = document.getElementById('g-senha').value;
+  const nome = document.getElementById('g-nome').value.trim();
+  const email = document.getElementById('g-email').value.trim();
+  const senha = document.getElementById('g-senha').value;
   const escola = document.getElementById('g-escola').value;
-  if (!nome)   { toast('Digite o nome.','⚠️'); return; }
-
+  if (!nome) { toast('Digite o nome.','⚠️'); return; }
   const btn = document.getElementById('btn-salvar-gestor');
   btn.disabled = true; btn.textContent = 'Salvando...';
-
   if (editingGestor) {
-    // Update apenas
     const { error } = await db.from('profiles').update({nome, escola_id: escola||null}).eq('id',editingGestor);
     if (error) { toast('Erro: '+error.message,'❌'); btn.disabled=false; btn.textContent='Salvar'; return; }
     toast('Gestor atualizado.','✅');
   } else {
-    if (!email||!senha) { toast('E-mail e senha são obrigatórios.','⚠️'); btn.disabled=false; btn.textContent='Criar Gestor'; return; }
-    if (senha.length<6) { toast('Senha precisa ter 6+ caracteres.','⚠️'); btn.disabled=false; btn.textContent='Criar Gestor'; return; }
-
-    // signUp cria o auth.user; o trigger ou o próprio app cria o profile
-    const { data, error } = await db.auth.signUp({
-      email, password: senha,
-      options: { data: { nome, role: 'gestor' } }
-    });
-
-    if (error) {
-      toast('Erro: '+traduzirErro(error.message),'❌',5000);
-      btn.disabled=false; btn.textContent='Criar Gestor';
-      return;
-    }
-
-    // Atenção: o signUp pode logar o gestor automaticamente.
-    // Precisamos restaurar a sessão do dono.
-    // Solução: salvamos o profile e re-logamos com a sessão antiga.
-
+    if (!email||!senha) { toast('E-mail e senha obrigatórios.','⚠️'); btn.disabled=false; btn.textContent='Criar Gestor'; return; }
+    if (senha.length<6) { toast('Senha precisa 6+ caracteres.','⚠️'); btn.disabled=false; btn.textContent='Criar Gestor'; return; }
+    const { data, error } = await db.auth.signUp({ email, password: senha, options:{data:{nome,role:'gestor'}} });
+    if (error) { toast('Erro: '+traduzirErro(error.message),'❌',5000); btn.disabled=false; btn.textContent='Criar Gestor'; return; }
     if (data?.user) {
-      await db.from('profiles').upsert({
-        id: data.user.id, nome, email, role: 'gestor', escola_id: escola||null
-      }, { onConflict: 'id' });
+      await db.from('profiles').upsert({ id: data.user.id, nome, email, role:'gestor', escola_id: escola||null }, { onConflict:'id' });
     }
-
-    toast(`Gestor "${nome}" criado!\nE-mail: ${email}\nSenha: ${senha}`,'✅',8000);
+    alert('Gestor criado!\n\nE-mail: '+email+'\nSenha: '+senha+'\n\n⚠️ Anote essas credenciais!\nVocê será deslogado e precisará logar como dono novamente.');
   }
-
   fecharGestor();
   renderGestoresDono();
   btn.disabled=false;
 }
 
-async function excluirGestor(id, nome) {
-  if (!confirm(`Remover acesso do gestor "${nome}"?`)) return;
-  // Como não temos service_role, só removemos o profile (mantém o auth.user)
+async function excluirGestor(id) {
+  if (!confirm('Remover acesso deste gestor?')) return;
   const { error } = await db.from('profiles').delete().eq('id',id);
   if (error) { toast('Erro: '+error.message,'❌'); return; }
   toast('Gestor removido.','🗑');
   renderGestoresDono();
 }
 
-// ════════════════════════════════════════════════
-// DONO: STATS
-// ════════════════════════════════════════════════
 async function renderStatsDono() {
   const [a,b,c,d] = await Promise.all([
     db.from('escolas').select('*',{count:'exact',head:true}),
@@ -1041,10 +775,9 @@ async function renderStatsDono() {
   document.getElementById('st-alunos').textContent = c.count||0;
   document.getElementById('st-presencas').textContent = d.count||0;
 }
+</script>
 
-// ════════════════════════════════════════════════
-// SCANNER (gestor)
-// ════════════════════════════════════════════════
+<script>
 function setScanStatus(type,text) {
   const el = document.getElementById('scan-badge');
   const tx = document.getElementById('scan-txt');
@@ -1078,7 +811,7 @@ function stopScanner() {
   if (v) v.srcObject=null;
   const bs = document.getElementById('btn-start');
   const bst= document.getElementById('btn-stop');
-  if (bs)  bs.style.display='';
+  if (bs) bs.style.display='';
   if (bst) bst.style.display='none';
   setScanStatus('idle','Scanner parado');
 }
@@ -1100,8 +833,7 @@ async function runDetection() {
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0,0,canvas.width,canvas.height);
   try {
-    const dets = await faceapi.detectAllFaces(video, new faceapi.SsdMobilenetv1Options({minConfidence:0.45}))
-      .withFaceLandmarks().withFaceDescriptors();
+    const dets = await faceapi.detectAllFaces(video, new faceapi.SsdMobilenetv1Options({minConfidence:0.45})).withFaceLandmarks().withFaceDescriptors();
     if (!dets.length) {
       setScanStatus('looking','Procurando rostos...');
       scanTimer = setTimeout(runDetection,700); return;
@@ -1150,13 +882,12 @@ async function confirmarPresenca() {
   const aluno = confirmCandidate;
   document.getElementById('confirm-overlay').classList.remove('show');
   confirmCandidate = null;
-
   const periodo = aluno.turma_periodo || 'Matutino';
   const horaMap = {
-    'Matutino':   currentEscola?.hora_matutino,
+    'Matutino': currentEscola?.hora_matutino,
     'Vespertino': currentEscola?.hora_vespertino,
-    'Noturno':    currentEscola?.hora_noturno,
-    'Integral':   currentEscola?.hora_integral
+    'Noturno': currentEscola?.hora_noturno,
+    'Integral': currentEscola?.hora_integral
   };
   let atrasado = false;
   const horaEntrada = horaMap[periodo];
@@ -1166,7 +897,6 @@ async function confirmarPresenca() {
     limite.setHours(parseInt(hh), parseInt(mm)+(currentEscola.tolerancia_min||0), 0, 0);
     atrasado = new Date() > limite;
   }
-
   const { error } = await db.from('presencas').insert({
     escola_id: currentEscola.id,
     aluno_id: aluno.id, aluno_nome: aluno.nome,
@@ -1175,7 +905,7 @@ async function confirmarPresenca() {
   });
   if (error) {
     if (error.code === '23505' || (error.message||'').includes('duplicate')) {
-      toast(`${aluno.nome} já registrou presença hoje.`,'⚠️',4000);
+      toast(aluno.nome+' já registrou presença hoje.','⚠️',4000);
       beep(330,200);
     } else {
       toast('Erro: '+error.message,'❌',5000);
@@ -1192,17 +922,9 @@ async function confirmarPresenca() {
 function showResultCard(aluno, hora, atrasado) {
   const area = document.getElementById('result-area');
   const tel = formatTel(aluno.telefone_resp);
-  const msg = encodeURIComponent(`Olá! Confirmamos a presença de ${aluno.nome} na escola hoje às ${hora.slice(0,5)}.`);
-  const wppLink = tel ? `https://wa.me/${tel}?text=${msg}` : null;
-  area.innerHTML = `<div class="result-card">
-    <div class="result-avatar" style="background:${getColor(aluno.nome)}22;color:${getColor(aluno.nome)};border:2px solid ${getColor(aluno.nome)}44">${getInit(aluno.nome)}</div>
-    <div class="result-info">
-      <h3>${aluno.nome}</h3>
-      <p>${aluno.turma_nome?'Turma '+aluno.turma_nome+' · ':''}${atrasado?'⚠️ ATRASADO':'✅ Presente'}</p>
-    </div>
-    <div class="result-time"><div class="time-big">${hora.slice(0,5)}</div></div>
-    ${wppLink ? `<a href="${wppLink}" target="_blank" class="btn btn-wpp btn-sm">📱 Avisar responsável</a>` : ''}
-  </div>`;
+  const msg = encodeURIComponent('Olá! Confirmamos a presença de '+aluno.nome+' na escola hoje às '+hora.slice(0,5)+'.');
+  const wppLink = tel ? 'https://wa.me/'+tel+'?text='+msg : null;
+  area.innerHTML = '<div class="result-card"><div class="result-avatar" style="background:'+getColor(aluno.nome)+'22;color:'+getColor(aluno.nome)+';border:2px solid '+getColor(aluno.nome)+'44">'+getInit(aluno.nome)+'</div><div class="result-info"><h3>'+aluno.nome+'</h3><p>'+(aluno.turma_nome?'Turma '+aluno.turma_nome+' · ':'')+(atrasado?'⚠️ ATRASADO':'✅ Presente')+'</p></div><div class="result-time"><div class="time-big">'+hora.slice(0,5)+'</div></div>'+(wppLink ? '<a href="'+wppLink+'" target="_blank" class="btn btn-wpp btn-sm">📱 Avisar</a>' : '')+'</div>';
 }
 
 async function renderTodayList() {
@@ -1211,18 +933,9 @@ async function renderTodayList() {
   const el = document.getElementById('today-list');
   if (!el) return;
   if (!data?.length) { el.innerHTML='<div class="empty"><p>Nenhuma presença hoje.</p></div>'; return; }
-  el.innerHTML = data.map(a=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
-      <div style="width:28px;height:28px;border-radius:50%;background:${getColor(a.aluno_nome)}22;color:${getColor(a.aluno_nome)};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:'Space Grotesk',sans-serif">${getInit(a.aluno_nome)}</div>
-      <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600">${a.aluno_nome}</div><div style="font-size:10px;color:var(--text2)">${a.turma_nome||'—'}</div></div>
-      ${a.atrasado?'<span class="badge badge-warning">atrasado</span>':''}
-      <div style="font-size:11px;color:var(--accent);font-family:'Space Grotesk',sans-serif;font-weight:600">${(a.hora||'').slice(0,5)}</div>
-    </div>`).join('');
+  el.innerHTML = data.map(a=>'<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)"><div style="width:28px;height:28px;border-radius:50%;background:'+getColor(a.aluno_nome)+'22;color:'+getColor(a.aluno_nome)+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:Space Grotesk,sans-serif">'+getInit(a.aluno_nome)+'</div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600">'+a.aluno_nome+'</div><div style="font-size:10px;color:var(--text2)">'+(a.turma_nome||'—')+'</div></div>'+(a.atrasado?'<span class="badge badge-warning">atrasado</span>':'')+'<div style="font-size:11px;color:var(--accent);font-family:Space Grotesk,sans-serif;font-weight:600">'+(a.hora||'').slice(0,5)+'</div></div>').join('');
 }
 
-// ════════════════════════════════════════════════
-// LISTA MANUAL
-// ════════════════════════════════════════════════
 function abrirListaManual() {
   document.getElementById('lista-busca').value = '';
   document.getElementById('modal-lista').classList.add('open');
@@ -1233,4 +946,401 @@ function filtrarLista() {
   const q = document.getElementById('lista-busca').value.toLowerCase().trim();
   const f = alunosCache.filter(a => !q || a.nome.toLowerCase().includes(q) || (a.turma_nome||'').toLowerCase().includes(q)).slice(0,40);
   const el = document.getElementById('lista-result');
-  if (!f.le
+  if (!f.length) { el.innerHTML='<div class="empty" style="padding:16px"><p>Nenhum encontrado.</p></div>'; return; }
+  el.innerHTML = f.map(a=>'<div class="search-item" onclick="selecionarManual(\''+a.id+'\')"><div style="width:30px;height:30px;border-radius:50%;background:'+getColor(a.nome)+'22;color:'+getColor(a.nome)+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:Space Grotesk,sans-serif">'+getInit(a.nome)+'</div><div style="flex:1"><div style="font-size:12px;font-weight:600">'+a.nome+'</div><div style="font-size:10px;color:var(--text2)">'+(a.turma_nome||'—')+'</div></div></div>').join('');
+}
+function selecionarManual(id) {
+  const a = alunosCache.find(x=>x.id===id);
+  if (!a) return;
+  fecharListaManual();
+  mostrarConfirmacao(a);
+}
+</script>
+
+<script>
+async function renderTurmas() {
+  await refreshCache();
+  document.getElementById('turmas-count').textContent = turmasCache.length+' turma(s)';
+  const rows = await Promise.all(turmasCache.map(async t => {
+    const { count } = await db.from('alunos').select('*',{count:'exact',head:true}).eq('turma_id',t.id).eq('ativo',true);
+    return '<tr><td><b>'+t.nome+'</b></td><td>'+(t.ano_letivo||'—')+'</td><td><span class="badge badge-info">'+t.periodo+'</span></td><td>'+(count||0)+'</td><td><button class="btn btn-ghost btn-sm" onclick="editarTurma(\''+t.id+'\')">✏️</button> <button class="btn btn-danger btn-sm" onclick="excluirTurma(\''+t.id+'\')">🗑</button></td></tr>';
+  }));
+  document.getElementById('turmas-body').innerHTML = rows.join('')||'<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">Nenhuma turma.</td></tr>';
+}
+
+function abrirTurma() {
+  editingTurma = null;
+  document.getElementById('m-turma-title').textContent = 'Nova Turma';
+  document.getElementById('t-nome').value = '';
+  document.getElementById('t-ano').value = '2026';
+  document.getElementById('t-periodo').value = 'Matutino';
+  document.getElementById('modal-turma').classList.add('open');
+}
+function editarTurma(id) {
+  const t = turmasCache.find(x=>x.id===id);
+  if (!t) return;
+  editingTurma = id;
+  document.getElementById('m-turma-title').textContent = 'Editar Turma';
+  document.getElementById('t-nome').value = t.nome;
+  document.getElementById('t-ano').value = t.ano_letivo||'2026';
+  document.getElementById('t-periodo').value = t.periodo||'Matutino';
+  document.getElementById('modal-turma').classList.add('open');
+}
+function fecharTurma() { document.getElementById('modal-turma').classList.remove('open'); }
+async function salvarTurma() {
+  const nome = document.getElementById('t-nome').value.trim();
+  if (!nome) { toast('Digite o nome.','⚠️'); return; }
+  const payload = {
+    nome, ano_letivo: document.getElementById('t-ano').value.trim()||'2026',
+    periodo: document.getElementById('t-periodo').value,
+    escola_id: currentEscola.id, ativo: true
+  };
+  const op = editingTurma ? db.from('turmas').update(payload).eq('id',editingTurma) : db.from('turmas').insert(payload);
+  const { error } = await op;
+  if (error) { toast('Erro: '+error.message,'❌'); return; }
+  toast('Turma salva.','✅');
+  fecharTurma();
+  await refreshCache();
+  renderTurmas();
+}
+async function excluirTurma(id) {
+  const { count } = await db.from('alunos').select('*',{count:'exact',head:true}).eq('turma_id',id).eq('ativo',true);
+  if (count>0) { if (!confirm('Esta turma tem '+count+' aluno(s). Excluir mesmo assim?')) return; }
+  else { if (!confirm('Excluir esta turma?')) return; }
+  await db.from('turmas').update({ativo:false}).eq('id',id);
+  toast('Turma removida.','🗑');
+  await refreshCache();
+  renderTurmas();
+}
+
+async function renderAlunos() {
+  await refreshCache();
+  const q = (document.getElementById('filter-alunos')?.value||'').toLowerCase().trim();
+  const bio = document.getElementById('filter-alunos-bio')?.value;
+  let lista = [...alunosCache];
+  if (q) lista = lista.filter(a => a.nome.toLowerCase().includes(q) || (a.turma_nome||'').toLowerCase().includes(q));
+  if (bio==='sim') lista = lista.filter(a=>a.descriptor);
+  if (bio==='nao') lista = lista.filter(a=>!a.descriptor);
+  document.getElementById('alunos-count').textContent = alunosCache.length+' aluno(s) · '+lista.length+' filtrado(s)';
+  const grid = document.getElementById('alunos-grid');
+  if (!lista.length) { grid.innerHTML='<div class="empty" style="grid-column:1/-1"><p>Nenhum aluno.</p></div>'; return; }
+  grid.innerHTML = lista.map(a=>'<div class="s-card '+(a.descriptor?'':'no-bio')+'"><button class="del-btn" onclick="excluirAluno(\''+a.id+'\')">✕</button>'+(a.descriptor ? '<div class="bio-dot"></div>' : '<div class="no-bio-tag">SEM FOTO</div>')+'<div class="avatar" style="background:'+getColor(a.nome)+'22;color:'+getColor(a.nome)+'">'+getInit(a.nome)+'</div><div class="sname">'+a.nome+'</div><div class="sturma">'+(a.turma_nome||'Sem turma')+'</div><div class="card-actions"><button class="btn btn-ghost" onclick="editarAluno(\''+a.id+'\')">✏️</button><button class="btn btn-primary" onclick="atualizarFoto(\''+a.id+'\')">📸 '+(a.descriptor?'Refazer':'Tirar')+'</button></div></div>').join('');
+}
+
+async function excluirAluno(id) {
+  if (!confirm('Remover este aluno?')) return;
+  await db.from('alunos').update({ativo:false}).eq('id',id);
+  toast('Aluno removido.','🗑');
+  await refreshCache();
+  renderAlunos();
+}
+
+function preencherTurmasSelect(selectedId) {
+  const sel = document.getElementById('a-turma');
+  if (!turmasCache.length) { sel.innerHTML = '<option value="">— Cadastre uma turma primeiro —</option>'; return; }
+  sel.innerHTML = '<option value="">— Selecione a turma —</option>' +
+    turmasCache.map(t=>'<option value="'+t.id+'"'+(t.id===selectedId?' selected':'')+'>'+t.nome+' · '+t.periodo+'</option>').join('');
+}
+
+async function abrirAluno() {
+  await refreshCache();
+  if (!turmasCache.length) { toast('Cadastre uma turma antes.','⚠️',5000); return; }
+  editingAluno = null;
+  document.getElementById('m-aluno-title').textContent = 'Cadastrar Aluno';
+  ['a-nome','a-resp','a-tel'].forEach(id=>document.getElementById(id).value='');
+  preencherTurmasSelect();
+  document.getElementById('btn-cap-aluno').disabled=false;
+  document.getElementById('btn-cap-aluno').textContent='📸 Capturar';
+  document.getElementById('a-status').textContent='Câmera iniciando...';
+  document.getElementById('modal-aluno').classList.add('open');
+  iniciarCamModal();
+}
+
+async function editarAluno(id) {
+  const a = alunosCache.find(x=>x.id===id);
+  if (!a) return;
+  editingAluno = id;
+  document.getElementById('m-aluno-title').textContent = 'Editar: '+a.nome;
+  document.getElementById('a-nome').value = a.nome;
+  document.getElementById('a-resp').value = a.nome_resp||'';
+  document.getElementById('a-tel').value = a.telefone_resp||'';
+  preencherTurmasSelect(a.turma_id);
+  document.getElementById('btn-cap-aluno').disabled=false;
+  document.getElementById('btn-cap-aluno').textContent = a.descriptor ? '📸 Atualizar foto' : '📸 Capturar';
+  document.getElementById('a-status').textContent = a.descriptor ? 'Aluno já tem foto. Capture para atualizar.' : 'Câmera iniciando...';
+  document.getElementById('modal-aluno').classList.add('open');
+  iniciarCamModal();
+}
+
+async function atualizarFoto(id) { await editarAluno(id); }
+
+async function iniciarCamModal() {
+  try {
+    modalStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:320},height:{ideal:320}}});
+    const v = document.getElementById('modal-video');
+    v.srcObject=modalStream; await v.play();
+    if (document.getElementById('a-status').textContent.startsWith('Câmera')) {
+      document.getElementById('a-status').textContent='✅ Posicione o rosto';
+    }
+  } catch(e) {
+    document.getElementById('a-status').textContent='⚠️ Câmera indisponível';
+  }
+}
+
+function fecharAluno() {
+  document.getElementById('modal-aluno').classList.remove('open');
+  if (modalStream) { modalStream.getTracks().forEach(t=>t.stop()); modalStream=null; }
+}
+
+async function salvarAlunoSemFoto() {
+  const nome = document.getElementById('a-nome').value.trim();
+  const turmaId = document.getElementById('a-turma').value;
+  if (!nome) { toast('Digite o nome.','⚠️'); return; }
+  if (!turmaId) { toast('Selecione a turma.','⚠️'); return; }
+  const payload = {
+    nome, turma_id: turmaId,
+    nome_resp: document.getElementById('a-resp').value.trim()||null,
+    telefone_resp: document.getElementById('a-tel').value.trim()||null,
+    ativo:true, escola_id: currentEscola.id
+  };
+  const op = editingAluno ? db.from('alunos').update(payload).eq('id',editingAluno) : db.from('alunos').insert(payload);
+  const { error } = await op;
+  if (error) { toast('Erro: '+error.message,'❌'); return; }
+  toast(nome+' salvo.','✅');
+  await refreshCache();
+  fecharAluno();
+  renderAlunos();
+}
+
+async function capturarAluno() {
+  const nome = document.getElementById('a-nome').value.trim();
+  const turmaId = document.getElementById('a-turma').value;
+  if (!nome) { toast('Digite o nome.','⚠️'); return; }
+  if (!turmaId) { toast('Selecione a turma.','⚠️'); return; }
+  const btn = document.getElementById('btn-cap-aluno');
+  btn.disabled = true; btn.textContent='Processando...';
+  let descriptor = null;
+  const video = document.getElementById('modal-video');
+  if (modelsLoaded && modalStream) {
+    await new Promise(r=>{
+      if (video.readyState>=2){r();return;}
+      video.addEventListener('canplay',r,{once:true});
+      setTimeout(r,3000);
+    });
+    try {
+      document.getElementById('a-status').textContent='🔍 Detectando rosto...';
+      const det = await faceapi.detectSingleFace(video, new faceapi.SsdMobilenetv1Options({minConfidence:0.4})).withFaceLandmarks().withFaceDescriptor();
+      if (det) {
+        descriptor = Array.from(det.descriptor);
+        document.getElementById('a-status').textContent='✅ Rosto capturado!';
+      } else {
+        document.getElementById('a-status').textContent='⚠️ Rosto não detectado.';
+        btn.disabled=false; btn.textContent='📸 Capturar';
+        return;
+      }
+    } catch(e) {
+      document.getElementById('a-status').textContent='⚠️ Erro na detecção.';
+      btn.disabled=false; btn.textContent='📸 Capturar';
+      return;
+    }
+  }
+  const payload = {
+    nome, turma_id: turmaId,
+    nome_resp: document.getElementById('a-resp').value.trim()||null,
+    telefone_resp: document.getElementById('a-tel').value.trim()||null,
+    ativo:true, escola_id: currentEscola.id
+  };
+  if (descriptor) payload.descriptor = descriptor;
+  const op = editingAluno ? db.from('alunos').update(payload).eq('id',editingAluno) : db.from('alunos').insert(payload);
+  const { error } = await op;
+  if (error) { toast('Erro: '+error.message,'❌',5000); btn.disabled=false; btn.textContent='📸 Capturar'; return; }
+  toast(nome+(descriptor?' salvo com foto.':' salvo.'),'✅');
+  await refreshCache();
+  fecharAluno();
+  renderAlunos();
+}
+</script>
+
+<script>
+function abrirImportCSV() { document.getElementById('csv-text').value=''; document.getElementById('modal-import').classList.add('open'); }
+function fecharImport() { document.getElementById('modal-import').classList.remove('open'); }
+async function importarCSV() {
+  const txt = document.getElementById('csv-text').value.trim();
+  if (!txt) { toast('Cole os dados.','⚠️'); return; }
+  await refreshCache();
+  const linhas = txt.split('\n').map(l=>l.trim()).filter(Boolean);
+  const turmasMap = {};
+  turmasCache.forEach(t=>turmasMap[t.nome.toLowerCase()]=t.id);
+  const turmasNovas = new Set();
+  for (const l of linhas) {
+    const [nome,turma] = l.split(';').map(x=>(x||'').trim());
+    if (!nome||!turma) continue;
+    if (!turmasMap[turma.toLowerCase()]) turmasNovas.add(turma);
+  }
+  if (turmasNovas.size>0) {
+    const novas = [...turmasNovas].map(nome=>({escola_id:currentEscola.id,nome,ano_letivo:'2026',periodo:'Matutino',ativo:true}));
+    const { data: criadas, error } = await db.from('turmas').insert(novas).select();
+    if (error) { toast('Erro turmas: '+error.message,'❌',5000); return; }
+    criadas.forEach(t=>turmasMap[t.nome.toLowerCase()]=t.id);
+  }
+  const novosAlunos = [];
+  for (const l of linhas) {
+    const [nome,turma,resp,tel] = l.split(';').map(x=>(x||'').trim());
+    if (!nome) continue;
+    novosAlunos.push({
+      nome, turma_id: turmasMap[(turma||'').toLowerCase()]||null,
+      nome_resp: resp||null, telefone_resp: tel||null,
+      ativo:true, escola_id: currentEscola.id
+    });
+  }
+  if (!novosAlunos.length) { toast('Nada para importar.','⚠️'); return; }
+  const { error } = await db.from('alunos').insert(novosAlunos);
+  if (error) { toast('Erro: '+error.message,'❌',5000); return; }
+  toast(novosAlunos.length+' aluno(s) e '+turmasNovas.size+' turma(s) importados!','✅',5000);
+  fecharImport();
+  await refreshCache();
+  renderAlunos();
+}
+
+async function loadTurmaFilter() {
+  if (!turmasCache.length) await refreshCache();
+  const sel = document.getElementById('filter-turma');
+  sel.innerHTML = '<option value="">Todas as turmas</option>' + turmasCache.map(t=>'<option value="'+t.nome+'">'+t.nome+' ('+t.periodo+')</option>').join('');
+}
+
+async function renderPresencas() {
+  const date = document.getElementById('filter-date').value || todayStr();
+  const turma = document.getElementById('filter-turma').value;
+  let q = db.from('presencas').select('*').eq('data',date).order('hora',{ascending:false});
+  if (turma) q = q.eq('turma_nome',turma);
+  const { data } = await q;
+  const tbody = document.getElementById('presencas-body');
+  if (!data?.length) { tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">Sem registros.</td></tr>'; return; }
+  tbody.innerHTML = data.map(r=>{
+    const aluno = alunosCache.find(a=>a.id===r.aluno_id);
+    const tel = aluno ? formatTel(aluno.telefone_resp) : '';
+    const msg = encodeURIComponent('Olá! Confirmamos a presença de '+r.aluno_nome+' na escola hoje às '+(r.hora||'').slice(0,5)+'.');
+    return '<tr><td><div style="display:flex;align-items:center;gap:6px"><div style="width:22px;height:22px;border-radius:50%;background:'+getColor(r.aluno_nome)+'22;color:'+getColor(r.aluno_nome)+';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:Space Grotesk,sans-serif">'+getInit(r.aluno_nome)+'</div>'+r.aluno_nome+'</div></td><td>'+(r.turma_nome||'—')+(r.periodo?'<br><span style="font-size:9px;color:var(--text3)">'+r.periodo+'</span>':'')+'</td><td style="font-family:Space Grotesk,sans-serif;color:var(--accent)">'+(r.hora||'').slice(0,5)+'</td><td>'+(r.atrasado?'<span class="badge badge-warning">⚠ Atrasado</span>':'<span class="badge badge-success">✓ OK</span>')+'</td><td>'+(tel?'<a href="https://wa.me/'+tel+'?text='+msg+'" target="_blank" class="btn btn-wpp btn-sm">📱</a>':'')+'</td></tr>';
+  }).join('');
+}
+
+async function avisarAusentes() {
+  const date = document.getElementById('filter-date').value || todayStr();
+  const turmaFilter = document.getElementById('filter-turma').value;
+  const { data: alunos } = await db.from('alunos').select('*').eq('ativo',true);
+  const { data: pres } = await db.from('presencas').select('aluno_id').eq('data',date);
+  const presentes = new Set((pres||[]).map(p=>p.aluno_id));
+  let ausentes = (alunos||[]).filter(a=>!presentes.has(a.id)).map(a=>{
+    const t = turmasCache.find(x=>x.id===a.turma_id);
+    return {...a, turma_nome: t?.nome||null};
+  });
+  if (turmaFilter) ausentes = ausentes.filter(a=>a.turma_nome===turmaFilter);
+  const comTel = ausentes.filter(a=>a.telefone_resp);
+  if (!ausentes.length) { toast('Sem ausentes!','✅'); return; }
+  if (!comTel.length) { toast(ausentes.length+' ausente(s) sem telefone.','⚠️',5000); return; }
+  const dt = new Date(date+'T12:00:00').toLocaleDateString('pt-BR');
+  const links = comTel.map(a=>{
+    const tel = formatTel(a.telefone_resp);
+    const msg = encodeURIComponent('Olá! Informamos que '+a.nome+' ('+(a.turma_nome||'')+') não compareceu à escola hoje, '+dt+'.');
+    return '<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px"><div><div style="font-size:12px;font-weight:600">'+a.nome+'</div><div style="font-size:10px;color:var(--text2)">'+(a.turma_nome||'—')+'</div></div><a href="https://wa.me/'+tel+'?text='+msg+'" target="_blank" class="btn btn-wpp btn-sm">📱</a></div>';
+  }).join('');
+  document.body.insertAdjacentHTML('beforeend', '<div style="position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:400;display:flex;align-items:center;justify-content:center;padding:14px" onclick="if(event.target===this)this.remove()"><div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:440px;width:100%;max-height:80vh;overflow-y:auto"><h2 style="font-family:Space Grotesk,sans-serif;font-size:15px;margin-bottom:12px">Ausentes em '+dt+' ('+comTel.length+')</h2>'+links+'<div style="margin-top:12px;text-align:right"><button class="btn btn-ghost btn-sm" onclick="this.closest(\'div[style*=fixed]\').remove()">Fechar</button></div></div></div>');
+}
+
+async function renderRelatorios() {
+  if (!currentEscola) return;
+  await refreshCache();
+  const [r1,r3,r4] = await Promise.all([
+    db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true),
+    db.from('presencas').select('*',{count:'exact',head:true}).eq('data',todayStr()),
+    db.from('presencas').select('*',{count:'exact',head:true}).eq('data',todayStr()).eq('atrasado',true)
+  ]);
+  const total = r1.count||0, hoje = r3.count||0;
+  document.getElementById('kpi-alunos').textContent = total;
+  document.getElementById('kpi-hoje').textContent = hoje;
+  document.getElementById('kpi-atrasados').textContent = r4.count||0;
+  document.getElementById('kpi-turmas').textContent = turmasCache.length;
+  document.getElementById('kpi-pct').textContent = total?Math.round(hoje/total*100)+'% hoje':'—';
+  const rows = await Promise.all(turmasCache.map(async t=>{
+    const [a,p] = await Promise.all([
+      db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true).eq('turma_id',t.id),
+      db.from('presencas').select('*',{count:'exact',head:true}).eq('turma_id',t.id)
+    ]);
+    return '<tr><td>'+t.nome+' <span style="font-size:9px;color:var(--text3)">'+t.periodo+'</span></td><td>'+(a.count||0)+'</td><td>'+(p.count||0)+'</td></tr>';
+  }));
+  document.getElementById('rel-body').innerHTML = rows.join('')||'<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:20px">Nada.</td></tr>';
+}
+
+async function exportCSV() {
+  const { data } = await db.from('presencas').select('*').order('data',{ascending:false});
+  if (!data?.length) { toast('Sem dados.','⚠️'); return; }
+  const csv = 'Data;Hora;Nome;Turma;Periodo;Atrasado\n'+data.map(r=>r.data+';'+r.hora+';'+r.aluno_nome+';'+(r.turma_nome||'')+';'+(r.periodo||'')+';'+(r.atrasado?'sim':'nao')).join('\n');
+  const a = Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),download:'presencas.csv'});
+  a.click();
+  toast('CSV exportado.','⬇');
+}
+
+async function loadConfig() {
+  if (!currentEscola) return;
+  document.getElementById('cfg-h-mat').value  = (currentEscola.hora_matutino||'07:00').slice(0,5);
+  document.getElementById('cfg-h-vesp').value = (currentEscola.hora_vespertino||'13:00').slice(0,5);
+  document.getElementById('cfg-h-not').value  = (currentEscola.hora_noturno||'19:00').slice(0,5);
+  document.getElementById('cfg-h-int').value  = (currentEscola.hora_integral||'07:00').slice(0,5);
+  document.getElementById('cfg-tol').value    = currentEscola.tolerancia_min ?? 10;
+}
+async function salvarConfig() {
+  const payload = {
+    hora_matutino:   document.getElementById('cfg-h-mat').value,
+    hora_vespertino: document.getElementById('cfg-h-vesp').value,
+    hora_noturno:    document.getElementById('cfg-h-not').value,
+    hora_integral:   document.getElementById('cfg-h-int').value,
+    tolerancia_min:  parseInt(document.getElementById('cfg-tol').value)||0
+  };
+  const { error } = await db.from('escolas').update(payload).eq('id',currentEscola.id);
+  if (error) { toast('Erro: '+error.message,'❌'); return; }
+  Object.assign(currentEscola, payload);
+  toast('Horários salvos.','✅');
+}
+function salvarPin() {
+  const pin = document.getElementById('cfg-pin').value;
+  if (!/^\d{4}$/.test(pin)) { toast('PIN deve ter 4 dígitos.','⚠️'); return; }
+  localStorage.setItem('pf-kiosk-pin', pin);
+  document.getElementById('cfg-pin').value = '';
+  toast('PIN salvo.','✅');
+}
+
+function ativarKiosk() {
+  if (!localStorage.getItem('pf-kiosk-pin')) { toast('Defina um PIN em Configurações.','⚠️',5000); return; }
+  document.body.classList.add('kiosk-mode');
+  kioskActive = true;
+  if (!scanRunning) startScanner();
+  toast('Modo portaria ativo. Toque no ✕ para sair.','🔒',4000);
+}
+function askExitKiosk() {
+  pinBuffer = '';
+  document.getElementById('pin-title').textContent = 'Digite o PIN';
+  document.getElementById('pin-display').textContent = '';
+  document.getElementById('modal-pin').classList.add('open');
+}
+function pinDigit(d) {
+  if (pinBuffer.length>=4) return;
+  pinBuffer += d;
+  document.getElementById('pin-display').textContent = '•'.repeat(pinBuffer.length);
+  if (pinBuffer.length===4) {
+    setTimeout(()=>{
+      if (pinBuffer === localStorage.getItem('pf-kiosk-pin')) {
+        document.body.classList.remove('kiosk-mode'); kioskActive=false;
+        fecharPin(); toast('Portaria desativada.','🔓');
+      } else {
+        document.getElementById('pin-display').textContent='❌'; beep(200,300);
+        setTimeout(()=>{ pinBuffer=''; document.getElementById('pin-display').textContent=''; },1000);
+      }
+    },150);
+  }
+}
+function pinBack()  { pinBuffer = pinBuffer.slice(0,-1); document.getElementById('pin-display').textContent = '•'.repeat(pinBuffer.length); }
+function pinClear() { pinBuffer=''; document.getElementById('pin-display').textContent=''; }
+function fecharPin(){ document.getElementById('modal-pin').classList.remove('open'); pinBuffer=''; }
+</script>
+</body>
+</html>
