@@ -713,25 +713,35 @@ async function doLogout() {
   setTimeout(() => { location.href = location.pathname; }, 100);
 }
 
-db.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'SIGNED_OUT') { showLogin(); return; }
-  if (session?.user && (!currentUser || currentUser.id !== session.user.id || !appReady)) {
-    currentUser = session.user;
-    await initApp();
-  }
-});
-
-// Restaura sessão existente ao carregar/recarregar a página
+// Restaura sessão ao carregar/recarregar — roda primeiro
 (async function restaurarSessao() {
   try {
     const { data: { session } } = await db.auth.getSession();
     if (session?.user) {
       currentUser = session.user;
       await initApp();
+      // Só registra o listener DEPOIS de restaurar, para não receber SIGNED_OUT espúrio
+      db.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_OUT') { showLogin(); return; }
+        if (event === 'TOKEN_REFRESHED' && session?.user) {
+          currentUser = session.user;
+          if (!appReady) await initApp();
+        }
+      });
+    } else {
+      // Sem sessão — mostra login e registra listener normalmente
+      showLogin();
+      db.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_OUT') { showLogin(); return; }
+        if (session?.user && (!currentUser || !appReady)) {
+          currentUser = session.user;
+          await initApp();
+        }
+      });
     }
-    // Se não tiver sessão, onAuthStateChange vai cuidar do fluxo
   } catch(e) {
     console.warn('Erro ao restaurar sessão:', e);
+    showLogin();
   }
 })();
 
