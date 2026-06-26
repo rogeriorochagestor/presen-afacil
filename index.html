@@ -475,6 +475,8 @@ let currentUser = null, currentProfile = null, currentEscola = null;
 let modelsLoaded = false, appReady = false;
 let scanStream = null, modalStream = null;
 let scanRunning = false, scanTimer = null;
+let lastConfirmedAt = 0;
+let recentlyConfirmedIds = new Map(); // id -> timestamp
 let localDescriptors = [], alunosCache = [], turmasCache = [];
 let confirmCandidate = null;
 let kioskActive = false, pinBuffer = '';
@@ -1006,6 +1008,18 @@ async function runDetection() {
     scanTimer = setTimeout(runDetection, 500);
     return;
   }
+  // Cooldown: após confirmar uma presença, espera 3s antes de buscar novo rosto
+  if (Date.now() - lastConfirmedAt < 3000) {
+    setScanStatus('found','✓ Aguardando próximo aluno...');
+    scanTimer = setTimeout(runDetection, 800);
+    return;
+  }
+  // Limpa IDs recém-confirmados há mais de 60s
+  const agora = Date.now();
+  for (const [id, ts] of recentlyConfirmedIds.entries()) {
+    if (agora - ts > 60000) recentlyConfirmedIds.delete(id);
+  }
+
   const video = document.getElementById('video');
   const canvas = document.getElementById('overlay');
   if (!video || !canvas || video.readyState < 2) {
@@ -1035,8 +1049,17 @@ async function runDetection() {
       for (const d of resized) {
         const match = matcher.findBestMatch(d.descriptor);
         if (match.label!=='unknown') {
+          // PULA se foi confirmado recentemente (evita re-detectar a mesma pessoa)
+          if (recentlyConfirmedIds.has(match.label)) {
+            setScanStatus('found','✓ '+(localDescriptors.find(a=>a.id===match.label)?.nome.split(' ')[0]||'')+' já registrado');
+            continue;
+          }
           const aluno = localDescriptors.find(a=>a.id===match.label);
-          if (aluno) { mostrarConfirmacao(aluno); return; }
+          if (aluno) {
+            mostrarConfirmacao(aluno);
+            scanTimer = setTimeout(runDetection, 500);
+            return;
+          }
         }
       }
     }
@@ -1057,6 +1080,10 @@ function mostrarConfirmacao(aluno) {
 
 function naoSouEu() {
   document.getElementById('confirm-overlay').classList.remove('show');
+  if (confirmCandidate) {
+    // Bloqueia esse rosto temporariamente para não pedir confirmação de novo
+    recentlyConfirmedIds.set(confirmCandidate.id, Date.now());
+  }
   confirmCandidate = null;
   abrirListaManual();
 }
@@ -1091,6 +1118,9 @@ async function confirmarPresenca() {
     if (error.code === '23505' || (error.message||'').includes('duplicate')) {
       toast(aluno.nome+' já registrou presença hoje.','⚠️',4000);
       beep(330,200);
+      // Bloqueia este aluno para não ficar pedindo confirmação repetida
+      recentlyConfirmedIds.set(aluno.id, Date.now());
+      lastConfirmedAt = Date.now();
     } else {
       toast('Erro: '+error.message,'❌',5000);
     }
@@ -1101,6 +1131,9 @@ async function confirmarPresenca() {
   setTimeout(()=>document.body.classList.remove('flash-success'),800);
   showResultCard(aluno, timeStr(), atrasado);
   renderTodayList();
+  // Anti-duplicação: bloqueia este aluno por 60s e ativa cooldown geral de 3s
+  recentlyConfirmedIds.set(aluno.id, Date.now());
+  lastConfirmedAt = Date.now();
 }
 
 function showResultCard(aluno, hora, atrasado) {
