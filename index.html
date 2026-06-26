@@ -146,6 +146,15 @@ tr:last-child td{border-bottom:none}
 .offline-banner.show{display:block}
 .conn-dot{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 5px var(--success);flex-shrink:0;transition:background .3s,box-shadow .3s}
 .conn-dot.offline{background:var(--warning);box-shadow:0 0 5px var(--warning)}
+.tarefa-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;transition:opacity .2s}
+.tarefa-card.enviado{opacity:.45;border-color:rgba(34,197,94,.25);background:rgba(34,197,94,.04)}
+.tarefa-card .tc-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-family:'Space Grotesk',sans-serif;flex-shrink:0}
+.tarefa-card .tc-info{flex:1;min-width:120px}
+.tarefa-card .tc-nome{font-size:13px;font-weight:600;margin-bottom:2px}
+.tarefa-card .tc-sub{font-size:10px;color:var(--text2)}
+.tarefa-card .tc-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.tc-enviado-badge{font-size:10px;font-weight:700;color:var(--success);display:flex;align-items:center;gap:3px}
+.tab-badge{display:inline-flex;align-items:center;justify-content:center;background:var(--danger);color:#fff;border-radius:10px;font-size:9px;font-weight:700;min-width:16px;height:16px;padding:0 4px;margin-left:4px;vertical-align:middle}
 @keyframes flashSuccess{0%{background:rgba(34,197,94,.3)}100%{background:transparent}}
 .flash-success{animation:flashSuccess .8s ease-out}
 </style>
@@ -190,6 +199,7 @@ tr:last-child td{border-bottom:none}
     <button class="tab" onclick="switchTab(this,'alunos')">👤 Alunos</button>
     <button class="tab" onclick="switchTab(this,'turmas')">🎓 Turmas</button>
     <button class="tab" onclick="switchTab(this,'presencas')">📋 Presenças</button>
+    <button class="tab" id="tab-tarefas" onclick="switchTab(this,'tarefas')">✉️ Tarefas</button>
     <button class="tab" onclick="switchTab(this,'analises')">📊 Análises</button>
     <button class="tab" onclick="switchTab(this,'config')">⚙️ Config</button>
   </nav>
@@ -270,6 +280,76 @@ tr:last-child td{border-bottom:none}
       <button class="btn btn-sm" style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:var(--warning)" onclick="avisarAusentes()">📱 Ausentes</button>
     </div>
     <div class="table-wrap"><table><thead><tr><th>Aluno</th><th>Turma</th><th>Hora</th><th>Status</th><th></th></tr></thead><tbody id="presencas-body"></tbody></table></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- TAREFAS DIÁRIAS                           -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="page" id="page-tarefas">
+    <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:8px">
+      <div>
+        <p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700">Tarefas Diárias</p>
+        <p style="font-size:11px;color:var(--text2)" id="tarefas-data">—</p>
+      </div>
+      <div class="row" style="gap:6px;align-items:center">
+        <div id="tarefas-badge-resumo" style="font-size:11px;color:var(--text2)"></div>
+        <button class="btn btn-ghost btn-sm" onclick="renderTarefas()">🔄 Atualizar</button>
+      </div>
+    </div>
+
+    <!-- KPIs resumo do dia -->
+    <div class="kpi-row" style="margin-bottom:18px">
+      <div class="kpi-card">
+        <div class="kpi-label">No horário</div>
+        <div class="kpi-value" id="tf-kpi-ok" style="color:var(--success)">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Atrasados</div>
+        <div class="kpi-value" id="tf-kpi-atrasados" style="color:var(--warning)">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Faltaram</div>
+        <div class="kpi-value" id="tf-kpi-faltas" style="color:var(--danger)">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Mensagens pendentes</div>
+        <div class="kpi-value" id="tf-kpi-pendentes" style="color:var(--accent)">—</div>
+      </div>
+    </div>
+
+    <!-- Seção: Atrasados -->
+    <div id="tf-sec-atrasados">
+      <div class="row" style="align-items:center;gap:8px;margin-bottom:8px">
+        <p class="sec" style="margin:0">⚠️ Atrasados</p>
+        <span id="tf-badge-atrasados" class="badge badge-warning" style="display:none"></span>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="marcarTodosGrupo('atrasado')">✓ Marcar todos enviados</button>
+      </div>
+      <div id="tf-lista-atrasados"><div class="empty"><p>Carregando...</p></div></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Seção: Faltaram -->
+    <div id="tf-sec-faltas">
+      <div class="row" style="align-items:center;gap:8px;margin-bottom:8px">
+        <p class="sec" style="margin:0">❌ Faltaram hoje</p>
+        <span id="tf-badge-faltas" class="badge badge-warning" style="display:none"></span>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="marcarTodosGrupo('falta')">✓ Marcar todos enviados</button>
+      </div>
+      <div id="tf-lista-faltas"><div class="empty"><p>Carregando...</p></div></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Seção: No horário (sem telefone ou só informativo) -->
+    <div id="tf-sec-ok">
+      <div class="row" style="align-items:center;gap:8px;margin-bottom:8px">
+        <p class="sec" style="margin:0">✅ Chegaram no horário</p>
+        <span id="tf-badge-ok" class="badge badge-success" style="display:none"></span>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="marcarTodosGrupo('ok')">✓ Marcar todos enviados</button>
+      </div>
+      <div id="tf-lista-ok"><div class="empty"><p>Carregando...</p></div></div>
+    </div>
   </div>
 
   <div class="page" id="page-analises">
@@ -775,6 +855,7 @@ function switchTab(el, id) {
   if (id==='alunos')        renderAlunos();
   if (id==='turmas')        renderTurmas();
   if (id==='presencas')     { loadTurmaFilter(); renderPresencas(); }
+  if (id==='tarefas')       renderTarefas();
   if (id==='analises')      renderAnalises();
   if (id==='config')        loadConfig();
 }
@@ -1175,6 +1256,8 @@ async function confirmarPresenca() {
   renderTodayList();
   recentlyConfirmedIds.set(aluno.id, Date.now());
   lastConfirmedAt = Date.now();
+  // Atualiza badge da aba Tarefas
+  setTimeout(atualizarBadgeTarefas, 500);
 }
 
 function showResultCard(aluno, hora, atrasado, offline=false) {
@@ -2035,6 +2118,231 @@ async function restaurarBackup() {
   } catch(e) {
     toast('Erro ao restaurar: '+e.message,'❌',5000);
   }
+}
+
+// ════════════════════════════════════════════════
+// TAREFAS DIÁRIAS
+// ════════════════════════════════════════════════
+
+// Chave de storage inclui a data para resetar automaticamente no dia seguinte
+function tarefasKey() { return 'pf-tarefas-'+todayStr()+(currentEscola?.id||''); }
+
+function tarefasGetEnviados() {
+  try { return JSON.parse(localStorage.getItem(tarefasKey())||'{}'); } catch(e) { return {}; }
+}
+function tarefasMarcarEnviado(alunoId) {
+  const obj = tarefasGetEnviados();
+  obj[alunoId] = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  try { localStorage.setItem(tarefasKey(), JSON.stringify(obj)); } catch(e) {}
+}
+function tarefasIsEnviado(alunoId) {
+  return !!tarefasGetEnviados()[alunoId];
+}
+function tarefasHoraEnvio(alunoId) {
+  return tarefasGetEnviados()[alunoId] || '';
+}
+
+async function renderTarefas() {
+  if (!currentEscola) return;
+  await refreshCache();
+
+  // Atualiza data no cabeçalho
+  const hoje = new Date();
+  document.getElementById('tarefas-data').textContent =
+    'Dia ' + hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  // Busca presenças de hoje
+  const { data: presHoje } = await db.from('presencas')
+    .select('*')
+    .eq('escola_id', currentEscola.id)
+    .eq('data', todayStr());
+
+  const presentesIds = new Set((presHoje||[]).map(p => p.aluno_id));
+  const presMap = {};
+  (presHoje||[]).forEach(p => presMap[p.aluno_id] = p);
+
+  // Classifica alunos
+  const atrasados = [], ok = [], faltaram = [];
+  for (const a of alunosCache) {
+    if (presentesIds.has(a.id)) {
+      if (presMap[a.id]?.atrasado) atrasados.push({...a, presenca: presMap[a.id]});
+      else ok.push({...a, presenca: presMap[a.id]});
+    } else {
+      faltaram.push(a);
+    }
+  }
+
+  // KPIs
+  document.getElementById('tf-kpi-ok').textContent = ok.length;
+  document.getElementById('tf-kpi-atrasados').textContent = atrasados.length;
+  document.getElementById('tf-kpi-faltas').textContent = faltaram.length;
+
+  // Calcula pendentes (atrasados + faltaram com telefone e não enviados)
+  const comAcao = [...atrasados, ...faltaram].filter(a => a.telefone_resp && !tarefasIsEnviado(a.id));
+  document.getElementById('tf-kpi-pendentes').textContent = comAcao.length;
+
+  // Atualiza badge na aba
+  const tabEl = document.getElementById('tab-tarefas');
+  const badgeExist = tabEl.querySelector('.tab-badge');
+  if (badgeExist) badgeExist.remove();
+  if (comAcao.length > 0) {
+    tabEl.innerHTML = '✉️ Tarefas<span class="tab-badge">'+comAcao.length+'</span>';
+  } else {
+    tabEl.textContent = '✉️ Tarefas';
+  }
+
+  // Renderiza seções
+  renderSecaoTarefas('atrasados', atrasados, 'atrasado',
+    a => `⚠️ Aviso de atraso: ${a.nome} chegou às ${(a.presenca?.hora||'').slice(0,5)} (${a.turma_nome||''}).`,
+    'tf-lista-atrasados', 'tf-badge-atrasados');
+
+  renderSecaoTarefas('faltas', faltaram, 'falta',
+    a => `❌ Falta: ${a.nome} (${a.turma_nome||''}) não compareceu hoje, ${hoje.toLocaleDateString('pt-BR')}.`,
+    'tf-lista-faltas', 'tf-badge-faltas');
+
+  renderSecaoTarefas('ok', ok, 'ok',
+    a => `✅ Presença: ${a.nome} chegou no horário hoje às ${(a.presenca?.hora||'').slice(0,5)}.`,
+    'tf-lista-ok', 'tf-badge-ok');
+
+  // Atualiza resumo
+  document.getElementById('tarefas-badge-resumo').textContent =
+    comAcao.length > 0 ? comAcao.length+' pendente(s)' : '✅ Tudo enviado';
+}
+
+function renderSecaoTarefas(grupo, lista, tipo, msgFn, listaId, badgeId) {
+  const el = document.getElementById(listaId);
+  const badge = document.getElementById(badgeId);
+  const pendentes = lista.filter(a => a.telefone_resp && !tarefasIsEnviado(a.id)).length;
+
+  if (badge) {
+    if (pendentes > 0) { badge.textContent = pendentes+' pendente'+(pendentes>1?'s':''); badge.style.display=''; }
+    else { badge.style.display='none'; }
+  }
+
+  if (!lista.length) {
+    el.innerHTML = '<div class="empty" style="padding:18px"><p>Nenhum aluno nesta categoria hoje.</p></div>';
+    return;
+  }
+
+  el.innerHTML = lista.map(a => {
+    const enviado = tarefasIsEnviado(a.id);
+    const hora = tarefasHoraEnvio(a.id);
+    const tel = formatTel(a.telefone_resp);
+    const msg = encodeURIComponent(msgFn(a));
+    const temTel = !!tel;
+
+    let statusHtml = '';
+    if (enviado) {
+      statusHtml = `<span class="tc-enviado-badge">✓ Enviado ${hora}</span>`;
+    } else if (temTel) {
+      statusHtml = `<a href="https://wa.me/${tel}?text=${msg}" target="_blank" class="btn btn-wpp btn-sm" onclick="tarefaClicarWpp('${a.id}','${grupo}')">📱 Enviar WPP</a>`;
+    } else {
+      statusHtml = `<span style="font-size:10px;color:var(--text3)">Sem telefone</span>`;
+    }
+
+    // Info da presença/falta
+    let subInfo = a.turma_nome || '—';
+    if (tipo === 'atrasado' && a.presenca?.hora) subInfo += ' · chegou às '+(a.presenca.hora||'').slice(0,5);
+    if (tipo === 'falta') subInfo += ' · faltou hoje';
+    if (tipo === 'ok' && a.presenca?.hora) subInfo += ' · chegou às '+(a.presenca.hora||'').slice(0,5);
+
+    return `<div class="tarefa-card ${enviado?'enviado':''}" id="tc-${a.id}">
+      <div class="tc-avatar" style="background:${getColor(a.nome)}22;color:${getColor(a.nome)}">${getInit(a.nome)}</div>
+      <div class="tc-info">
+        <div class="tc-nome">${a.nome}</div>
+        <div class="tc-sub">${subInfo}</div>
+      </div>
+      <div class="tc-actions">${statusHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function tarefaClicarWpp(alunoId, grupo) {
+  // Marca como enviado após clicar no link
+  setTimeout(() => {
+    tarefasMarcarEnviado(alunoId);
+    // Atualiza só o card sem re-renderizar tudo
+    const card = document.getElementById('tc-'+alunoId);
+    if (card) {
+      card.classList.add('enviado');
+      const actions = card.querySelector('.tc-actions');
+      const hora = tarefasHoraEnvio(alunoId);
+      if (actions) actions.innerHTML = `<span class="tc-enviado-badge">✓ Enviado ${hora}</span>`;
+    }
+    // Atualiza KPI de pendentes e badge da aba
+    _atualizarKpiPendentes();
+  }, 800); // pequeno delay para garantir que o WPP abriu
+}
+
+function _atualizarKpiPendentes() {
+  // Recalcula só o contador de pendentes sem refazer tudo
+  const enviados = tarefasGetEnviados();
+  const pendentes = [...alunosCache].filter(a => {
+    if (!a.telefone_resp) return false;
+    if (enviados[a.id]) return false;
+    return true; // ainda não calculamos se é atrasado/falta aqui; valor aproximado
+  });
+  // Re-render completo só dos KPIs e badge
+  const tabEl = document.getElementById('tab-tarefas');
+  const kpiEl = document.getElementById('tf-kpi-pendentes');
+  const resumoEl = document.getElementById('tarefas-badge-resumo');
+  // Conta cards visíveis como pendentes (mais preciso)
+  const totalCards = document.querySelectorAll('#page-tarefas .tarefa-card:not(.enviado)').length;
+  const semTel = document.querySelectorAll('#page-tarefas .tarefa-card:not(.enviado) .tc-actions [style*="Sem telefone"]').length;
+  const reaisPendentes = Math.max(0, totalCards - semTel);
+  if (kpiEl) kpiEl.textContent = reaisPendentes;
+  if (resumoEl) resumoEl.textContent = reaisPendentes > 0 ? reaisPendentes+' pendente(s)' : '✅ Tudo enviado';
+  if (tabEl) {
+    const badgeExist = tabEl.querySelector('.tab-badge');
+    if (badgeExist) badgeExist.remove();
+    if (reaisPendentes > 0) {
+      tabEl.innerHTML = '✉️ Tarefas<span class="tab-badge">'+reaisPendentes+'</span>';
+    } else {
+      tabEl.textContent = '✉️ Tarefas';
+    }
+  }
+  // Atualiza badges das seções
+  ['atrasados','faltas','ok'].forEach(grupo => {
+    const badge = document.getElementById('tf-badge-'+grupo);
+    if (!badge) return;
+    const sec = document.getElementById('tf-lista-'+grupo);
+    if (!sec) return;
+    const p = sec.querySelectorAll('.tarefa-card:not(.enviado) a.btn-wpp').length;
+    if (p > 0) { badge.textContent = p+' pendente'+(p>1?'s':''); badge.style.display=''; }
+    else { badge.style.display='none'; }
+  });
+}
+
+function marcarTodosGrupo(tipo) {
+  // Encontra todos os cards não enviados com botão WPP no grupo
+  let listaId;
+  if (tipo === 'atrasado') listaId = 'tf-lista-atrasados';
+  else if (tipo === 'falta') listaId = 'tf-lista-faltas';
+  else listaId = 'tf-lista-ok';
+  const sec = document.getElementById(listaId);
+  if (!sec) return;
+  const cards = sec.querySelectorAll('.tarefa-card:not(.enviado)');
+  cards.forEach(card => {
+    const id = card.id.replace('tc-','');
+    if (!id) return;
+    tarefasMarcarEnviado(id);
+    card.classList.add('enviado');
+    const actions = card.querySelector('.tc-actions');
+    const hora = tarefasHoraEnvio(id);
+    if (actions) actions.innerHTML = `<span class="tc-enviado-badge">✓ Enviado ${hora}</span>`;
+  });
+  _atualizarKpiPendentes();
+  toast('Todos marcados como enviados.','✅');
+}
+
+// Atualiza badge da aba Tarefas após confirmar presença (chamado a partir do scanner)
+function atualizarBadgeTarefas() {
+  if (!currentEscola) return;
+  // Só atualiza se a aba já foi carregada (evita query desnecessária)
+  const page = document.getElementById('page-tarefas');
+  if (page && page.classList.contains('active')) renderTarefas();
+  // Senão atualiza só o badge contando pendentes salvos
+  else _atualizarKpiPendentes();
 }
 
 // ════════════════════════════════════════════════
