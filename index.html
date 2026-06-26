@@ -525,13 +525,19 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
       if (k.startsWith('sb-') || k.startsWith('pf-auth') || k.startsWith('supabase')) {
         try {
           const v = localStorage.getItem(k);
-          // Remove APENAS se o conteúdo tiver deviceAttributes (bug conhecido do Supabase)
-          if (v && v.includes('deviceAttributes')) {
+          if (!v || v === 'undefined' || v === 'null') {
+            localStorage.removeItem(k); continue;
+          }
+          // Tenta fazer parse — se falhar ou tiver deviceAttributes, remove
+          const parsed = JSON.parse(v);
+          if (parsed && typeof parsed === 'object' && 'deviceAttributes' in parsed) {
             localStorage.removeItem(k);
             console.log('Token corrompido removido:', k);
           }
-          // Não remove no catch — pode ser uma chave válida com erro de leitura pontual
-        } catch(e) { console.warn('Erro ao ler chave', k, e); }
+        } catch(e) {
+          // JSON inválido — remove a chave
+          try { localStorage.removeItem(k); } catch(e2) {}
+        }
       }
     }
   } catch(e) {}
@@ -539,8 +545,9 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 
 // Capturar erros globais do Supabase que travam o app
 window.addEventListener('unhandledrejection', function(e) {
-  if (e.reason && e.reason.message && e.reason.message.includes('deviceAttributes')) {
-    console.warn('Ignorando erro deviceAttributes:', e.reason.message);
+  const msg = e.reason?.message || e.reason || '';
+  if (String(msg).includes('deviceAttributes') || String(msg).includes('Cannot read properties of undefined')) {
+    console.warn('Erro Supabase interno ignorado:', msg);
     e.preventDefault();
   }
 });
@@ -551,13 +558,21 @@ const _pfStorage = {
   getItem(key) {
     try {
       const v = localStorage.getItem(key);
-      if (v && v.includes('deviceAttributes')) { localStorage.removeItem(key); return null; }
-      return v ?? this._mem[key] ?? null;
+      // Nunca retorna undefined — só string ou null
+      if (v === undefined || v === null) return this._mem[key] ?? null;
+      // Remove chaves corrompidas com deviceAttributes
+      if (typeof v === 'string' && v.includes('deviceAttributes')) {
+        localStorage.removeItem(key);
+        delete this._mem[key];
+        return null;
+      }
+      return v;
     } catch(e) { return this._mem[key] ?? null; }
   },
   setItem(key, value) {
+    if (value === undefined || value === null) return;
     this._mem[key] = value;
-    try { localStorage.setItem(key, value); } catch(e) {}
+    try { localStorage.setItem(key, String(value)); } catch(e) {}
   },
   removeItem(key) {
     delete this._mem[key];
