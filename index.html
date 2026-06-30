@@ -303,9 +303,14 @@ tr:last-child td{border-bottom:none}
     </div>
     <div class="filters">
       <input type="text" id="filter-alunos" placeholder="Buscar..." oninput="renderAlunos()">
-      <select id="filter-alunos-bio" onchange="renderAlunos()"><option value="">Todos</option><option value="sim">Com foto</option><option value="nao">Sem foto</option></select>
+      <select id="filter-alunos-turma" onchange="renderAlunos()"><option value="">Todas as turmas</option></select>
+      <select id="filter-alunos-bio" onchange="renderAlunos()"><option value="">Todos (foto)</option><option value="sim">Com foto</option><option value="nao">Sem foto</option></select>
+      <select id="filter-alunos-status" onchange="renderAlunos()"><option value="ativo">Ativos</option><option value="inativo">Inativos</option><option value="todos">Todos os status</option></select>
     </div>
-    <div class="cards-grid" id="alunos-grid"><div class="empty" style="grid-column:1/-1"><p>Carregando...</p></div></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Aluno</th><th>Turma</th><th>Foto</th><th>WhatsApp</th><th>Status</th><th></th></tr></thead>
+      <tbody id="alunos-grid"><tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">Carregando...</td></tr></tbody>
+    </table></div>
   </div>
 
   <div class="page" id="page-turmas">
@@ -634,6 +639,8 @@ let editingAluno=null, editingTurma=null, editingEscola=null, editingGestor=null
 // Cache em memória dos alunos que já marcaram presença hoje — evita duplicatas sem consultar banco
 let presentesHoje = new Set(); // Set de aluno_id
 let presentesHojeData = '';    // data do cache — se mudar o dia, limpa automaticamente
+let _todosAlunosCache = null;  // cache de alunos incluindo inativos (para filtro de status)
+let _todosAlunosCacheTime = 0;
 
 let audioCtx = null;
 function beep(freq=880, dur=120) {
@@ -1439,31 +1446,94 @@ async function renderAlunos() {
   await refreshCache();
   const q = (document.getElementById('filter-alunos')?.value||'').toLowerCase().trim();
   const bio = document.getElementById('filter-alunos-bio')?.value;
-  let lista = [...alunosCache];
+  const turmaFiltro = document.getElementById('filter-alunos-turma')?.value;
+  const statusFiltro = document.getElementById('filter-alunos-status')?.value || 'ativo';
+
+  // Busca TODOS os alunos (ativos e inativos) só quando necessário
+  let baseAlunos = alunosCache; // já vem só ativo:true do refreshCache
+  if (statusFiltro !== 'ativo') {
+    if (!_todosAlunosCache || _todosAlunosCacheTime < Date.now() - 5000) {
+      const { data } = await db.from('alunos').select('*').eq('escola_id', currentEscola.id).order('nome');
+      _todosAlunosCache = (data||[]).map(a => {
+        const t = turmasCache.find(x=>x.id===a.turma_id);
+        return { ...a, turma_nome: t?.nome||null, turma_periodo: t?.periodo||null };
+      });
+      _todosAlunosCacheTime = Date.now();
+    }
+    baseAlunos = _todosAlunosCache;
+  }
+
+  let lista = [...baseAlunos];
+  if (statusFiltro === 'ativo') lista = lista.filter(a => a.ativo !== false);
+  else if (statusFiltro === 'inativo') lista = lista.filter(a => a.ativo === false);
+  // 'todos' não filtra
+
   if (q) lista = lista.filter(a => a.nome.toLowerCase().includes(q) || (a.turma_nome||'').toLowerCase().includes(q));
+  if (turmaFiltro) lista = lista.filter(a => a.turma_id === turmaFiltro);
   if (bio==='sim') lista = lista.filter(a=>a.descriptor);
   if (bio==='nao') lista = lista.filter(a=>!a.descriptor);
+
   const completos = alunosCache.filter(a=>a.descriptor && (a.telefone_resp||a.telefone_resp2)).length;
-  document.getElementById('alunos-count').textContent = alunosCache.length+' aluno(s) · '+lista.length+' filtrado(s) · '+completos+' completo(s)';
-  const grid = document.getElementById('alunos-grid');
-  if (!lista.length) { grid.innerHTML='<div class="empty" style="grid-column:1/-1"><p>Nenhum aluno.</p></div>'; return; }
-  grid.innerHTML = lista.map(a=>{
+  document.getElementById('alunos-count').textContent = alunosCache.length+' ativo(s) · '+lista.length+' exibido(s) · '+completos+' completo(s)';
+
+  // Popula filtro de turmas (uma vez)
+  const selTurma = document.getElementById('filter-alunos-turma');
+  if (selTurma && selTurma.options.length <= 1) {
+    selTurma.innerHTML = '<option value="">Todas as turmas</option>' +
+      turmasCache.map(t=>`<option value="${t.id}">${t.nome} (${t.periodo})</option>`).join('');
+  }
+
+  const tbody = document.getElementById('alunos-grid');
+  if (!lista.length) { tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">Nenhum aluno encontrado.</td></tr>'; return; }
+
+  tbody.innerHTML = lista.map(a => {
     const temFoto = !!a.descriptor;
     const temTel = !!(a.telefone_resp || a.telefone_resp2);
-    const completo = temFoto && temTel;
-    let statusTag;
-    if (completo) statusTag = '<div class="bio-dot" title="Cadastro completo"></div>';
-    else if (!temFoto && !temTel) statusTag = '<div class="no-bio-tag" style="background:var(--danger)">SEM FOTO E TEL.</div>';
-    else if (!temFoto) statusTag = '<div class="no-bio-tag">SEM FOTO</div>';
-    else statusTag = '<div class="no-bio-tag" style="background:var(--warning);color:#000">SEM WHATSAPP</div>';
-    return '<div class="s-card '+(completo?'':'no-bio')+'"><button class="del-btn" onclick="excluirAluno(\''+a.id+'\')">✕</button>'+statusTag+'<div class="avatar" style="background:'+getColor(a.nome)+'22;color:'+getColor(a.nome)+'">'+getInit(a.nome)+'</div><div class="sname">'+a.nome+'</div><div class="sturma">'+(a.turma_nome||'Sem turma')+'</div><div class="card-actions"><button class="btn btn-ghost" onclick="editarAluno(\''+a.id+'\')">✏️</button><button class="btn btn-primary" onclick="atualizarFoto(\''+a.id+'\')">📸 '+(temFoto?'Refazer':'Tirar')+'</button></div></div>';
+    const inativo = a.ativo === false;
+    const fotoTag = temFoto
+      ? '<span class="badge badge-success">✓ Sim</span>'
+      : '<span class="badge badge-warning">✗ Não</span>';
+    const telTag = temTel
+      ? `<span style="font-size:10px;color:var(--text2)">${[a.telefone_resp&&'1',a.telefone_resp2&&'2'].filter(Boolean).join(' e ')}</span>`
+      : '<span style="font-size:10px;color:var(--text3)">—</span>';
+    const statusTag = inativo
+      ? '<span class="badge" style="background:rgba(239,68,68,.15);color:var(--danger)">Inativo</span>'
+      : '<span class="badge badge-success">Ativo</span>';
+    return `<tr style="${inativo?'opacity:.5':''}">
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div style="width:26px;height:26px;border-radius:50%;background:${getColor(a.nome)}22;color:${getColor(a.nome)};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:'Space Grotesk',sans-serif;flex-shrink:0">${getInit(a.nome)}</div>
+        <span style="font-size:12px;font-weight:600">${a.nome}</span>
+      </div></td>
+      <td style="font-size:11px;color:var(--text2)">${a.turma_nome||'—'}</td>
+      <td>${fotoTag}</td>
+      <td>${telTag}</td>
+      <td>${statusTag}</td>
+      <td><div class="row" style="gap:4px;justify-content:flex-end">
+        <button class="btn btn-ghost btn-sm" onclick="editarAluno('${a.id}')" title="Editar">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="atualizarFoto('${a.id}')" title="Foto">📸</button>
+        ${inativo
+          ? `<button class="btn btn-success btn-sm" onclick="reativarAluno('${a.id}')" title="Reativar">↩️ Ativar</button>`
+          : `<button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="excluirAluno('${a.id}')" title="Inativar">🗑️</button>`
+        }
+      </div></td>
+    </tr>`;
   }).join('');
 }
 
 async function excluirAluno(id) {
-  if (!confirm('Remover este aluno?')) return;
+  const aluno = alunosCache.find(a=>a.id===id);
+  if (!confirm('Inativar '+(aluno?.nome||'este aluno')+'?\n\nO histórico de presenças é mantido, mas ele deixa de aparecer no scanner e nas contagens da escola.')) return;
   await db.from('alunos').update({ativo:false}).eq('id',id);
-  toast('Aluno removido.','🗑');
+  toast('Aluno inativado.','🗑');
+  _todosAlunosCache = null; // invalida cache de status
+  await refreshCache();
+  renderAlunos();
+}
+
+async function reativarAluno(id) {
+  await db.from('alunos').update({ativo:true}).eq('id',id);
+  toast('Aluno reativado.','✅');
+  _todosAlunosCache = null; // invalida cache de status
   await refreshCache();
   renderAlunos();
 }
