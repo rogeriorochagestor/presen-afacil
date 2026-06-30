@@ -422,6 +422,7 @@ tr:last-child td{border-bottom:none}
 
     <p class="sec">Relatórios disponíveis</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:18px">
+      <div class="kpi-card" style="cursor:pointer;border:1px solid rgba(79,142,247,.3);background:rgba(79,142,247,.05)" onclick="relListaChamada()"><div style="font-size:24px;margin-bottom:4px">📋</div><div style="font-size:13px;font-weight:700;font-family:'Space Grotesk',sans-serif">Lista de Chamada</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Presença do dia por turma — para imprimir</div></div>
       <div class="kpi-card" style="cursor:pointer" onclick="relFrequenciaMensal()"><div style="font-size:24px;margin-bottom:4px">📈</div><div style="font-size:13px;font-weight:700;font-family:'Space Grotesk',sans-serif">Frequência Mensal</div><div style="font-size:11px;color:var(--text2);margin-top:2px">% de presença de cada aluno no mês</div></div>
       <div class="kpi-card" style="cursor:pointer" onclick="relAtrasos()"><div style="font-size:24px;margin-bottom:4px">🕐</div><div style="font-size:13px;font-weight:700;font-family:'Space Grotesk',sans-serif">Ranking de Atrasos</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Quem mais se atrasa</div></div>
       <div class="kpi-card" style="cursor:pointer" onclick="relFaltasConsecutivas()"><div style="font-size:24px;margin-bottom:4px">⚠️</div><div style="font-size:13px;font-weight:700;font-family:'Space Grotesk',sans-serif">Faltas Consecutivas</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Alunos com 3+ faltas seguidas</div></div>
@@ -877,13 +878,48 @@ async function refreshCache() {
     const t = turmasCache.find(x=>x.id===a.turma_id);
     return { ...a, turma_nome: t?.nome||null, turma_periodo: t?.periodo||null };
   });
+  // Atualiza descritores filtrados pelo período atual
+  _atualizarDescritoresPeriodo();
+}
+
+// Detecta qual período está ativo agora com base nos horários da escola
+function periodoAtual() {
+  if (!currentEscola) return null;
+  const agora = new Date();
+  const hm = agora.getHours() * 60 + agora.getMinutes();
+  const parse = h => { if (!h) return null; const [hh,mm] = h.split(':'); return parseInt(hh)*60+parseInt(mm); };
+  const mat  = parse(currentEscola.hora_matutino);
+  const vesp = parse(currentEscola.hora_vespertino);
+  const not  = parse(currentEscola.hora_noturno);
+  // Matutino: da hora de entrada até 30min antes do vespertino (ou até 12h)
+  const fimMat  = vesp ? vesp - 30 : 12*60;
+  // Vespertino: da hora de entrada até 30min antes do noturno (ou até 18h)
+  const fimVesp = not  ? not  - 30 : 18*60;
+  // Noturno: da hora de entrada até meia-noite
+  if (mat  && hm >= mat  && hm < fimMat)  return 'Matutino';
+  if (vesp && hm >= vesp && hm < fimVesp) return 'Vespertino';
+  if (not  && hm >= not)                  return 'Noturno';
+  // Fora de qualquer horário definido — carrega tudo (modo seguro)
+  return null;
+}
+
+// Reconstrói localDescriptors apenas para o período ativo (melhora performance)
+function _atualizarDescritoresPeriodo() {
+  const periodo = periodoAtual();
   localDescriptors = [];
-  for (const a of alunosCache) {
+  let fonte = alunosCache;
+  // Filtra pelo período se detectado — turmas Integral sempre incluídas
+  if (periodo) {
+    fonte = alunosCache.filter(a =>
+      a.turma_periodo === periodo ||
+      a.turma_periodo === 'Integral' ||
+      !a.turma_periodo  // turma sem período definido: inclui por segurança
+    );
+  }
+  for (const a of fonte) {
     if (!a.descriptor) continue;
     let arr = a.descriptor;
-    if (typeof arr === 'string') {
-      try { arr = JSON.parse(arr); } catch(e) { continue; }
-    }
+    if (typeof arr === 'string') { try { arr = JSON.parse(arr); } catch(e) { continue; } }
     if (!Array.isArray(arr) || arr.length !== 128) continue;
     localDescriptors.push({
       id:a.id, nome:a.nome, turma_id:a.turma_id, turma_nome:a.turma_nome,
@@ -893,12 +929,27 @@ async function refreshCache() {
       descriptor: new Float32Array(arr)
     });
   }
+  // Atualiza banner com info de período
+  const banner = document.getElementById('gestor-banner');
+  if (banner && currentEscola) {
+    const p = periodo || 'todos os períodos';
+    banner.textContent = currentEscola.nome + ' · ' + localDescriptors.length + ' aluno(s) com foto carregados (' + p + ')';
+  }
 }
 
 async function recarregarFaces() {
   await refreshCache();
-  toast(localDescriptors.length+' aluno(s) com foto carregado(s).','🔄');
+  const periodo = periodoAtual();
+  const msg = periodo
+    ? localDescriptors.length+' aluno(s) carregados — período '+periodo
+    : localDescriptors.length+' aluno(s) carregados (todos os períodos)';
+  toast(msg,'🔄',4000);
 }
+
+// Atualiza descritores automaticamente quando o período muda (a cada 5 minutos)
+setInterval(() => {
+  if (alunosCache.length > 0) _atualizarDescritoresPeriodo();
+}, 5 * 60 * 1000);
 
 function switchTab(el, id) {
   const isDono = currentProfile?.role === 'dono';
@@ -1288,6 +1339,16 @@ async function confirmarPresenca() {
   }
 
   const periodo = aluno.turma_periodo || 'Matutino';
+
+  // Verifica se o aluno está no período correto do horário atual
+  const periodoHoje = periodoAtual();
+  if (periodoHoje && aluno.turma_periodo && aluno.turma_periodo !== 'Integral' && aluno.turma_periodo !== periodoHoje) {
+    toast(`${aluno.nome} é do período ${aluno.turma_periodo}, mas agora é horário do ${periodoHoje}.`,'⚠️',5000);
+    beep(220,300);
+    recentlyConfirmedIds.set(aluno.id, Date.now());
+    lastConfirmedAt = Date.now();
+    return;
+  }
   const horaMap = {
     'Matutino':   currentEscola?.hora_matutino,
     'Vespertino': currentEscola?.hora_vespertino,
@@ -2225,6 +2286,134 @@ async function renderAnalises() {
 // ════════════════════════════════════════════════
 // RELATÓRIO 1: Frequência Mensal por Aluno
 // ════════════════════════════════════════════════
+async function relListaChamada() {
+  if (!currentEscola) return;
+  await refreshCache();
+
+  // Seleciona data e turma
+  const hoje = todayStr();
+  const turmaOpts = ['Todas as turmas', ...turmasCache.map(t=>t.nome+' ('+t.periodo+')')];
+  const area = document.getElementById('rel-area');
+  area.innerHTML = `
+    <div class="kpi-card" style="margin-top:14px">
+      <p style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;margin-bottom:12px">📋 Lista de Chamada</p>
+      <div class="filters" style="margin-bottom:12px">
+        <input type="date" id="chamada-data" value="${hoje}">
+        <select id="chamada-turma">
+          ${turmaOpts.map((t,i)=>`<option value="${i===0?'':turmasCache[i-1]?.id||''}">${t}</option>`).join('')}
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="gerarListaChamada()">📄 Gerar PDF</button>
+      </div>
+      <p style="font-size:11px;color:var(--text2)">Selecione a data e turma, depois clique em Gerar PDF. O relatório mostra todos os alunos da turma com presença, falta ou situação do dia.</p>
+    </div>`;
+  area.scrollIntoView({behavior:'smooth'});
+}
+
+async function gerarListaChamada() {
+  const data = document.getElementById('chamada-data').value || todayStr();
+  const turmaId = document.getElementById('chamada-turma').value;
+  await refreshCache();
+
+  // Busca presenças do dia
+  let q = db.from('presencas').select('*').eq('escola_id',currentEscola.id).eq('data',data);
+  if (turmaId) q = q.eq('turma_id', turmaId);
+  const { data: pres } = await q;
+  const presMap = {};
+  (pres||[]).forEach(p => presMap[p.aluno_id] = p);
+
+  // Lista de alunos
+  let alunos = alunosCache;
+  if (turmaId) alunos = alunos.filter(a => a.turma_id === turmaId);
+  if (!alunos.length) { toast('Nenhum aluno nesta turma.','⚠️'); return; }
+  alunos = [...alunos].sort((a,b)=>a.nome.localeCompare(b.nome));
+
+  // Gera PDF diretamente (layout especial para impressão)
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const dtFormatada = new Date(data+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  // Cabeçalho
+  if (currentEscola?.logo) {
+    try { doc.addImage(currentEscola.logo,'PNG',15,8,18,18); } catch(e) {}
+  }
+  const xOff = currentEscola?.logo ? 37 : 15;
+  doc.setFontSize(11); doc.setTextColor(40,40,40);
+  doc.text(currentEscola?.nome||'Escola', xOff, 14);
+  doc.setFontSize(9); doc.setTextColor(100,100,100);
+  doc.text(currentEscola?.cidade||'', xOff, 19);
+
+  // Título
+  const nTurma = turmaId ? (turmasCache.find(t=>t.id===turmaId)?.nome||'Turma') : 'Todas as Turmas';
+  doc.setFontSize(14); doc.setTextColor(30,30,30);
+  doc.text('Lista de Chamada — '+nTurma, 15, 34);
+  doc.setFontSize(9); doc.setTextColor(120,120,120);
+  doc.text(dtFormatada.charAt(0).toUpperCase()+dtFormatada.slice(1), 15, 40);
+
+  const presentes = alunos.filter(a=>presMap[a.id]).length;
+  const faltas = alunos.length - presentes;
+  const pct = alunos.length ? Math.round(presentes/alunos.length*100) : 0;
+  doc.text(`Total: ${alunos.length} alunos  |  Presentes: ${presentes}  |  Faltas: ${faltas}  |  Frequência: ${pct}%`, 15, 46);
+
+  // Tabela
+  const rows = alunos.map((a,i) => {
+    const p = presMap[a.id];
+    const status = p ? (p.atrasado ? 'ATRASADO' : 'PRESENTE') : 'FALTA';
+    const hora = p ? (p.hora||'').slice(0,5) : '—';
+    return [
+      String(i+1).padStart(2,'0'),
+      a.nome,
+      a.turma_nome||'—',
+      hora,
+      status
+    ];
+  });
+
+  doc.autoTable({
+    startY: 50,
+    head: [['Nº','Nome do Aluno','Turma','Chegada','Status']],
+    body: rows,
+    theme: 'grid',
+    headStyles: { fillColor: [40,40,40], textColor: 255, fontSize: 8, fontStyle:'bold' },
+    bodyStyles: { fontSize: 8 },
+    columnStyles: {
+      0: { cellWidth: 10, halign:'center' },
+      2: { cellWidth: 30 },
+      3: { cellWidth: 20, halign:'center' },
+      4: { cellWidth: 25, halign:'center' }
+    },
+    didParseCell: (d) => {
+      if (d.section==='body' && d.column.index===4) {
+        if (d.cell.raw==='PRESENTE') { d.cell.styles.textColor=[34,139,34]; d.cell.styles.fontStyle='bold'; }
+        else if (d.cell.raw==='FALTA') { d.cell.styles.textColor=[200,30,30]; d.cell.styles.fontStyle='bold'; }
+        else if (d.cell.raw==='ATRASADO') { d.cell.styles.textColor=[180,120,0]; d.cell.styles.fontStyle='bold'; }
+      }
+    },
+    alternateRowStyles: { fillColor: [248,249,252] },
+    margin: { left:15, right:15 }
+  });
+
+  // Assinatura
+  const finalY = doc.lastAutoTable.finalY + 20;
+  if (finalY < 260) {
+    doc.setFontSize(9); doc.setTextColor(80,80,80);
+    doc.text('Assinatura do Professor: _________________________________', 15, finalY);
+    doc.text('Visto da Coordenação: _________________________________', 15, finalY+10);
+  }
+
+  // Rodapé
+  const pg = doc.internal.getNumberOfPages();
+  for (let i=1;i<=pg;i++) {
+    doc.setPage(i);
+    doc.setFontSize(7); doc.setTextColor(160,160,160);
+    doc.text('PresençaFácil · Emitido em '+new Date().toLocaleString('pt-BR'), 15, doc.internal.pageSize.height-6);
+    doc.text('Pág '+i+'/'+pg, doc.internal.pageSize.width-22, doc.internal.pageSize.height-6);
+  }
+
+  const fname = 'chamada-'+nTurma.replace(/[^a-z0-9]/gi,'-').toLowerCase()+'-'+data+'.pdf';
+  doc.save(fname);
+  toast('PDF gerado: '+fname,'📄');
+}
+
 async function relFrequenciaMensal() {
   await refreshCache();
   const hoje = new Date();
