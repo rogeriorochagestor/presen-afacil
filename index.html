@@ -307,9 +307,17 @@ tr:last-child td{border-bottom:none}
       <select id="filter-alunos-bio" onchange="renderAlunos()"><option value="">Todos (foto)</option><option value="sim">Com foto</option><option value="nao">Sem foto</option></select>
       <select id="filter-alunos-status" onchange="renderAlunos()"><option value="ativo">Ativos</option><option value="inativo">Inativos</option><option value="todos">Todos os status</option></select>
     </div>
+    <div id="alunos-bulkbar" style="display:none;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--accent);border-radius:var(--r);padding:10px 14px;margin-bottom:10px">
+      <span id="alunos-bulk-count" style="font-size:12px;font-weight:600;color:var(--accent)">0 selecionado(s)</span>
+      <div class="row" style="gap:6px;margin-left:auto">
+        <button class="btn btn-success btn-sm" onclick="bulkAtivarAlunos()">✅ Ativar selecionados</button>
+        <button class="btn btn-sm" style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:var(--warning)" onclick="bulkInativarAlunos()">🗑️ Inativar selecionados</button>
+        <button class="btn btn-ghost btn-sm" onclick="limparSelecaoAlunos()">Cancelar</button>
+      </div>
+    </div>
     <div class="table-wrap"><table>
-      <thead><tr><th>Aluno</th><th>Turma</th><th>Foto</th><th>WhatsApp</th><th>Status</th><th></th></tr></thead>
-      <tbody id="alunos-grid"><tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">Carregando...</td></tr></tbody>
+      <thead><tr><th style="width:32px"><input type="checkbox" id="check-all-alunos" onchange="toggleSelecionarTodosAlunos(this.checked)"></th><th>Aluno</th><th>Turma</th><th>Foto</th><th>WhatsApp</th><th>Status</th><th></th></tr></thead>
+      <tbody id="alunos-grid"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">Carregando...</td></tr></tbody>
     </table></div>
   </div>
 
@@ -1483,13 +1491,20 @@ async function renderAlunos() {
       turmasCache.map(t=>`<option value="${t.id}">${t.nome} (${t.periodo})</option>`).join('');
   }
 
+  // Remove da seleção quem não está mais na lista filtrada (evita ação fantasma)
+  const idsVisiveis = new Set(lista.map(a=>a.id));
+  for (const id of [..._alunosSelecionados]) {
+    if (!idsVisiveis.has(id)) _alunosSelecionados.delete(id);
+  }
+
   const tbody = document.getElementById('alunos-grid');
-  if (!lista.length) { tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">Nenhum aluno encontrado.</td></tr>'; return; }
+  if (!lista.length) { tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">Nenhum aluno encontrado.</td></tr>'; atualizarBarraSelecaoAlunos(); return; }
 
   tbody.innerHTML = lista.map(a => {
     const temFoto = !!a.descriptor;
     const temTel = !!(a.telefone_resp || a.telefone_resp2);
     const inativo = a.ativo === false;
+    const marcado = _alunosSelecionados.has(a.id);
     const fotoTag = temFoto
       ? '<span class="badge badge-success">✓ Sim</span>'
       : '<span class="badge badge-warning">✗ Não</span>';
@@ -1500,6 +1515,7 @@ async function renderAlunos() {
       ? '<span class="badge" style="background:rgba(239,68,68,.15);color:var(--danger)">Inativo</span>'
       : '<span class="badge badge-success">Ativo</span>';
     return `<tr style="${inativo?'opacity:.5':''}">
+      <td><input type="checkbox" class="check-aluno" data-id="${a.id}" ${marcado?'checked':''} onchange="toggleSelecionarAluno('${a.id}', this.checked)"></td>
       <td><div style="display:flex;align-items:center;gap:8px">
         <div style="width:26px;height:26px;border-radius:50%;background:${getColor(a.nome)}22;color:${getColor(a.nome)};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:'Space Grotesk',sans-serif;flex-shrink:0">${getInit(a.nome)}</div>
         <span style="font-size:12px;font-weight:600">${a.nome}</span>
@@ -1518,6 +1534,83 @@ async function renderAlunos() {
       </div></td>
     </tr>`;
   }).join('');
+
+  // Atualiza checkbox "selecionar todos" conforme estado atual
+  const checkAll = document.getElementById('check-all-alunos');
+  if (checkAll) checkAll.checked = lista.length > 0 && lista.every(a => _alunosSelecionados.has(a.id));
+
+  atualizarBarraSelecaoAlunos();
+}
+
+// ── Seleção em massa de alunos ──────────────────────────────────────────────
+let _alunosSelecionados = new Set();
+
+function toggleSelecionarAluno(id, marcado) {
+  if (marcado) _alunosSelecionados.add(id);
+  else _alunosSelecionados.delete(id);
+  atualizarBarraSelecaoAlunos();
+  const checkAll = document.getElementById('check-all-alunos');
+  if (checkAll) {
+    const todosChecks = document.querySelectorAll('.check-aluno');
+    checkAll.checked = todosChecks.length > 0 && Array.from(todosChecks).every(c => c.checked);
+  }
+}
+
+function toggleSelecionarTodosAlunos(marcado) {
+  document.querySelectorAll('.check-aluno').forEach(c => {
+    c.checked = marcado;
+    const id = c.getAttribute('data-id');
+    if (marcado) _alunosSelecionados.add(id);
+    else _alunosSelecionados.delete(id);
+  });
+  atualizarBarraSelecaoAlunos();
+}
+
+function limparSelecaoAlunos() {
+  _alunosSelecionados.clear();
+  document.querySelectorAll('.check-aluno').forEach(c => c.checked = false);
+  const checkAll = document.getElementById('check-all-alunos');
+  if (checkAll) checkAll.checked = false;
+  atualizarBarraSelecaoAlunos();
+}
+
+function atualizarBarraSelecaoAlunos() {
+  const bar = document.getElementById('alunos-bulkbar');
+  const count = document.getElementById('alunos-bulk-count');
+  if (!bar || !count) return;
+  const n = _alunosSelecionados.size;
+  if (n > 0) {
+    bar.style.display = 'flex';
+    count.textContent = n+' selecionado'+(n>1?'s':'');
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+async function bulkInativarAlunos() {
+  const ids = [..._alunosSelecionados];
+  if (!ids.length) return;
+  if (!confirm('Inativar '+ids.length+' aluno(s) selecionado(s)?\n\nO histórico de presenças é mantido, mas eles deixam de aparecer no scanner e nas contagens da escola.')) return;
+  const { error } = await db.from('alunos').update({ativo:false}).in('id', ids);
+  if (error) { toast('Erro: '+error.message,'❌',5000); return; }
+  toast(ids.length+' aluno(s) inativado(s).','🗑',4000);
+  _alunosSelecionados.clear();
+  _todosAlunosCache = null;
+  await refreshCache();
+  renderAlunos();
+}
+
+async function bulkAtivarAlunos() {
+  const ids = [..._alunosSelecionados];
+  if (!ids.length) return;
+  if (!confirm('Ativar '+ids.length+' aluno(s) selecionado(s)?')) return;
+  const { error } = await db.from('alunos').update({ativo:true}).in('id', ids);
+  if (error) { toast('Erro: '+error.message,'❌',5000); return; }
+  toast(ids.length+' aluno(s) ativado(s).','✅',4000);
+  _alunosSelecionados.clear();
+  _todosAlunosCache = null;
+  await refreshCache();
+  renderAlunos();
 }
 
 async function excluirAluno(id) {
