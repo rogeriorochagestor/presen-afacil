@@ -1587,13 +1587,27 @@ function atualizarBarraSelecaoAlunos() {
   }
 }
 
+// Processa updates em lotes para evitar erro "Bad Request" do Supabase com muitos IDs de uma vez
+async function atualizarStatusEmLotes(ids, ativo) {
+  const TAMANHO_LOTE = 100;
+  let sucesso = 0, falha = 0;
+  for (let i = 0; i < ids.length; i += TAMANHO_LOTE) {
+    const lote = ids.slice(i, i + TAMANHO_LOTE);
+    const { error } = await db.from('alunos').update({ativo}).in('id', lote);
+    if (error) { falha += lote.length; console.warn('Erro no lote:', error.message); }
+    else sucesso += lote.length;
+  }
+  return { sucesso, falha };
+}
+
 async function bulkInativarAlunos() {
   const ids = [..._alunosSelecionados];
   if (!ids.length) return;
   if (!confirm('Inativar '+ids.length+' aluno(s) selecionado(s)?\n\nO histórico de presenças é mantido, mas eles deixam de aparecer no scanner e nas contagens da escola.')) return;
-  const { error } = await db.from('alunos').update({ativo:false}).in('id', ids);
-  if (error) { toast('Erro: '+error.message,'❌',5000); return; }
-  toast(ids.length+' aluno(s) inativado(s).','🗑',4000);
+  toast('Inativando '+ids.length+' aluno(s)...','⏳',8000);
+  const { sucesso, falha } = await atualizarStatusEmLotes(ids, false);
+  if (falha) toast(sucesso+' inativado(s), '+falha+' falharam.','⚠️',6000);
+  else toast(sucesso+' aluno(s) inativado(s).','🗑',4000);
   _alunosSelecionados.clear();
   _todosAlunosCache = null;
   await refreshCache();
@@ -1604,9 +1618,10 @@ async function bulkAtivarAlunos() {
   const ids = [..._alunosSelecionados];
   if (!ids.length) return;
   if (!confirm('Ativar '+ids.length+' aluno(s) selecionado(s)?')) return;
-  const { error } = await db.from('alunos').update({ativo:true}).in('id', ids);
-  if (error) { toast('Erro: '+error.message,'❌',5000); return; }
-  toast(ids.length+' aluno(s) ativado(s).','✅',4000);
+  toast('Ativando '+ids.length+' aluno(s)...','⏳',8000);
+  const { sucesso, falha } = await atualizarStatusEmLotes(ids, true);
+  if (falha) toast(sucesso+' ativado(s), '+falha+' falharam.','⚠️',6000);
+  else toast(sucesso+' aluno(s) ativado(s).','✅',4000);
   _alunosSelecionados.clear();
   _todosAlunosCache = null;
   await refreshCache();
