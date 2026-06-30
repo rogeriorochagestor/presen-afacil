@@ -508,19 +508,33 @@ tr:last-child td{border-bottom:none}
   <h2 id="m-aluno-title">Cadastrar Aluno</h2>
   <div class="field"><label>Nome</label><input type="text" id="a-nome"></div>
   <div class="field"><label>Turma</label><select id="a-turma"></select></div>
-  <div class="field"><label>Responsável (opcional)</label><input type="text" id="a-resp"></div>
-  <div class="field"><label>WhatsApp do responsável (opcional)</label><input type="tel" id="a-tel" placeholder="65 99999-9999"></div>
+  <div class="field"><label>Código Sigeduca (opcional)</label><input type="text" id="a-sigeduca"></div>
+  <div class="field"><label>Responsável 1 — nome (opcional)</label><input type="text" id="a-resp"></div>
+  <div class="field"><label>WhatsApp do Responsável 1</label><input type="tel" id="a-tel" placeholder="65 99999-9999"></div>
+  <div class="field"><label>Responsável 2 — nome (opcional)</label><input type="text" id="a-resp2"></div>
+  <div class="field"><label>WhatsApp do Responsável 2</label><input type="tel" id="a-tel2" placeholder="65 99999-9999"></div>
   <p class="sec" id="a-cam-label">Foto facial</p>
   <div class="modal-cam"><video id="modal-video" autoplay muted playsinline></video></div>
   <div id="a-status" style="font-size:11px;color:var(--text2);min-height:16px">Câmera iniciando...</div>
   <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="fecharAluno()">Cancelar</button><button class="btn btn-ghost btn-sm" onclick="salvarAlunoSemFoto()">Só dados</button><button class="btn btn-success btn-sm" id="btn-cap-aluno" onclick="capturarAluno()">📸 Capturar</button></div>
 </div></div>
 
-<div class="modal-bg" id="modal-import"><div class="modal" style="max-width:540px">
+<div class="modal-bg" id="modal-import"><div class="modal" style="max-width:560px">
   <h2>Importar Alunos via CSV</h2>
-  <p style="font-size:11px;color:var(--text2);margin-bottom:10px">Formato: <code style="background:var(--bg);padding:2px 5px;border-radius:4px;font-size:10px">nome;turma;responsavel;telefone</code></p>
-  <div id="import-step-1">
-    <div class="field"><textarea id="csv-text" rows="8" placeholder="Ana Silva;7A;Maria Silva;65999990001&#10;João Souza;7B;Pedro Souza;65999990002" style="font-family:monospace;font-size:11px"></textarea></div>
+  <div id="import-step-0">
+    <p style="font-size:11px;color:var(--text2);margin-bottom:10px">Selecione o formato do arquivo e a turma de destino.</p>
+    <div class="field">
+      <label>Formato do arquivo</label>
+      <select id="csv-formato" onchange="atualizarPlaceholderCSV()">
+        <option value="sigeduca">Sigeduca (Código;Nome;Tel.Resp1;Tel.Resp2)</option>
+        <option value="simples">Simples (Nome;Turma;Responsável;Telefone)</option>
+      </select>
+    </div>
+    <div class="field" id="campo-turma-destino">
+      <label>Turma de destino (todos os alunos colados vão para essa turma)</label>
+      <select id="csv-turma-destino"><option value="">Selecione a turma...</option></select>
+    </div>
+    <div class="field"><textarea id="csv-text" rows="9" placeholder="Cole aqui os dados do CSV" style="font-family:monospace;font-size:11px"></textarea></div>
     <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="fecharImport()">Cancelar</button><button class="btn btn-primary btn-sm" onclick="previewCSV()">👁 Pré-visualizar</button></div>
   </div>
   <div id="import-step-2" style="display:none">
@@ -617,6 +631,9 @@ let confirmCandidate = null;
 let kioskActive = false, pinBuffer = '';
 const COLORS = ['#4f8ef7','#7c3aed','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16'];
 let editingAluno=null, editingTurma=null, editingEscola=null, editingGestor=null;
+// Cache em memória dos alunos que já marcaram presença hoje — evita duplicatas sem consultar banco
+let presentesHoje = new Set(); // Set de aluno_id
+let presentesHojeData = '';    // data do cache — se mudar o dia, limpa automaticamente
 
 let audioCtx = null;
 function beep(freq=880, dur=120) {
@@ -774,6 +791,7 @@ async function initApp() {
     document.getElementById('filter-date').value = todayStr();
     loadModels();
     renderTodayList();
+    carregarPresentesHoje(); // cache anti-duplicata
   }
 }
 
@@ -856,6 +874,7 @@ async function refreshCache() {
       id:a.id, nome:a.nome, turma_id:a.turma_id, turma_nome:a.turma_nome,
       turma_periodo:a.turma_periodo,
       telefone_resp:a.telefone_resp, nome_resp:a.nome_resp,
+      telefone_resp2:a.telefone_resp2, nome_resp2:a.nome_resp2,
       descriptor: new Float32Array(arr)
     });
   }
@@ -1211,17 +1230,54 @@ function naoSouEu() {
   abrirListaManual();
 }
 
+// Carrega presentes do dia para o cache em memória
+async function carregarPresentesHoje() {
+  const hoje = todayStr();
+  if (presentesHojeData === hoje && presentesHoje.size >= 0) return; // já carregado hoje
+  presentesHoje = new Set();
+  presentesHojeData = hoje;
+  if (!currentEscola) return;
+  const { data } = await db.from('presencas')
+    .select('aluno_id')
+    .eq('escola_id', currentEscola.id)
+    .eq('data', hoje);
+  (data || []).forEach(p => presentesHoje.add(p.aluno_id));
+}
+
 async function confirmarPresenca() {
   if (!confirmCandidate) return;
   const aluno = confirmCandidate;
   document.getElementById('confirm-overlay').classList.remove('show');
   confirmCandidate = null;
+
+  // Garante que o cache do dia está carregado
+  await carregarPresentesHoje();
+
+  // Bloqueia se já está no cache em memória
+  if (presentesHoje.has(aluno.id)) {
+    toast(aluno.nome+' já registrou presença hoje.','⚠️',4000);
+    beep(330,200);
+    recentlyConfirmedIds.set(aluno.id, Date.now());
+    lastConfirmedAt = Date.now();
+    return;
+  }
+
+  // Bloqueia se está na fila offline
+  const filaLocal = offlineQueue.get();
+  if (filaLocal.some(p => p.aluno_id === aluno.id && p.data === todayStr())) {
+    toast(aluno.nome+' já registrou presença hoje.','⚠️',4000);
+    beep(330,200);
+    recentlyConfirmedIds.set(aluno.id, Date.now());
+    lastConfirmedAt = Date.now();
+    return;
+  }
+
   const periodo = aluno.turma_periodo || 'Matutino';
   const horaMap = {
-    'Matutino': currentEscola?.hora_matutino,
+    'Matutino':   currentEscola?.hora_matutino,
     'Vespertino': currentEscola?.hora_vespertino,
-    'Noturno': currentEscola?.hora_noturno,
-    'Integral': currentEscola?.hora_integral
+    'Noturno':    currentEscola?.hora_noturno,
+    'Integral':   currentEscola?.hora_integral
   };
   let atrasado = false;
   const horaEntrada = horaMap[periodo];
@@ -1231,6 +1287,7 @@ async function confirmarPresenca() {
     limite.setHours(parseInt(hh), parseInt(mm)+(currentEscola.tolerancia_min||0), 0, 0);
     atrasado = new Date() > limite;
   }
+
   const registro = {
     escola_id: currentEscola.id,
     aluno_id: aluno.id, aluno_nome: aluno.nome,
@@ -1238,42 +1295,8 @@ async function confirmarPresenca() {
     periodo, data: todayStr(), hora: timeStr(), atrasado
   };
 
-  // 1. Verifica duplicata na fila offline local
-  const filaLocal = offlineQueue.get();
-  const jaNaFila = filaLocal.some(p => p.aluno_id === aluno.id && p.data === registro.data);
-  if (jaNaFila) {
-    toast(aluno.nome+' já registrou presença hoje.','⚠️',4000);
-    beep(330,200);
-    recentlyConfirmedIds.set(aluno.id, Date.now());
-    lastConfirmedAt = Date.now();
-    return;
-  }
-
-  // 2. Verifica duplicata no banco (fonte da verdade)
-  if (navigator.onLine) {
-    const { data: jaExiste } = await db.from('presencas')
-      .select('id', { count: 'exact', head: true })
-      .eq('escola_id', currentEscola.id)
-      .eq('aluno_id', aluno.id)
-      .eq('data', todayStr());
-    if (jaExiste !== null && jaExiste !== undefined) {
-      // count vem em .count quando head:true — testa de outra forma
-    }
-    const { count } = await db.from('presencas')
-      .select('*', { count: 'exact', head: true })
-      .eq('escola_id', currentEscola.id)
-      .eq('aluno_id', aluno.id)
-      .eq('data', todayStr());
-    if (count > 0) {
-      toast(aluno.nome+' já registrou presença hoje.','⚠️',4000);
-      beep(330,200);
-      recentlyConfirmedIds.set(aluno.id, Date.now());
-      lastConfirmedAt = Date.now();
-      return;
-    }
-  }
-
   if (!navigator.onLine) {
+    presentesHoje.add(aluno.id); // já adiciona ao cache local
     offlineQueue.add(registro);
     beep(880,120); setTimeout(()=>beep(1100,100),130);
     document.body.classList.add('flash-success');
@@ -1288,15 +1311,19 @@ async function confirmarPresenca() {
   const { error } = await db.from('presencas').insert(registro);
   if (error) {
     if (error.code === '23505' || (error.message||'').includes('duplicate')) {
+      presentesHoje.add(aluno.id); // sincroniza cache
       toast(aluno.nome+' já registrou presença hoje.','⚠️',4000);
       beep(330,200);
-      recentlyConfirmedIds.set(aluno.id, Date.now());
-      lastConfirmedAt = Date.now();
     } else {
       toast('Erro: '+error.message,'❌',5000);
     }
+    recentlyConfirmedIds.set(aluno.id, Date.now());
+    lastConfirmedAt = Date.now();
     return;
   }
+
+  // Sucesso — adiciona ao cache imediatamente
+  presentesHoje.add(aluno.id);
   beep(880,120); setTimeout(()=>beep(1320,150),130);
   document.body.classList.add('flash-success');
   setTimeout(()=>document.body.classList.remove('flash-success'),800);
@@ -1309,12 +1336,17 @@ async function confirmarPresenca() {
 
 function showResultCard(aluno, hora, atrasado, offline=false) {
   const area = document.getElementById('result-area');
-  const tel = formatTel(aluno.telefone_resp);
+  const tel1 = formatTel(aluno.telefone_resp);
+  const tel2 = formatTel(aluno.telefone_resp2);
   const msg = encodeURIComponent('Olá! Confirmamos a presença de '+aluno.nome+' na escola hoje às '+hora.slice(0,5)+'.');
-  const wppLink = tel ? 'https://wa.me/'+tel+'?text='+msg : null;
   const statusTxt = offline ? '📵 Salvo offline' : (atrasado ? '⚠️ ATRASADO' : '✅ Presente');
   const statusColor = offline ? 'var(--warning)' : '';
-  area.innerHTML = '<div class="result-card"><div class="result-avatar" style="background:'+getColor(aluno.nome)+'22;color:'+getColor(aluno.nome)+';border:2px solid '+getColor(aluno.nome)+'44">'+getInit(aluno.nome)+'</div><div class="result-info"><h3>'+aluno.nome+'</h3><p style="color:'+statusColor+'">'+(aluno.turma_nome?'Turma '+aluno.turma_nome+' · ':'')+statusTxt+'</p></div><div class="result-time"><div class="time-big">'+hora.slice(0,5)+'</div></div>'+(wppLink && !offline ? '<a href="'+wppLink+'" target="_blank" class="btn btn-wpp btn-sm">📱 Avisar</a>' : '')+'</div>';
+  let botoesWpp = '';
+  if (!offline) {
+    if (tel1) botoesWpp += '<a href="https://wa.me/'+tel1+'?text='+msg+'" target="_blank" class="btn btn-wpp btn-sm">📱 Resp. 1</a>';
+    if (tel2) botoesWpp += '<a href="https://wa.me/'+tel2+'?text='+msg+'" target="_blank" class="btn btn-wpp btn-sm">📱 Resp. 2</a>';
+  }
+  area.innerHTML = '<div class="result-card"><div class="result-avatar" style="background:'+getColor(aluno.nome)+'22;color:'+getColor(aluno.nome)+';border:2px solid '+getColor(aluno.nome)+'44">'+getInit(aluno.nome)+'</div><div class="result-info"><h3>'+aluno.nome+'</h3><p style="color:'+statusColor+'">'+(aluno.turma_nome?'Turma '+aluno.turma_nome+' · ':'')+statusTxt+'</p></div><div class="result-time"><div class="time-big">'+hora.slice(0,5)+'</div></div>'+botoesWpp+'</div>';
 }
 
 async function renderTodayList() {
@@ -1411,10 +1443,21 @@ async function renderAlunos() {
   if (q) lista = lista.filter(a => a.nome.toLowerCase().includes(q) || (a.turma_nome||'').toLowerCase().includes(q));
   if (bio==='sim') lista = lista.filter(a=>a.descriptor);
   if (bio==='nao') lista = lista.filter(a=>!a.descriptor);
-  document.getElementById('alunos-count').textContent = alunosCache.length+' aluno(s) · '+lista.length+' filtrado(s)';
+  const completos = alunosCache.filter(a=>a.descriptor && (a.telefone_resp||a.telefone_resp2)).length;
+  document.getElementById('alunos-count').textContent = alunosCache.length+' aluno(s) · '+lista.length+' filtrado(s) · '+completos+' completo(s)';
   const grid = document.getElementById('alunos-grid');
   if (!lista.length) { grid.innerHTML='<div class="empty" style="grid-column:1/-1"><p>Nenhum aluno.</p></div>'; return; }
-  grid.innerHTML = lista.map(a=>'<div class="s-card '+(a.descriptor?'':'no-bio')+'"><button class="del-btn" onclick="excluirAluno(\''+a.id+'\')">✕</button>'+(a.descriptor ? '<div class="bio-dot"></div>' : '<div class="no-bio-tag">SEM FOTO</div>')+'<div class="avatar" style="background:'+getColor(a.nome)+'22;color:'+getColor(a.nome)+'">'+getInit(a.nome)+'</div><div class="sname">'+a.nome+'</div><div class="sturma">'+(a.turma_nome||'Sem turma')+'</div><div class="card-actions"><button class="btn btn-ghost" onclick="editarAluno(\''+a.id+'\')">✏️</button><button class="btn btn-primary" onclick="atualizarFoto(\''+a.id+'\')">📸 '+(a.descriptor?'Refazer':'Tirar')+'</button></div></div>').join('');
+  grid.innerHTML = lista.map(a=>{
+    const temFoto = !!a.descriptor;
+    const temTel = !!(a.telefone_resp || a.telefone_resp2);
+    const completo = temFoto && temTel;
+    let statusTag;
+    if (completo) statusTag = '<div class="bio-dot" title="Cadastro completo"></div>';
+    else if (!temFoto && !temTel) statusTag = '<div class="no-bio-tag" style="background:var(--danger)">SEM FOTO E TEL.</div>';
+    else if (!temFoto) statusTag = '<div class="no-bio-tag">SEM FOTO</div>';
+    else statusTag = '<div class="no-bio-tag" style="background:var(--warning);color:#000">SEM WHATSAPP</div>';
+    return '<div class="s-card '+(completo?'':'no-bio')+'"><button class="del-btn" onclick="excluirAluno(\''+a.id+'\')">✕</button>'+statusTag+'<div class="avatar" style="background:'+getColor(a.nome)+'22;color:'+getColor(a.nome)+'">'+getInit(a.nome)+'</div><div class="sname">'+a.nome+'</div><div class="sturma">'+(a.turma_nome||'Sem turma')+'</div><div class="card-actions"><button class="btn btn-ghost" onclick="editarAluno(\''+a.id+'\')">✏️</button><button class="btn btn-primary" onclick="atualizarFoto(\''+a.id+'\')">📸 '+(temFoto?'Refazer':'Tirar')+'</button></div></div>';
+  }).join('');
 }
 
 async function excluirAluno(id) {
@@ -1437,7 +1480,7 @@ async function abrirAluno() {
   if (!turmasCache.length) { toast('Cadastre uma turma antes.','⚠️',5000); return; }
   editingAluno = null;
   document.getElementById('m-aluno-title').textContent = 'Cadastrar Aluno';
-  ['a-nome','a-resp','a-tel'].forEach(id=>document.getElementById(id).value='');
+  ['a-nome','a-resp','a-tel','a-resp2','a-tel2','a-sigeduca'].forEach(id=>document.getElementById(id).value='');
   preencherTurmasSelect();
   document.getElementById('btn-cap-aluno').disabled=false;
   document.getElementById('btn-cap-aluno').textContent='📸 Capturar';
@@ -1454,6 +1497,9 @@ async function editarAluno(id) {
   document.getElementById('a-nome').value = a.nome;
   document.getElementById('a-resp').value = a.nome_resp||'';
   document.getElementById('a-tel').value = a.telefone_resp||'';
+  document.getElementById('a-resp2').value = a.nome_resp2||'';
+  document.getElementById('a-tel2').value = a.telefone_resp2||'';
+  document.getElementById('a-sigeduca').value = a.codigo_sigeduca||'';
   preencherTurmasSelect(a.turma_id);
   document.getElementById('btn-cap-aluno').disabled=false;
   document.getElementById('btn-cap-aluno').textContent = a.descriptor ? '📸 Atualizar foto' : '📸 Capturar';
@@ -1489,8 +1535,11 @@ async function salvarAlunoSemFoto() {
   if (!turmaId) { toast('Selecione a turma.','⚠️'); return; }
   const payload = {
     nome, turma_id: turmaId,
+    codigo_sigeduca: document.getElementById('a-sigeduca').value.trim()||null,
     nome_resp: document.getElementById('a-resp').value.trim()||null,
     telefone_resp: document.getElementById('a-tel').value.trim()||null,
+    nome_resp2: document.getElementById('a-resp2').value.trim()||null,
+    telefone_resp2: document.getElementById('a-tel2').value.trim()||null,
     ativo:true, escola_id: currentEscola.id
   };
   const op = editingAluno ? db.from('alunos').update(payload).eq('id',editingAluno) : db.from('alunos').insert(payload);
@@ -1536,8 +1585,11 @@ async function capturarAluno() {
   }
   const payload = {
     nome, turma_id: turmaId,
+    codigo_sigeduca: document.getElementById('a-sigeduca').value.trim()||null,
     nome_resp: document.getElementById('a-resp').value.trim()||null,
     telefone_resp: document.getElementById('a-tel').value.trim()||null,
+    nome_resp2: document.getElementById('a-resp2').value.trim()||null,
+    telefone_resp2: document.getElementById('a-tel2').value.trim()||null,
     ativo:true, escola_id: currentEscola.id
   };
   if (descriptor) payload.descriptor = descriptor;
@@ -1552,39 +1604,106 @@ async function capturarAluno() {
 </script>
 
 <script>
-function abrirImportCSV() { document.getElementById('csv-text').value=''; document.getElementById('import-step-1').style.display=''; document.getElementById('import-step-2').style.display='none'; document.getElementById('modal-import').classList.add('open'); }
+async function abrirImportCSV() {
+  document.getElementById('csv-text').value = '';
+  document.getElementById('import-step-0').style.display = '';
+  document.getElementById('import-step-2').style.display = 'none';
+  // Popula select de turma destino
+  await refreshCache();
+  const sel = document.getElementById('csv-turma-destino');
+  sel.innerHTML = '<option value="">Selecione a turma...</option>' +
+    turmasCache.map(t => `<option value="${t.id}">${t.nome} (${t.periodo})</option>`).join('');
+  atualizarPlaceholderCSV();
+  document.getElementById('modal-import').classList.add('open');
+}
+
+function atualizarPlaceholderCSV() {
+  const formato = document.getElementById('csv-formato').value;
+  const campoTurma = document.getElementById('campo-turma-destino');
+  const txt = document.getElementById('csv-text');
+  if (formato === 'sigeduca') {
+    campoTurma.style.display = '';
+    txt.placeholder = 'Sigeduca;Nome do Estudante;Tel. Responsável;Tel. Resp. 2\n2361586;ALICE DE PAULA SOUSA;66996463730;\n2464224;ANA JULIA ARAUJO;66997108153;66999999999';
+  } else {
+    campoTurma.style.display = 'none';
+    txt.placeholder = 'Ana Silva;7A;Maria Silva;65999990001\nJoão Souza;7B;Pedro Souza;65999990002';
+  }
+}
+
 function fecharImport() { document.getElementById('modal-import').classList.remove('open'); }
-function voltarImport() { document.getElementById('import-step-1').style.display=''; document.getElementById('import-step-2').style.display='none'; }
+function voltarImport() { document.getElementById('import-step-0').style.display=''; document.getElementById('import-step-2').style.display='none'; }
 
 // Dados do preview (usados na confirmação)
 let _importPreviewData = null;
 
+// Limpa telefone brasileiro: remove tudo que não é número, garante DDD+9 dígitos
+function limparTelefoneBR(raw) {
+  if (!raw) return null;
+  let n = String(raw).replace(/\D/g, '');
+  if (!n || n.length < 10) return null; // muito curto pra ser válido
+  // Remove código do país se vier com 55 na frente e tiver dígitos demais
+  if (n.length > 11 && n.startsWith('55')) n = n.slice(2);
+  // DDD (2) + número (8 ou 9 dígitos) — se tiver só 10 dígitos (sem o 9), insere o 9
+  if (n.length === 10) {
+    const ddd = n.slice(0,2), resto = n.slice(2);
+    n = ddd + '9' + resto;
+  }
+  return n.length === 11 ? n : null;
+}
+
 async function previewCSV() {
   const txt = document.getElementById('csv-text').value.trim();
   if (!txt) { toast('Cole os dados antes.','⚠️'); return; }
+  const formato = document.getElementById('csv-formato').value;
   await refreshCache();
 
   const nomesExistentes = new Set(alunosCache.map(a => a.nome.toLowerCase().trim()));
+  const sigeducaExistentes = new Set(alunosCache.filter(a=>a.codigo_sigeduca).map(a => a.codigo_sigeduca));
   const turmasMap = {};
   turmasCache.forEach(t => turmasMap[t.nome.toLowerCase().trim()] = t.id);
 
   const linhas = txt.split('\n').map(l=>l.trim()).filter(Boolean);
   const novos = [], duplicados = [], invalidos = [], turmasNovas = new Set();
 
-  for (const l of linhas) {
-    const parts = l.split(';').map(x=>(x||'').trim());
-    const [nome, turma, resp, tel] = parts;
-    if (!nome) { invalidos.push(l); continue; }
-    if (!turma) { invalidos.push(nome+' (sem turma)'); continue; }
-    if (nomesExistentes.has(nome.toLowerCase())) {
-      duplicados.push({nome, turma, resp, tel});
-    } else {
-      novos.push({nome, turma, resp, tel});
-      if (!turmasMap[turma.toLowerCase()]) turmasNovas.add(turma);
+  if (formato === 'sigeduca') {
+    const turmaDestinoId = document.getElementById('csv-turma-destino').value;
+    if (!turmaDestinoId) { toast('Selecione a turma de destino.','⚠️'); return; }
+    const turmaObj = turmasCache.find(t => t.id === turmaDestinoId);
+
+    for (const l of linhas) {
+      // Pula linha de cabeçalho
+      if (/sigeduca/i.test(l) && /nome/i.test(l)) continue;
+      const parts = l.split(';').map(x=>(x||'').trim());
+      const [sigeduca, nome, tel1raw, tel2raw] = parts;
+      if (!nome) { invalidos.push(l); continue; }
+      if (sigeducaExistentes.has(sigeduca) || nomesExistentes.has(nome.toLowerCase())) {
+        duplicados.push({nome, turma: turmaObj?.nome, sigeduca});
+        continue;
+      }
+      const tel1 = limparTelefoneBR(tel1raw);
+      const tel2 = limparTelefoneBR(tel2raw);
+      novos.push({
+        nome, turma: turmaObj?.nome, turmaId: turmaDestinoId,
+        sigeduca: sigeduca || null,
+        tel1, tel2
+      });
+    }
+  } else {
+    for (const l of linhas) {
+      const parts = l.split(';').map(x=>(x||'').trim());
+      const [nome, turma, resp, tel] = parts;
+      if (!nome) { invalidos.push(l); continue; }
+      if (!turma) { invalidos.push(nome+' (sem turma)'); continue; }
+      if (nomesExistentes.has(nome.toLowerCase())) {
+        duplicados.push({nome, turma, resp, tel});
+      } else {
+        novos.push({nome, turma, resp, tel1: limparTelefoneBR(tel)});
+        if (!turmasMap[turma.toLowerCase()]) turmasNovas.add(turma);
+      }
     }
   }
 
-  _importPreviewData = { novos, duplicados, invalidos, turmasNovas };
+  _importPreviewData = { novos, duplicados, invalidos, turmasNovas, formato };
 
   // Resumo
   const r = document.getElementById('import-resumo');
@@ -1598,10 +1717,7 @@ async function previewCSV() {
         <div class="kpi-label">Duplicados (ignorar)</div>
         <div class="kpi-value" style="color:var(--warning);font-size:18px">${duplicados.length}</div>
       </div>
-      <div class="kpi-card" style="background:rgba(79,142,247,.08);border-color:rgba(79,142,247,.25)">
-        <div class="kpi-label">Turmas novas</div>
-        <div class="kpi-value" style="color:var(--accent);font-size:18px">${turmasNovas.size}</div>
-      </div>
+      ${turmasNovas.size ? `<div class="kpi-card" style="background:rgba(79,142,247,.08);border-color:rgba(79,142,247,.25)"><div class="kpi-label">Turmas novas</div><div class="kpi-value" style="color:var(--accent);font-size:18px">${turmasNovas.size}</div></div>` : ''}
       ${invalidos.length ? `<div class="kpi-card" style="background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.25)"><div class="kpi-label">Inválidos</div><div class="kpi-value" style="color:var(--danger);font-size:18px">${invalidos.length}</div></div>` : ''}
     </div>
     ${turmasNovas.size ? `<p style="font-size:11px;color:var(--accent);margin-bottom:6px">🎓 Turmas que serão criadas: <b>${[...turmasNovas].join(', ')}</b></p>` : ''}
@@ -1615,12 +1731,18 @@ async function previewCSV() {
     document.getElementById('btn-confirmar-import').disabled = true;
   } else {
     document.getElementById('btn-confirmar-import').disabled = false;
-    wrap.innerHTML = `<table><thead><tr><th>Nome</th><th>Turma</th><th>Responsável</th><th>Telefone</th></tr></thead><tbody>
-      ${novos.map(a=>`<tr><td>${a.nome}</td><td>${a.turma}${!turmasMap[a.turma.toLowerCase()]?'<span style="font-size:9px;background:var(--accent);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px">NOVA</span>':''}</td><td style="font-size:11px;color:var(--text2)">${a.resp||'—'}</td><td style="font-size:11px;color:var(--text2)">${a.tel||'—'}</td></tr>`).join('')}
-    </tbody></table>`;
+    if (formato === 'sigeduca') {
+      wrap.innerHTML = `<table><thead><tr><th>Nome</th><th>Turma</th><th>WhatsApp 1</th><th>WhatsApp 2</th></tr></thead><tbody>
+        ${novos.map(a=>`<tr><td>${a.nome}</td><td>${a.turma||'—'}</td><td style="font-size:11px;color:${a.tel1?'var(--success)':'var(--text3)'}">${a.tel1?formatTel(a.tel1):'sem nº'}</td><td style="font-size:11px;color:${a.tel2?'var(--success)':'var(--text3)'}">${a.tel2?formatTel(a.tel2):'—'}</td></tr>`).join('')}
+      </tbody></table>`;
+    } else {
+      wrap.innerHTML = `<table><thead><tr><th>Nome</th><th>Turma</th><th>Responsável</th><th>Telefone</th></tr></thead><tbody>
+        ${novos.map(a=>`<tr><td>${a.nome}</td><td>${a.turma}${!turmasMap[a.turma.toLowerCase()]?'<span style="font-size:9px;background:var(--accent);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px">NOVA</span>':''}</td><td style="font-size:11px;color:var(--text2)">${a.resp||'—'}</td><td style="font-size:11px;color:var(--text2)">${a.tel1?formatTel(a.tel1):'—'}</td></tr>`).join('')}
+      </tbody></table>`;
+    }
   }
 
-  document.getElementById('import-step-1').style.display = 'none';
+  document.getElementById('import-step-0').style.display = 'none';
   document.getElementById('import-step-2').style.display = '';
 }
 
@@ -1630,28 +1752,41 @@ async function importarCSV() {
   btn.disabled = true; btn.textContent = 'Importando...';
 
   await refreshCache();
+  const { novos, turmasNovas, formato } = _importPreviewData;
   const turmasMap = {};
   turmasCache.forEach(t => turmasMap[t.nome.toLowerCase().trim()] = t.id);
 
-  // Criar turmas novas
-  if (_importPreviewData.turmasNovas.size > 0) {
-    const novas = [..._importPreviewData.turmasNovas].map(nome=>({
-      escola_id: currentEscola.id, nome, ano_letivo:'2026', periodo:'Matutino', ativo:true
-    }));
-    const { data: criadas, error } = await db.from('turmas').insert(novas).select();
-    if (error) { toast('Erro ao criar turmas: '+error.message,'❌',5000); btn.disabled=false; btn.textContent='✅ Importar'; return; }
-    criadas.forEach(t => turmasMap[t.nome.toLowerCase().trim()] = t.id);
-  }
+  let payload;
 
-  // Inserir alunos novos
-  const payload = _importPreviewData.novos.map(a => ({
-    nome: a.nome,
-    turma_id: turmasMap[a.turma.toLowerCase().trim()] || null,
-    nome_resp: a.resp || null,
-    telefone_resp: a.tel || null,
-    ativo: true,
-    escola_id: currentEscola.id
-  }));
+  if (formato === 'sigeduca') {
+    payload = novos.map(a => ({
+      nome: a.nome,
+      turma_id: a.turmaId,
+      codigo_sigeduca: a.sigeduca,
+      telefone_resp: a.tel1,
+      telefone_resp2: a.tel2,
+      ativo: true,
+      escola_id: currentEscola.id
+    }));
+  } else {
+    // Criar turmas novas (só formato simples)
+    if (turmasNovas.size > 0) {
+      const novas = [...turmasNovas].map(nome=>({
+        escola_id: currentEscola.id, nome, ano_letivo:'2026', periodo:'Matutino', ativo:true
+      }));
+      const { data: criadas, error } = await db.from('turmas').insert(novas).select();
+      if (error) { toast('Erro ao criar turmas: '+error.message,'❌',5000); btn.disabled=false; btn.textContent='✅ Importar'; return; }
+      criadas.forEach(t => turmasMap[t.nome.toLowerCase().trim()] = t.id);
+    }
+    payload = novos.map(a => ({
+      nome: a.nome,
+      turma_id: turmasMap[a.turma.toLowerCase().trim()] || null,
+      nome_resp: a.resp || null,
+      telefone_resp: a.tel1 || null,
+      ativo: true,
+      escola_id: currentEscola.id
+    }));
+  }
 
   const { error } = await db.from('alunos').insert(payload);
   if (error) { toast('Erro: '+error.message,'❌',5000); btn.disabled=false; btn.textContent='✅ Importar'; return; }
@@ -1681,9 +1816,13 @@ async function renderPresencas() {
   if (!data?.length) { tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">Sem registros.</td></tr>'; return; }
   tbody.innerHTML = data.map(r=>{
     const aluno = alunosCache.find(a=>a.id===r.aluno_id);
-    const tel = aluno ? formatTel(aluno.telefone_resp) : '';
+    const tel1 = aluno ? formatTel(aluno.telefone_resp) : '';
+    const tel2 = aluno ? formatTel(aluno.telefone_resp2) : '';
     const msg = encodeURIComponent('Olá! Confirmamos a presença de '+r.aluno_nome+' na escola hoje às '+(r.hora||'').slice(0,5)+'.');
-    return '<tr><td><div style="display:flex;align-items:center;gap:6px"><div style="width:22px;height:22px;border-radius:50%;background:'+getColor(r.aluno_nome)+'22;color:'+getColor(r.aluno_nome)+';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:Space Grotesk,sans-serif">'+getInit(r.aluno_nome)+'</div>'+r.aluno_nome+'</div></td><td>'+(r.turma_nome||'—')+(r.periodo?'<br><span style="font-size:9px;color:var(--text3)">'+r.periodo+'</span>':'')+'</td><td style="font-family:Space Grotesk,sans-serif;color:var(--accent)">'+(r.hora||'').slice(0,5)+'</td><td>'+(r.atrasado?'<span class="badge badge-warning">⚠ Atrasado</span>':'<span class="badge badge-success">✓ OK</span>')+'</td><td>'+(tel?'<a href="https://wa.me/'+tel+'?text='+msg+'" target="_blank" class="btn btn-wpp btn-sm">📱</a>':'')+'</td></tr>';
+    let btns = '';
+    if (tel1) btns += '<a href="https://wa.me/'+tel1+'?text='+msg+'" target="_blank" class="btn btn-wpp btn-sm">📱1</a>';
+    if (tel2) btns += '<a href="https://wa.me/'+tel2+'?text='+msg+'" target="_blank" class="btn btn-wpp btn-sm">📱2</a>';
+    return '<tr><td><div style="display:flex;align-items:center;gap:6px"><div style="width:22px;height:22px;border-radius:50%;background:'+getColor(r.aluno_nome)+'22;color:'+getColor(r.aluno_nome)+';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:Space Grotesk,sans-serif">'+getInit(r.aluno_nome)+'</div>'+r.aluno_nome+'</div></td><td>'+(r.turma_nome||'—')+(r.periodo?'<br><span style="font-size:9px;color:var(--text3)">'+r.periodo+'</span>':'')+'</td><td style="font-family:Space Grotesk,sans-serif;color:var(--accent)">'+(r.hora||'').slice(0,5)+'</td><td>'+(r.atrasado?'<span class="badge badge-warning">⚠ Atrasado</span>':'<span class="badge badge-success">✓ OK</span>')+'</td><td>'+btns+'</td></tr>';
   }).join('');
 }
 
@@ -1698,14 +1837,18 @@ async function avisarAusentes() {
     return {...a, turma_nome: t?.nome||null};
   });
   if (turmaFilter) ausentes = ausentes.filter(a=>a.turma_nome===turmaFilter);
-  const comTel = ausentes.filter(a=>a.telefone_resp);
+  const comTel = ausentes.filter(a=>a.telefone_resp || a.telefone_resp2);
   if (!ausentes.length) { toast('Sem ausentes!','✅'); return; }
   if (!comTel.length) { toast(ausentes.length+' ausente(s) sem telefone.','⚠️',5000); return; }
   const dt = new Date(date+'T12:00:00').toLocaleDateString('pt-BR');
   const links = comTel.map(a=>{
-    const tel = formatTel(a.telefone_resp);
+    const tel1 = formatTel(a.telefone_resp);
+    const tel2 = formatTel(a.telefone_resp2);
     const msg = encodeURIComponent('Olá! Informamos que '+a.nome+' ('+(a.turma_nome||'')+') não compareceu à escola hoje, '+dt+'.');
-    return '<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px"><div><div style="font-size:12px;font-weight:600">'+a.nome+'</div><div style="font-size:10px;color:var(--text2)">'+(a.turma_nome||'—')+'</div></div><a href="https://wa.me/'+tel+'?text='+msg+'" target="_blank" class="btn btn-wpp btn-sm">📱</a></div>';
+    let btns = '';
+    if (tel1) btns += '<a href="https://wa.me/'+tel1+'?text='+msg+'" target="_blank" class="btn btn-wpp btn-sm">📱1</a>';
+    if (tel2) btns += '<a href="https://wa.me/'+tel2+'?text='+msg+'" target="_blank" class="btn btn-wpp btn-sm">📱2</a>';
+    return '<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px"><div><div style="font-size:12px;font-weight:600">'+a.nome+'</div><div style="font-size:10px;color:var(--text2)">'+(a.turma_nome||'—')+'</div></div><div style="display:flex;gap:4px">'+btns+'</div></div>';
   }).join('');
   document.body.insertAdjacentHTML('beforeend', '<div style="position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:400;display:flex;align-items:center;justify-content:center;padding:14px" onclick="if(event.target===this)this.remove()"><div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:440px;width:100%;max-height:80vh;overflow-y:auto"><h2 style="font-family:Space Grotesk,sans-serif;font-size:15px;margin-bottom:12px">Ausentes em '+dt+' ('+comTel.length+')</h2>'+links+'<div style="margin-top:12px;text-align:right"><button class="btn btn-ghost btn-sm" onclick="this.closest(\'div[style*=fixed]\').remove()">Fechar</button></div></div></div>');
 }
@@ -2225,7 +2368,7 @@ async function renderTarefas() {
   document.getElementById('tf-kpi-faltas').textContent = faltaram.length;
 
   // Calcula pendentes (atrasados + faltaram com telefone e não enviados)
-  const comAcao = [...atrasados, ...faltaram].filter(a => a.telefone_resp && !tarefasIsEnviado(a.id));
+  const comAcao = [...atrasados, ...faltaram].filter(a => (a.telefone_resp || a.telefone_resp2) && !tarefasIsEnviado(a.id));
   document.getElementById('tf-kpi-pendentes').textContent = comAcao.length;
 
   // Atualiza badge na aba
@@ -2259,7 +2402,7 @@ async function renderTarefas() {
 function renderSecaoTarefas(grupo, lista, tipo, msgFn, listaId, badgeId) {
   const el = document.getElementById(listaId);
   const badge = document.getElementById(badgeId);
-  const pendentes = lista.filter(a => a.telefone_resp && !tarefasIsEnviado(a.id)).length;
+  const pendentes = lista.filter(a => (a.telefone_resp || a.telefone_resp2) && !tarefasIsEnviado(a.id)).length;
 
   if (badge) {
     if (pendentes > 0) { badge.textContent = pendentes+' pendente'+(pendentes>1?'s':''); badge.style.display=''; }
@@ -2274,15 +2417,18 @@ function renderSecaoTarefas(grupo, lista, tipo, msgFn, listaId, badgeId) {
   el.innerHTML = lista.map(a => {
     const enviado = tarefasIsEnviado(a.id);
     const hora = tarefasHoraEnvio(a.id);
-    const tel = formatTel(a.telefone_resp);
+    const tel1 = formatTel(a.telefone_resp);
+    const tel2 = formatTel(a.telefone_resp2);
     const msg = encodeURIComponent(msgFn(a));
-    const temTel = !!tel;
+    const temTel = !!(tel1 || tel2);
 
     let statusHtml = '';
     if (enviado) {
       statusHtml = `<span class="tc-enviado-badge">✓ Enviado ${hora}</span>`;
     } else if (temTel) {
-      statusHtml = `<a href="https://wa.me/${tel}?text=${msg}" target="_blank" class="btn btn-wpp btn-sm" onclick="tarefaClicarWpp('${a.id}','${grupo}')">📱 Enviar WPP</a>`;
+      statusHtml = '';
+      if (tel1) statusHtml += `<a href="https://wa.me/${tel1}?text=${msg}" target="_blank" class="btn btn-wpp btn-sm" onclick="tarefaClicarWpp('${a.id}','${grupo}')">📱 Resp.1</a>`;
+      if (tel2) statusHtml += `<a href="https://wa.me/${tel2}?text=${msg}" target="_blank" class="btn btn-wpp btn-sm" onclick="tarefaClicarWpp('${a.id}','${grupo}')">📱 Resp.2</a>`;
     } else {
       statusHtml = `<span style="font-size:10px;color:var(--text3)">Sem telefone</span>`;
     }
@@ -2325,7 +2471,7 @@ function _atualizarKpiPendentes() {
   // Recalcula só o contador de pendentes sem refazer tudo
   const enviados = tarefasGetEnviados();
   const pendentes = [...alunosCache].filter(a => {
-    if (!a.telefone_resp) return false;
+    if (!a.telefone_resp && !a.telefone_resp2) return false;
     if (enviados[a.id]) return false;
     return true; // ainda não calculamos se é atrasado/falta aqui; valor aproximado
   });
