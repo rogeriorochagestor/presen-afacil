@@ -1528,8 +1528,9 @@ async function renderAlunos() {
         <button class="btn btn-ghost btn-sm" onclick="editarAluno('${a.id}')" title="Editar">✏️</button>
         <button class="btn btn-ghost btn-sm" onclick="atualizarFoto('${a.id}')" title="Foto">📸</button>
         ${inativo
-          ? `<button class="btn btn-success btn-sm" onclick="reativarAluno('${a.id}')" title="Reativar">↩️ Ativar</button>`
-          : `<button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="excluirAluno('${a.id}')" title="Inativar">🗑️</button>`
+          ? `<button class="btn btn-success btn-sm" onclick="reativarAluno('${a.id}')" title="Reativar">↩️ Ativar</button>
+             <button class="btn btn-sm" style="background:rgba(239,68,68,.15);color:var(--danger);border:1px solid rgba(239,68,68,.3)" onclick="excluirDefinitivamente('${a.id}','${a.nome.replace(/'/g,"\\'")}')">🗑 Excluir</button>`
+          : `<button class="btn btn-ghost btn-sm" style="color:var(--warning)" onclick="excluirAluno('${a.id}')" title="Inativar">⏸ Inativar</button>`
         }
       </div></td>
     </tr>`;
@@ -1641,7 +1642,20 @@ async function excluirAluno(id) {
 async function reativarAluno(id) {
   await db.from('alunos').update({ativo:true}).eq('id',id);
   toast('Aluno reativado.','✅');
-  _todosAlunosCache = null; // invalida cache de status
+  _todosAlunosCache = null;
+  await refreshCache();
+  renderAlunos();
+}
+
+async function excluirDefinitivamente(id, nome) {
+  if (!confirm(`⚠️ EXCLUIR PERMANENTEMENTE "${nome}"?\n\nEssa ação é IRREVERSÍVEL:\n• O aluno será apagado do banco de dados\n• Todo o histórico de presenças dele será perdido\n• Não há como desfazer\n\nTem certeza absoluta?`)) return;
+  if (!confirm(`Confirme novamente: excluir "${nome}" permanentemente?`)) return;
+  // Apaga presenças do aluno primeiro (foreign key)
+  await db.from('presencas').delete().eq('aluno_id', id);
+  const { error } = await db.from('alunos').delete().eq('id', id);
+  if (error) { toast('Erro ao excluir: '+error.message,'❌',6000); return; }
+  toast(nome+' excluído permanentemente.','🗑',4000);
+  _todosAlunosCache = null;
   await refreshCache();
   renderAlunos();
 }
