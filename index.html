@@ -477,6 +477,7 @@ tr:last-child td{border-bottom:none}
     <h2>É você?</h2>
     <p class="nome" id="conf-nome">—</p>
     <p class="turma" id="conf-turma">—</p>
+    <div id="conf-confianca" style="margin:6px 0;font-size:11px;color:var(--text2);text-align:center"></div>
     <div class="confirm-actions">
       <button class="btn btn-success btn-lg" onclick="confirmarPresenca()">✓ SIM, SOU EU</button>
       <button class="btn btn-ghost" onclick="naoSouEu()">✗ Não sou eu</button>
@@ -1239,7 +1240,7 @@ async function runDetection() {
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0,0,canvas.width,canvas.height);
   try {
-    const dets = await faceapi.detectAllFaces(video, new faceapi.SsdMobilenetv1Options({minConfidence:0.45})).withFaceLandmarks().withFaceDescriptors();
+    const dets = await faceapi.detectAllFaces(video, new faceapi.SsdMobilenetv1Options({minConfidence:0.7})).withFaceLandmarks().withFaceDescriptors();
     if (!dets.length) {
       setScanStatus('looking','Procurando rostos...');
       scanTimer = setTimeout(runDetection,700); return;
@@ -1253,17 +1254,21 @@ async function runDetection() {
     });
     if (localDescriptors.length>0) {
       const labeled = localDescriptors.map(a=>new faceapi.LabeledFaceDescriptors(a.id,[a.descriptor]));
-      const matcher = new faceapi.FaceMatcher(labeled,0.5);
+      // Threshold 0.38 = mais rigoroso (padrão era 0.5)
+      // Distâncias menores = rostos mais parecidos; 0.38 elimina a maioria das confusões
+      const matcher = new faceapi.FaceMatcher(labeled, 0.38);
       for (const d of resized) {
         const match = matcher.findBestMatch(d.descriptor);
-        if (match.label!=='unknown') {
-          // PULA se foi confirmado recentemente (evita re-detectar a mesma pessoa)
+        // Dupla verificação: só aceita se a distância for realmente baixa
+        if (match.label !== 'unknown' && match.distance < 0.38) {
           if (recentlyConfirmedIds.has(match.label)) {
             setScanStatus('found','✓ '+(localDescriptors.find(a=>a.id===match.label)?.nome.split(' ')[0]||'')+' já registrado');
             continue;
           }
           const aluno = localDescriptors.find(a=>a.id===match.label);
           if (aluno) {
+            // Calcula % de confiança para exibir no card (distância 0 = 100%, 0.38 = 0%)
+            aluno._confianca = Math.round((1 - match.distance / 0.38) * 100);
             mostrarConfirmacao(aluno);
             scanTimer = setTimeout(runDetection, 500);
             return;
@@ -1282,6 +1287,12 @@ function mostrarConfirmacao(aluno) {
   document.getElementById('conf-avatar').style.color = getColor(aluno.nome);
   document.getElementById('conf-nome').textContent = aluno.nome;
   document.getElementById('conf-turma').textContent = aluno.turma_nome||'Sem turma';
+  // Indicador de confiança
+  const conf = aluno._confianca || 0;
+  const cor = conf >= 80 ? '#22c55e' : conf >= 60 ? '#f59e0b' : '#ef4444';
+  const label = conf >= 80 ? '🟢 Alta confiança' : conf >= 60 ? '🟡 Confiança moderada' : '🔴 Baixa confiança';
+  document.getElementById('conf-confianca').innerHTML =
+    `<span style="color:${cor};font-weight:600">${label} (${conf}%)</span>`;
   document.getElementById('confirm-overlay').classList.add('show');
   beep(660,80);
 }
@@ -1821,7 +1832,7 @@ async function capturarAluno() {
     });
     try {
       document.getElementById('a-status').textContent='🔍 Detectando rosto...';
-      const det = await faceapi.detectSingleFace(video, new faceapi.SsdMobilenetv1Options({minConfidence:0.4})).withFaceLandmarks().withFaceDescriptor();
+      const det = await faceapi.detectSingleFace(video, new faceapi.SsdMobilenetv1Options({minConfidence:0.7})).withFaceLandmarks().withFaceDescriptor();
       if (det) {
         descriptor = Array.from(det.descriptor);
         document.getElementById('a-status').textContent='✅ Rosto capturado!';
