@@ -2682,13 +2682,21 @@ async function renderTarefas() {
   const limNot  = parse(currentEscola.hora_noturno);
   const limInt  = parse(currentEscola.hora_matutino); // Integral usa o mesmo limite do matutino
 
-  // Margem extra de 30 minutos após o limite para confirmar falta
-  const MARGEM = 30;
+  // "Liberado" = passou do horário limite + tolerância → falta confirmada
+  // "Aguardando" = janela de 30min ANTES do limite (ex: 7h00 a 7h30 se limite=7h30)
+  const JANELA = 30;
   const periodoLiberado = {
-    'Matutino':   limMat  ? hm > limMat  + tol + MARGEM : false,
-    'Vespertino': limVesp ? hm > limVesp + tol + MARGEM : false,
-    'Noturno':    limNot  ? hm > limNot  + tol + MARGEM : false,
-    'Integral':   limInt  ? hm > limInt  + tol + MARGEM : false,
+    'Matutino':   limMat  ? hm > limMat  + tol : false,
+    'Vespertino': limVesp ? hm > limVesp + tol : false,
+    'Noturno':    limNot  ? hm > limNot  + tol : false,
+    'Integral':   limInt  ? hm > limInt  + tol : false,
+  };
+  // Aguardando: nos 30min que antecedem o limite (limite - JANELA até limite + tol)
+  const periodoAguardando = {
+    'Matutino':   limMat  ? (hm >= limMat  + tol - JANELA && hm <= limMat  + tol) : false,
+    'Vespertino': limVesp ? (hm >= limVesp + tol - JANELA && hm <= limVesp + tol) : false,
+    'Noturno':    limNot  ? (hm >= limNot  + tol - JANELA && hm <= limNot  + tol) : false,
+    'Integral':   limInt  ? (hm >= limInt  + tol - JANELA && hm <= limInt  + tol) : false,
   };
 
   // Classifica alunos
@@ -2700,12 +2708,13 @@ async function renderTarefas() {
     } else {
       const periodo = a.turma_periodo || 'Matutino';
       if (periodoLiberado[periodo]) {
-        // Horário limite já passou — é falta confirmada
+        // Passou do limite — falta confirmada
         faltaram.push(a);
-      } else {
-        // Ainda dentro do horário de entrada — aguardando
+      } else if (periodoAguardando[periodo]) {
+        // Nos 30min antes do limite — aguardando
         aguardando.push(a);
       }
+      // Antes da janela de 30min: não aparece em nenhuma categoria
     }
   }
 
