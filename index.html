@@ -276,6 +276,16 @@ tr:last-child td{border-bottom:none}
 
   <div class="page" id="page-scanner">
     <div class="kiosk-banner">🔒 <span id="gestor-banner">...</span><button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="ativarKiosk()">🔐 Modo Portaria</button></div>
+    <div class="filters" style="margin-bottom:8px">
+      <select id="filter-scanner-turno" onchange="filtrarScanner()">
+        <option value="">Todos os turnos</option>
+        <option value="Matutino">☀️ Matutino</option>
+        <option value="Vespertino">🌤️ Vespertino</option>
+        <option value="Noturno">🌙 Noturno</option>
+        <option value="Integral">📚 Integral</option>
+      </select>
+      <select id="filter-scanner-turma" onchange="filtrarScanner()"><option value="">Todas as turmas</option></select>
+    </div>
     <p class="sec">Câmera ao vivo</p>
     <div class="scanner-wrapper">
       <video id="video" autoplay muted playsinline></video>
@@ -303,6 +313,13 @@ tr:last-child td{border-bottom:none}
     </div>
     <div class="filters">
       <input type="text" id="filter-alunos" placeholder="Buscar..." oninput="renderAlunos()">
+      <select id="filter-alunos-turno" onchange="renderAlunos()">
+        <option value="">Todos os turnos</option>
+        <option value="Matutino">☀️ Matutino</option>
+        <option value="Vespertino">🌤️ Vespertino</option>
+        <option value="Noturno">🌙 Noturno</option>
+        <option value="Integral">📚 Integral</option>
+      </select>
       <select id="filter-alunos-turma" onchange="renderAlunos()"><option value="">Todas as turmas</option></select>
       <select id="filter-alunos-bio" onchange="renderAlunos()"><option value="">Todos (foto)</option><option value="sim">Com foto</option><option value="nao">Sem foto</option></select>
       <select id="filter-alunos-status" onchange="renderAlunos()"><option value="ativo">Ativos</option><option value="inativo">Inativos</option><option value="todos">Todos os status</option></select>
@@ -326,12 +343,28 @@ tr:last-child td{border-bottom:none}
       <div><p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700">Turmas</p><p style="font-size:11px;color:var(--text2)" id="turmas-count">...</p></div>
       <button class="btn btn-primary btn-sm" onclick="abrirTurma()">+ Nova Turma</button>
     </div>
+    <div class="filters">
+      <input type="text" id="filter-turmas-busca" placeholder="Buscar turma..." oninput="renderTurmas()">
+      <select id="filter-turmas-turno" onchange="renderTurmas()">
+        <option value="">Todos os turnos</option>
+        <option value="Matutino">☀️ Matutino</option>
+        <option value="Vespertino">🌤️ Vespertino</option>
+        <option value="Noturno">🌙 Noturno</option>
+        <option value="Integral">📚 Integral</option>
+      </select>
+    </div>
     <div class="table-wrap"><table><thead><tr><th>Nome</th><th>Ano</th><th>Período</th><th>Alunos</th><th></th></tr></thead><tbody id="turmas-body"></tbody></table></div>
   </div>
 
   <div class="page" id="page-presencas">
     <div class="filters">
       <input type="date" id="filter-date" onchange="renderPresencas()">
+      <select id="filter-presencas-turno" onchange="renderPresencas()">
+        <option value="">Todos os turnos</option>
+        <option value="Matutino">☀️ Matutino</option>
+        <option value="Vespertino">🌤️ Vespertino</option>
+        <option value="Noturno">🌙 Noturno</option>
+      </select>
       <select id="filter-turma" onchange="renderPresencas()"><option value="">Todas as turmas</option></select>
       <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ CSV</button>
       <button class="btn btn-sm" style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:var(--warning)" onclick="avisarAusentes()">📱 Ausentes</button>
@@ -343,7 +376,7 @@ tr:last-child td{border-bottom:none}
   <!-- TAREFAS DIÁRIAS                           -->
   <!-- ══════════════════════════════════════════ -->
   <div class="page" id="page-tarefas">
-    <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:8px">
+    <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px">
       <div>
         <p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700">Tarefas Diárias</p>
         <p style="font-size:11px;color:var(--text2)" id="tarefas-data">—</p>
@@ -352,6 +385,16 @@ tr:last-child td{border-bottom:none}
         <div id="tarefas-badge-resumo" style="font-size:11px;color:var(--text2)"></div>
         <button class="btn btn-ghost btn-sm" onclick="renderTarefas()">🔄 Atualizar</button>
       </div>
+    </div>
+    <div class="filters" style="margin-bottom:14px">
+      <select id="filter-tarefas-turno" onchange="renderTarefas()">
+        <option value="">Todos os turnos</option>
+        <option value="Matutino">☀️ Matutino</option>
+        <option value="Vespertino">🌤️ Vespertino</option>
+        <option value="Noturno">🌙 Noturno</option>
+        <option value="Integral">📚 Integral</option>
+      </select>
+      <select id="filter-tarefas-turma" onchange="renderTarefas()"><option value="">Todas as turmas</option></select>
     </div>
 
     <!-- KPIs resumo do dia -->
@@ -953,11 +996,51 @@ function _atualizarDescritoresPeriodo() {
 
 async function recarregarFaces() {
   await refreshCache();
+  filtrarScanner();
   const periodo = periodoAtual();
   const msg = periodo
     ? localDescriptors.length+' aluno(s) carregados — período '+periodo
     : localDescriptors.length+' aluno(s) carregados (todos os períodos)';
   toast(msg,'🔄',4000);
+}
+
+function filtrarScanner() {
+  const turno = document.getElementById('filter-scanner-turno')?.value || '';
+  const turmaId = document.getElementById('filter-scanner-turma')?.value || '';
+
+  // Popula select de turma respeitando turno
+  const selTurma = document.getElementById('filter-scanner-turma');
+  if (selTurma) {
+    const turmasFilt = turno ? turmasCache.filter(t=>t.periodo===turno) : turmasCache;
+    const valorAtual = selTurma.value;
+    selTurma.innerHTML = '<option value="">Todas as turmas</option>' +
+      turmasFilt.map(t=>`<option value="${t.id}" ${t.id===valorAtual?'selected':''}>${t.nome} (${t.periodo})</option>`).join('');
+  }
+
+  // Reconstrói localDescriptors com filtro manual (sobrepõe filtro de período automático)
+  localDescriptors = [];
+  for (const a of alunosCache) {
+    if (!a.descriptor) continue;
+    if (turno && a.turma_periodo !== turno && a.turma_periodo !== 'Integral') continue;
+    if (turmaId && a.turma_id !== turmaId) continue;
+    let arr = a.descriptor;
+    if (typeof arr === 'string') { try { arr = JSON.parse(arr); } catch(e) { continue; } }
+    if (!Array.isArray(arr) || arr.length !== 128) continue;
+    localDescriptors.push({
+      id:a.id, nome:a.nome, turma_id:a.turma_id, turma_nome:a.turma_nome,
+      turma_periodo:a.turma_periodo,
+      telefone_resp:a.telefone_resp, nome_resp:a.nome_resp,
+      telefone_resp2:a.telefone_resp2, nome_resp2:a.nome_resp2,
+      descriptor: new Float32Array(arr)
+    });
+  }
+
+  // Atualiza banner
+  const banner = document.getElementById('gestor-banner');
+  if (banner && currentEscola) {
+    const label = turno ? turno : (turmaId ? (turmasCache.find(t=>t.id===turmaId)?.nome||'Turma') : 'todos os períodos');
+    banner.textContent = currentEscola.nome+' · '+localDescriptors.length+' aluno(s) carregados ('+label+')';
+  }
 }
 
 // Atualiza descritores automaticamente quando o período muda (a cada 5 minutos)
@@ -976,6 +1059,7 @@ function switchTab(el, id) {
   if (id==='dono-gestores') renderGestoresDono();
   if (id==='dono-stats')    renderStatsDono();
   if (id==='dono-backup')   renderBackup();
+  if (id==='scanner')       { filtrarScanner(); renderTodayList(); }
   if (id==='alunos')        renderAlunos();
   if (id==='turmas')        renderTurmas();
   if (id==='presencas')     { loadTurmaFilter(); renderPresencas(); }
@@ -1482,8 +1566,13 @@ function selecionarManual(id) {
 <script>
 async function renderTurmas() {
   await refreshCache();
-  document.getElementById('turmas-count').textContent = turmasCache.length+' turma(s)';
-  const rows = await Promise.all(turmasCache.map(async t => {
+  const q = (document.getElementById('filter-turmas-busca')?.value||'').toLowerCase().trim();
+  const turno = document.getElementById('filter-turmas-turno')?.value||'';
+  let lista = [...turmasCache];
+  if (q) lista = lista.filter(t => t.nome.toLowerCase().includes(q));
+  if (turno) lista = lista.filter(t => t.periodo === turno);
+  document.getElementById('turmas-count').textContent = turmasCache.length+' turma(s) · '+lista.length+' exibida(s)';
+  const rows = await Promise.all(lista.map(async t => {
     const { count } = await db.from('alunos').select('*',{count:'exact',head:true}).eq('turma_id',t.id).eq('ativo',true);
     return '<tr><td><b>'+t.nome+'</b></td><td>'+(t.ano_letivo||'—')+'</td><td><span class="badge badge-info">'+t.periodo+'</span></td><td>'+(count||0)+'</td><td><button class="btn btn-ghost btn-sm" onclick="editarTurma(\''+t.id+'\')">✏️</button> <button class="btn btn-danger btn-sm" onclick="excluirTurma(\''+t.id+'\')">🗑</button></td></tr>';
   }));
@@ -1561,7 +1650,9 @@ async function renderAlunos() {
   else if (statusFiltro === 'inativo') lista = lista.filter(a => a.ativo === false);
   // 'todos' não filtra
 
+  const turnoFiltro = document.getElementById('filter-alunos-turno')?.value || '';
   if (q) lista = lista.filter(a => a.nome.toLowerCase().includes(q) || (a.turma_nome||'').toLowerCase().includes(q));
+  if (turnoFiltro) lista = lista.filter(a => a.turma_periodo === turnoFiltro);
   if (turmaFiltro) lista = lista.filter(a => a.turma_id === turmaFiltro);
   if (bio==='sim') lista = lista.filter(a=>a.descriptor);
   if (bio==='nao') lista = lista.filter(a=>!a.descriptor);
@@ -1569,11 +1660,13 @@ async function renderAlunos() {
   const completos = alunosCache.filter(a=>a.descriptor && (a.telefone_resp||a.telefone_resp2)).length;
   document.getElementById('alunos-count').textContent = alunosCache.length+' ativo(s) · '+lista.length+' exibido(s) · '+completos+' completo(s)';
 
-  // Popula filtro de turmas (uma vez)
+  // Popula filtro de turmas (atualiza conforme turno selecionado)
   const selTurma = document.getElementById('filter-alunos-turma');
-  if (selTurma && selTurma.options.length <= 1) {
+  if (selTurma) {
+    const turmasFiltradas = turnoFiltro ? turmasCache.filter(t=>t.periodo===turnoFiltro) : turmasCache;
+    const valorAtual = selTurma.value;
     selTurma.innerHTML = '<option value="">Todas as turmas</option>' +
-      turmasCache.map(t=>`<option value="${t.id}">${t.nome} (${t.periodo})</option>`).join('');
+      turmasFiltradas.map(t=>`<option value="${t.id}" ${t.id===valorAtual?'selected':''}>${t.nome} (${t.periodo})</option>`).join('');
   }
 
   // Remove da seleção quem não está mais na lista filtrada (evita ação fantasma)
@@ -2079,15 +2172,22 @@ async function importarCSV() {
 async function loadTurmaFilter() {
   if (!turmasCache.length) await refreshCache();
   const sel = document.getElementById('filter-turma');
-  sel.innerHTML = '<option value="">Todas as turmas</option>' + turmasCache.map(t=>'<option value="'+t.nome+'">'+t.nome+' ('+t.periodo+')</option>').join('');
+  if (!sel) return;
+  const turno = document.getElementById('filter-presencas-turno')?.value || '';
+  const turmasFiltradas = turno ? turmasCache.filter(t=>t.periodo===turno) : turmasCache;
+  sel.innerHTML = '<option value="">Todas as turmas</option>' +
+    turmasFiltradas.map(t=>'<option value="'+t.nome+'">'+t.nome+' ('+t.periodo+')</option>').join('');
 }
 
 async function renderPresencas() {
   if (!currentEscola) return;
+  await loadTurmaFilter();
   const date = document.getElementById('filter-date').value || todayStr();
   const turma = document.getElementById('filter-turma').value;
+  const turno = document.getElementById('filter-presencas-turno')?.value || '';
   let q = db.from('presencas').select('*').eq('escola_id',currentEscola.id).eq('data',date).order('hora',{ascending:false});
-  if (turma) q = q.eq('turma_nome',turma);
+  if (turno) q = q.eq('periodo', turno);
+  if (turma) q = q.eq('turma_nome', turma);
   const { data } = await q;
   const tbody = document.getElementById('presencas-body');
   if (!data?.length) { tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">Sem registros.</td></tr>'; return; }
@@ -2672,6 +2772,24 @@ async function renderTarefas() {
   const presMap = {};
   (presHoje||[]).forEach(p => presMap[p.aluno_id] = p);
 
+  // Lê filtros de turno e turma
+  const filtroTurno = document.getElementById('filter-tarefas-turno')?.value || '';
+  const filtroTurma = document.getElementById('filter-tarefas-turma')?.value || '';
+
+  // Popula select de turma respeitando turno
+  const selTurma = document.getElementById('filter-tarefas-turma');
+  if (selTurma) {
+    const turmasFilt = filtroTurno ? turmasCache.filter(t=>t.periodo===filtroTurno) : turmasCache;
+    const valorAtual = selTurma.value;
+    selTurma.innerHTML = '<option value="">Todas as turmas</option>' +
+      turmasFilt.map(t=>`<option value="${t.id}" ${t.id===valorAtual?'selected':''}>${t.nome} (${t.periodo})</option>`).join('');
+  }
+
+  // Aplica filtros na lista base de alunos
+  let alunosBase = alunosCache;
+  if (filtroTurno) alunosBase = alunosBase.filter(a => a.turma_periodo === filtroTurno);
+  if (filtroTurma) alunosBase = alunosBase.filter(a => a.turma_id === filtroTurma);
+
   // Calcula se o horário limite de um período já passou
   // Usa a hora de entrada + tolerância + margem de 30min para confirmar falta
   const hm = hoje.getHours() * 60 + hoje.getMinutes();
@@ -2699,9 +2817,9 @@ async function renderTarefas() {
     'Integral':   limInt  ? (hm >= limInt  + tol - JANELA && hm <= limInt  + tol) : false,
   };
 
-  // Classifica alunos
+  // Classifica alunos (usando lista filtrada)
   const atrasados = [], ok = [], faltaram = [], aguardando = [];
-  for (const a of alunosCache) {
+  for (const a of alunosBase) {
     if (presentesIds.has(a.id)) {
       if (presMap[a.id]?.atrasado) atrasados.push({...a, presenca: presMap[a.id]});
       else ok.push({...a, presenca: presMap[a.id]});
