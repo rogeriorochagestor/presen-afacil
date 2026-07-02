@@ -2672,14 +2672,40 @@ async function renderTarefas() {
   const presMap = {};
   (presHoje||[]).forEach(p => presMap[p.aluno_id] = p);
 
+  // Calcula se o horário limite de um período já passou
+  // Usa a hora de entrada + tolerância + margem de 30min para confirmar falta
+  const hm = hoje.getHours() * 60 + hoje.getMinutes();
+  const parse = h => { if (!h) return null; const [hh,mm] = h.split(':'); return parseInt(hh)*60+parseInt(mm); };
+  const tol = currentEscola.tolerancia_min || 0;
+  const limMat  = parse(currentEscola.hora_matutino);
+  const limVesp = parse(currentEscola.hora_vespertino);
+  const limNot  = parse(currentEscola.hora_noturno);
+  const limInt  = parse(currentEscola.hora_matutino); // Integral usa o mesmo limite do matutino
+
+  // Margem extra de 30 minutos após o limite para confirmar falta
+  const MARGEM = 30;
+  const periodoLiberado = {
+    'Matutino':   limMat  ? hm > limMat  + tol + MARGEM : false,
+    'Vespertino': limVesp ? hm > limVesp + tol + MARGEM : false,
+    'Noturno':    limNot  ? hm > limNot  + tol + MARGEM : false,
+    'Integral':   limInt  ? hm > limInt  + tol + MARGEM : false,
+  };
+
   // Classifica alunos
-  const atrasados = [], ok = [], faltaram = [];
+  const atrasados = [], ok = [], faltaram = [], aguardando = [];
   for (const a of alunosCache) {
     if (presentesIds.has(a.id)) {
       if (presMap[a.id]?.atrasado) atrasados.push({...a, presenca: presMap[a.id]});
       else ok.push({...a, presenca: presMap[a.id]});
     } else {
-      faltaram.push(a);
+      const periodo = a.turma_periodo || 'Matutino';
+      if (periodoLiberado[periodo]) {
+        // Horário limite já passou — é falta confirmada
+        faltaram.push(a);
+      } else {
+        // Ainda dentro do horário de entrada — aguardando
+        aguardando.push(a);
+      }
     }
   }
 
@@ -2714,6 +2740,42 @@ async function renderTarefas() {
   renderSecaoTarefas('ok', ok, 'ok',
     a => `✅ Presença: ${a.nome} chegou no horário hoje às ${(a.presenca?.hora||'').slice(0,5)}.`,
     'tf-lista-ok', 'tf-badge-ok');
+
+  // Seção de aguardando (só exibe se houver alunos ainda dentro do prazo)
+  const secAg = document.getElementById('tf-sec-aguardando');
+  if (aguardando.length > 0) {
+    if (!secAg) {
+      // Cria a seção dinamicamente se não existir
+      const divider = document.createElement('div');
+      divider.className = 'divider';
+      divider.id = 'tf-divider-aguardando';
+      const sec = document.createElement('div');
+      sec.id = 'tf-sec-aguardando';
+      sec.innerHTML = `
+        <div class="row" style="align-items:center;gap:8px;margin-bottom:8px">
+          <p class="sec" style="margin:0">⏳ Aguardando chegada</p>
+          <span id="tf-badge-aguardando" class="badge" style="background:rgba(79,142,247,.15);color:var(--accent)">${aguardando.length} aluno(s)</span>
+        </div>
+        <p style="font-size:11px;color:var(--text2);margin-bottom:8px">Esses alunos ainda estão dentro do horário de entrada — não são faltas confirmadas.</p>
+        <div id="tf-lista-aguardando"></div>`;
+      const relArea = document.getElementById('tf-sec-ok').parentNode;
+      const secOk = document.getElementById('tf-sec-ok');
+      relArea.insertBefore(divider, secOk);
+      relArea.insertBefore(sec, secOk);
+    } else {
+      document.getElementById('tf-badge-aguardando').textContent = aguardando.length+' aluno(s)';
+      document.getElementById('tf-sec-aguardando').style.display='';
+      const div = document.getElementById('tf-divider-aguardando');
+      if (div) div.style.display='';
+    }
+    document.getElementById('tf-lista-aguardando').innerHTML =
+      aguardando.slice(0,5).map(a=>`<div style="padding:6px 0;font-size:12px;color:var(--text2);border-bottom:0.5px solid var(--border)">${a.nome} <span style="color:var(--text3)">${a.turma_nome||''}</span></div>`).join('') +
+      (aguardando.length>5 ? `<div style="font-size:11px;color:var(--text3);padding:6px 0">+ ${aguardando.length-5} outros...</div>` : '');
+  } else if (secAg) {
+    secAg.style.display = 'none';
+    const div = document.getElementById('tf-divider-aguardando');
+    if (div) div.style.display = 'none';
+  }
 
   // Atualiza resumo
   document.getElementById('tarefas-badge-resumo').textContent =
