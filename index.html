@@ -856,6 +856,7 @@ async function initApp() {
     }
     const { data: escola } = await db.from('escolas').select('*').eq('id', profile.escola_id).maybeSingle();
     currentEscola = escola;
+    tarefasInvalidarCache(); // garante que tarefas usam o ID correto da escola
     document.getElementById('gestor-banner').textContent = 'Escola: '+escola.nome+' · '+profile.nome;
     document.getElementById('tabs-gestor').style.display = '';
     document.getElementById('tabs-dono').style.display = 'none';
@@ -2735,22 +2736,59 @@ async function restaurarBackup() {
 // TAREFAS DIÁRIAS
 // ════════════════════════════════════════════════
 
-// Chave de storage inclui a data para resetar automaticamente no dia seguinte
-function tarefasKey() { return 'pf-tarefas-'+todayStr()+(currentEscola?.id||''); }
+// Cache em memória dos enviados (fonte primária durante a sessão)
+let _tarefasCache = null;
+let _tarefasCacheKey = null;
+
+function tarefasKey() {
+  // Nunca usa escola indefinida — aguarda currentEscola
+  if (!currentEscola?.id) return null;
+  return 'pf-tarefas-' + todayStr() + '-' + currentEscola.id;
+}
 
 function tarefasGetEnviados() {
-  try { return JSON.parse(localStorage.getItem(tarefasKey())||'{}'); } catch(e) { return {}; }
+  const key = tarefasKey();
+  if (!key) return {};
+  // Usa cache em memória se a chave não mudou
+  if (_tarefasCacheKey === key && _tarefasCache !== null) return _tarefasCache;
+  try {
+    const raw = localStorage.getItem(key);
+    _tarefasCache = raw ? JSON.parse(raw) : {};
+    _tarefasCacheKey = key;
+    return _tarefasCache;
+  } catch(e) {
+    _tarefasCache = {};
+    _tarefasCacheKey = key;
+    return {};
+  }
 }
+
+function tarefasSalvar(obj) {
+  const key = tarefasKey();
+  if (!key) return;
+  _tarefasCache = obj;
+  _tarefasCacheKey = key;
+  try { localStorage.setItem(key, JSON.stringify(obj)); } catch(e) {}
+}
+
 function tarefasMarcarEnviado(alunoId) {
   const obj = tarefasGetEnviados();
   obj[alunoId] = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  try { localStorage.setItem(tarefasKey(), JSON.stringify(obj)); } catch(e) {}
+  tarefasSalvar(obj);
 }
+
 function tarefasIsEnviado(alunoId) {
   return !!tarefasGetEnviados()[alunoId];
 }
+
 function tarefasHoraEnvio(alunoId) {
   return tarefasGetEnviados()[alunoId] || '';
+}
+
+// Limpa cache em memória ao trocar de escola ou de dia
+function tarefasInvalidarCache() {
+  _tarefasCache = null;
+  _tarefasCacheKey = null;
 }
 
 async function renderTarefas() {
@@ -3025,15 +3063,20 @@ function marcarTodosGrupo(tipo) {
   const sec = document.getElementById(listaId);
   if (!sec) return;
   const cards = sec.querySelectorAll('.tarefa-card:not(.enviado)');
+  if (!cards.length) { toast('Nenhum pendente nesta seção.','⚠️'); return; }
+
+  // Salva todos de uma vez (atômico — evita inconsistência)
+  const agora = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const obj = tarefasGetEnviados();
   cards.forEach(card => {
     const id = card.id.replace('tc-','');
     if (!id) return;
-    tarefasMarcarEnviado(id);
+    obj[id] = agora;
     card.classList.add('enviado');
     const actions = card.querySelector('.tc-actions');
-    const hora = tarefasHoraEnvio(id);
-    if (actions) actions.innerHTML = `<span class="tc-enviado-badge">✓ Enviado ${hora}</span>`;
+    if (actions) actions.innerHTML = `<span class="tc-enviado-badge">✓ Enviado ${agora}</span>`;
   });
+  tarefasSalvar(obj); // uma única gravação no localStorage
   _atualizarKpiPendentes();
   toast('Todos marcados como enviados.','✅');
 }
