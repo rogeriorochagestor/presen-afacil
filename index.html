@@ -410,12 +410,25 @@ tr:last-child td{border-bottom:none}
   </div>
 
   <div class="page" id="page-analises">
-    <p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;margin-bottom:4px">Análises e Relatórios</p>
-    <p style="font-size:11px;color:var(--text2);margin-bottom:16px">Escolha um relatório para visualizar e exportar em PDF.</p>
+    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div>
+        <p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;margin-bottom:2px">Análises e Relatórios</p>
+        <p style="font-size:11px;color:var(--text2)">Escolha um relatório para visualizar e exportar em PDF.</p>
+      </div>
+      <div class="row" style="gap:6px;align-items:center">
+        <span style="font-size:11px;color:var(--text2)">Filtrar por turno:</span>
+        <div class="row" style="gap:4px">
+          <button class="btn btn-primary btn-sm" id="btn-turno-todos" onclick="setTurnoAnalise('')">Todos</button>
+          <button class="btn btn-ghost btn-sm" id="btn-turno-mat" onclick="setTurnoAnalise('Matutino')">☀️ Matutino</button>
+          <button class="btn btn-ghost btn-sm" id="btn-turno-vesp" onclick="setTurnoAnalise('Vespertino')">🌤️ Vespertino</button>
+          <button class="btn btn-ghost btn-sm" id="btn-turno-not" onclick="setTurnoAnalise('Noturno')">🌙 Noturno</button>
+        </div>
+      </div>
+    </div>
 
     <div class="kpi-row">
-      <div class="kpi-card"><div class="kpi-label">Alunos</div><div class="kpi-value" id="kpi-alunos">—</div></div>
-      <div class="kpi-card"><div class="kpi-label">Hoje</div><div class="kpi-value" id="kpi-hoje" style="color:var(--success)">—</div><div class="kpi-sub" id="kpi-pct">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Alunos ativos</div><div class="kpi-value" id="kpi-alunos">—</div><div class="kpi-sub" id="kpi-alunos-sub" style="font-size:10px;color:var(--text2)"></div></div>
+      <div class="kpi-card"><div class="kpi-label">Presenças hoje</div><div class="kpi-value" id="kpi-hoje" style="color:var(--success)">—</div><div class="kpi-sub" id="kpi-pct">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Atrasados hoje</div><div class="kpi-value" id="kpi-atrasados" style="color:var(--warning)">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Turmas</div><div class="kpi-value" id="kpi-turmas">—</div></div>
     </div>
@@ -2277,179 +2290,85 @@ function resultadoTabela(titulo, columns, rows, opcoes={}) {
 // ════════════════════════════════════════════════
 // PÁGINA ANÁLISES — KPIs iniciais
 // ════════════════════════════════════════════════
+// Turno selecionado na aba Análises — '' = todos
+let _turnoAnalise = '';
+
+function setTurnoAnalise(turno) {
+  _turnoAnalise = turno;
+  ['todos','mat','vesp','not'].forEach(t => {
+    const el = document.getElementById('btn-turno-'+t);
+    if (el) el.className = 'btn btn-ghost btn-sm';
+  });
+  const map = {'':'todos','Matutino':'mat','Vespertino':'vesp','Noturno':'not'};
+  const btn = document.getElementById('btn-turno-'+(map[turno]||'todos'));
+  if (btn) btn.className = 'btn btn-primary btn-sm';
+  renderAnalises();
+}
+
+function alunosFiltradosTurno() {
+  if (!_turnoAnalise) return alunosCache;
+  return alunosCache.filter(a => a.turma_periodo === _turnoAnalise);
+}
+
+function turmasFiltradosTurno() {
+  if (!_turnoAnalise) return turmasCache;
+  return turmasCache.filter(t => t.periodo === _turnoAnalise);
+}
+
+function aplicarFiltroTurno(query) {
+  if (_turnoAnalise) return query.eq('periodo', _turnoAnalise);
+  return query;
+}
+
 async function renderAnalises() {
   if (!currentEscola) return;
   await refreshCache();
-  const [r1,r3,r4] = await Promise.all([
-    db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true).eq('escola_id',currentEscola.id),
-    db.from('presencas').select('*',{count:'exact',head:true}).eq('escola_id',currentEscola.id).eq('data',todayStr()),
-    db.from('presencas').select('*',{count:'exact',head:true}).eq('escola_id',currentEscola.id).eq('data',todayStr()).eq('atrasado',true)
-  ]);
-  const total = r1.count||0, hoje = r3.count||0;
+  const alunosFiltro = alunosFiltradosTurno();
+  const turmasFiltro = turmasFiltradosTurno();
+  const total = alunosFiltro.length;
+  let qHoje = db.from('presencas').select('*',{count:'exact',head:true}).eq('escola_id',currentEscola.id).eq('data',todayStr());
+  let qAtras = db.from('presencas').select('*',{count:'exact',head:true}).eq('escola_id',currentEscola.id).eq('data',todayStr()).eq('atrasado',true);
+  if (_turnoAnalise) { qHoje = qHoje.eq('periodo',_turnoAnalise); qAtras = qAtras.eq('periodo',_turnoAnalise); }
+  const [r3, r4] = await Promise.all([qHoje, qAtras]);
+  const hoje = r3.count||0;
   document.getElementById('kpi-alunos').textContent = total;
+  document.getElementById('kpi-alunos-sub').textContent = _turnoAnalise || 'Todos os turnos';
   document.getElementById('kpi-hoje').textContent = hoje;
   document.getElementById('kpi-atrasados').textContent = r4.count||0;
-  document.getElementById('kpi-turmas').textContent = turmasCache.length;
-  document.getElementById('kpi-pct').textContent = total?Math.round(hoje/total*100)+'% hoje':'—';
+  document.getElementById('kpi-turmas').textContent = turmasFiltro.length;
+  document.getElementById('kpi-pct').textContent = total ? Math.round(hoje/total*100)+'% hoje' : '—';
   document.getElementById('rel-area').innerHTML = '<div class="empty" style="padding:30px"><p>Escolha um relatório acima para visualizar.</p></div>';
 }
 
 // ════════════════════════════════════════════════
 // RELATÓRIO 1: Frequência Mensal por Aluno
 // ════════════════════════════════════════════════
-async function relListaChamada() {
-  if (!currentEscola) return;
-  await refreshCache();
-
-  // Seleciona data e turma
-  const hoje = todayStr();
-  const turmaOpts = ['Todas as turmas', ...turmasCache.map(t=>t.nome+' ('+t.periodo+')')];
-  const area = document.getElementById('rel-area');
-  area.innerHTML = `
-    <div class="kpi-card" style="margin-top:14px">
-      <p style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;margin-bottom:12px">📋 Lista de Chamada</p>
-      <div class="filters" style="margin-bottom:12px">
-        <input type="date" id="chamada-data" value="${hoje}">
-        <select id="chamada-turma">
-          ${turmaOpts.map((t,i)=>`<option value="${i===0?'':turmasCache[i-1]?.id||''}">${t}</option>`).join('')}
-        </select>
-        <button class="btn btn-primary btn-sm" onclick="gerarListaChamada()">📄 Gerar PDF</button>
-      </div>
-      <p style="font-size:11px;color:var(--text2)">Selecione a data e turma, depois clique em Gerar PDF. O relatório mostra todos os alunos da turma com presença, falta ou situação do dia.</p>
-    </div>`;
-  area.scrollIntoView({behavior:'smooth'});
-}
-
-async function gerarListaChamada() {
-  const data = document.getElementById('chamada-data').value || todayStr();
-  const turmaId = document.getElementById('chamada-turma').value;
-  await refreshCache();
-
-  // Busca presenças do dia
-  let q = db.from('presencas').select('*').eq('escola_id',currentEscola.id).eq('data',data);
-  if (turmaId) q = q.eq('turma_id', turmaId);
-  const { data: pres } = await q;
-  const presMap = {};
-  (pres||[]).forEach(p => presMap[p.aluno_id] = p);
-
-  // Lista de alunos
-  let alunos = alunosCache;
-  if (turmaId) alunos = alunos.filter(a => a.turma_id === turmaId);
-  if (!alunos.length) { toast('Nenhum aluno nesta turma.','⚠️'); return; }
-  alunos = [...alunos].sort((a,b)=>a.nome.localeCompare(b.nome));
-
-  // Gera PDF diretamente (layout especial para impressão)
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const dtFormatada = new Date(data+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-
-  // Cabeçalho
-  if (currentEscola?.logo) {
-    try { doc.addImage(currentEscola.logo,'PNG',15,8,18,18); } catch(e) {}
-  }
-  const xOff = currentEscola?.logo ? 37 : 15;
-  doc.setFontSize(11); doc.setTextColor(40,40,40);
-  doc.text(currentEscola?.nome||'Escola', xOff, 14);
-  doc.setFontSize(9); doc.setTextColor(100,100,100);
-  doc.text(currentEscola?.cidade||'', xOff, 19);
-
-  // Título
-  const nTurma = turmaId ? (turmasCache.find(t=>t.id===turmaId)?.nome||'Turma') : 'Todas as Turmas';
-  doc.setFontSize(14); doc.setTextColor(30,30,30);
-  doc.text('Lista de Chamada — '+nTurma, 15, 34);
-  doc.setFontSize(9); doc.setTextColor(120,120,120);
-  doc.text(dtFormatada.charAt(0).toUpperCase()+dtFormatada.slice(1), 15, 40);
-
-  const presentes = alunos.filter(a=>presMap[a.id]).length;
-  const faltas = alunos.length - presentes;
-  const pct = alunos.length ? Math.round(presentes/alunos.length*100) : 0;
-  doc.text(`Total: ${alunos.length} alunos  |  Presentes: ${presentes}  |  Faltas: ${faltas}  |  Frequência: ${pct}%`, 15, 46);
-
-  // Tabela
-  const rows = alunos.map((a,i) => {
-    const p = presMap[a.id];
-    const status = p ? (p.atrasado ? 'ATRASADO' : 'PRESENTE') : 'FALTA';
-    const hora = p ? (p.hora||'').slice(0,5) : '—';
-    return [
-      String(i+1).padStart(2,'0'),
-      a.nome,
-      a.turma_nome||'—',
-      hora,
-      status
-    ];
-  });
-
-  doc.autoTable({
-    startY: 50,
-    head: [['Nº','Nome do Aluno','Turma','Chegada','Status']],
-    body: rows,
-    theme: 'grid',
-    headStyles: { fillColor: [40,40,40], textColor: 255, fontSize: 8, fontStyle:'bold' },
-    bodyStyles: { fontSize: 8 },
-    columnStyles: {
-      0: { cellWidth: 10, halign:'center' },
-      2: { cellWidth: 30 },
-      3: { cellWidth: 20, halign:'center' },
-      4: { cellWidth: 25, halign:'center' }
-    },
-    didParseCell: (d) => {
-      if (d.section==='body' && d.column.index===4) {
-        if (d.cell.raw==='PRESENTE') { d.cell.styles.textColor=[34,139,34]; d.cell.styles.fontStyle='bold'; }
-        else if (d.cell.raw==='FALTA') { d.cell.styles.textColor=[200,30,30]; d.cell.styles.fontStyle='bold'; }
-        else if (d.cell.raw==='ATRASADO') { d.cell.styles.textColor=[180,120,0]; d.cell.styles.fontStyle='bold'; }
-      }
-    },
-    alternateRowStyles: { fillColor: [248,249,252] },
-    margin: { left:15, right:15 }
-  });
-
-  // Assinatura
-  const finalY = doc.lastAutoTable.finalY + 20;
-  if (finalY < 260) {
-    doc.setFontSize(9); doc.setTextColor(80,80,80);
-    doc.text('Assinatura do Professor: _________________________________', 15, finalY);
-    doc.text('Visto da Coordenação: _________________________________', 15, finalY+10);
-  }
-
-  // Rodapé
-  const pg = doc.internal.getNumberOfPages();
-  for (let i=1;i<=pg;i++) {
-    doc.setPage(i);
-    doc.setFontSize(7); doc.setTextColor(160,160,160);
-    doc.text('PresençaFácil · Emitido em '+new Date().toLocaleString('pt-BR'), 15, doc.internal.pageSize.height-6);
-    doc.text('Pág '+i+'/'+pg, doc.internal.pageSize.width-22, doc.internal.pageSize.height-6);
-  }
-
-  const fname = 'chamada-'+nTurma.replace(/[^a-z0-9]/gi,'-').toLowerCase()+'-'+data+'.pdf';
-  doc.save(fname);
-  toast('PDF gerado: '+fname,'📄');
-}
-
 async function relFrequenciaMensal() {
   await refreshCache();
   const hoje = new Date();
   const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0,10);
   const fim    = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).toISOString().slice(0,10);
-  const { data: pres } = await db.from('presencas').select('*').eq('escola_id',currentEscola.id).gte('data',inicio).lte('data',fim);
+  let q = db.from('presencas').select('*').eq('escola_id',currentEscola.id).gte('data',inicio).lte('data',fim);
+  q = aplicarFiltroTurno(q);
+  const { data: pres } = await q;
   const mapa = {};
   (pres||[]).forEach(p => {
     if (!mapa[p.aluno_id]) mapa[p.aluno_id] = { presencas:0, atrasos:0 };
     mapa[p.aluno_id].presencas++;
     if (p.atrasado) mapa[p.aluno_id].atrasos++;
   });
-  // dias úteis aproximados do mês (seg a sex)
   let diasUteis = 0;
   for (let d = new Date(inicio); d <= new Date(fim); d.setDate(d.getDate()+1)) {
-    const dow = d.getDay();
-    if (dow !== 0 && dow !== 6) diasUteis++;
+    if (d.getDay() !== 0 && d.getDay() !== 6) diasUteis++;
   }
-  const rows = alunosCache.map(a => {
+  const rows = alunosFiltradosTurno().map(a => {
     const m = mapa[a.id] || { presencas:0, atrasos:0 };
     const pct = diasUteis ? Math.round(m.presencas/diasUteis*100) : 0;
-    return [a.nome, a.turma_nome||'—', m.presencas+'/'+diasUteis, pct+'%', m.atrasos];
-  }).sort((a,b) => parseInt(b[3]) - parseInt(a[3]));
+    return [a.nome, a.turma_nome||'—', a.turma_periodo||'—', m.presencas+'/'+diasUteis, pct+'%', m.atrasos];
+  }).sort((a,b) => parseInt(b[4]) - parseInt(a[4]));
   const mes = hoje.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-  resultadoTabela('Frequência Mensal', ['Aluno','Turma','Presenças','% Frequência','Atrasos'], rows, {subtitulo:'Mês: '+mes+' · '+diasUteis+' dias úteis'});
+  const sub = 'Mês: '+mes+' · '+diasUteis+' dias úteis'+(_turnoAnalise?' · Turno: '+_turnoAnalise:'');
+  resultadoTabela('Frequência Mensal', ['Aluno','Turma','Período','Presenças','% Frequência','Atrasos'], rows, {subtitulo:sub});
 }
 
 // ════════════════════════════════════════════════
@@ -2457,14 +2376,19 @@ async function relFrequenciaMensal() {
 // ════════════════════════════════════════════════
 async function relAtrasos() {
   await refreshCache();
-  const { data: pres } = await db.from('presencas').select('*').eq('escola_id',currentEscola.id).eq('atrasado',true);
+  let q = db.from('presencas').select('*').eq('escola_id',currentEscola.id).eq('atrasado',true);
+  q = aplicarFiltroTurno(q);
+  const { data: pres } = await q;
   const mapa = {};
   (pres||[]).forEach(p => { mapa[p.aluno_id] = (mapa[p.aluno_id]||0) + 1; });
+  const alunos = alunosFiltradosTurno();
   const rows = Object.entries(mapa).map(([alunoId, count]) => {
-    const a = alunosCache.find(x => x.id === alunoId);
-    return [a?.nome || '?', a?.turma_nome || '—', count];
-  }).sort((a,b) => b[2] - a[2]);
-  resultadoTabela('Ranking de Atrasos', ['Aluno','Turma','Total Atrasos'], rows, {subtitulo:'Alunos que mais chegaram atrasados (histórico completo)'});
+    const a = alunos.find(x => x.id === alunoId);
+    if (!a) return null;
+    return [a.nome, a.turma_nome||'—', a.turma_periodo||'—', count];
+  }).filter(Boolean).sort((a,b) => b[3] - a[3]);
+  const sub = 'Histórico completo'+(_turnoAnalise?' · Turno: '+_turnoAnalise:'');
+  resultadoTabela('Ranking de Atrasos', ['Aluno','Turma','Período','Total Atrasos'], rows, {subtitulo:sub});
 }
 
 // ════════════════════════════════════════════════
@@ -2472,21 +2396,18 @@ async function relAtrasos() {
 // ════════════════════════════════════════════════
 async function relFaltasConsecutivas() {
   await refreshCache();
-  // últimos 30 dias úteis
   const hoje = new Date();
   const inicio = new Date(); inicio.setDate(inicio.getDate()-45);
-  const { data: pres } = await db.from('presencas').select('aluno_id,data').eq('escola_id',currentEscola.id).gte('data',inicio.toISOString().slice(0,10));
-
-  // Mapa: aluno -> set de datas presentes
+  let q = db.from('presencas').select('aluno_id,data').eq('escola_id',currentEscola.id).gte('data',inicio.toISOString().slice(0,10));
+  q = aplicarFiltroTurno(q);
+  const { data: pres } = await q;
   const presPorAluno = {};
   (pres||[]).forEach(p => {
     if (!presPorAluno[p.aluno_id]) presPorAluno[p.aluno_id] = new Set();
     presPorAluno[p.aluno_id].add(p.data);
   });
-
-  // Conta faltas consecutivas até hoje (dias úteis)
   const rows = [];
-  for (const a of alunosCache) {
+  for (const a of alunosFiltradosTurno()) {
     const datas = presPorAluno[a.id] || new Set();
     let consec = 0;
     const d = new Date(hoje);
@@ -2500,12 +2421,12 @@ async function relFaltasConsecutivas() {
       d.setDate(d.getDate()-1);
     }
     if (consec >= 3) {
-      let nivel = consec >= 5 ? '🔴 CRÍTICO' : '🟡 ALERTA';
-      rows.push([a.nome, a.turma_nome||'—', consec, nivel]);
+      rows.push([a.nome, a.turma_nome||'—', a.turma_periodo||'—', consec, consec >= 5 ? '🔴 CRÍTICO' : '🟡 ALERTA']);
     }
   }
-  rows.sort((a,b) => b[2] - a[2]);
-  resultadoTabela('Faltas Consecutivas', ['Aluno','Turma','Faltas seguidas','Nível'], rows, {subtitulo:'🟡 Alerta: 3-4 faltas · 🔴 Crítico: 5+ faltas'});
+  rows.sort((a,b) => b[3] - a[3]);
+  const sub = '🟡 Alerta: 3-4 faltas · 🔴 Crítico: 5+'+(_turnoAnalise?' · Turno: '+_turnoAnalise:'');
+  resultadoTabela('Faltas Consecutivas', ['Aluno','Turma','Período','Faltas seguidas','Nível'], rows, {subtitulo:sub});
 }
 
 // ════════════════════════════════════════════════
@@ -2524,11 +2445,11 @@ function abrirHistoricoAluno() {
 
 function filtrarHistBusca() {
   const q = (document.getElementById('hist-busca')?.value||'').toLowerCase().trim();
-  const f = alunosCache.filter(a => !q || a.nome.toLowerCase().includes(q)).slice(0,20);
+  const f = alunosFiltradosTurno().filter(a => !q || a.nome.toLowerCase().includes(q)).slice(0,20);
   document.getElementById('hist-lista').innerHTML = f.map(a => `
     <div class="search-item" onclick="verHistorico('${a.id}')">
       <div style="width:30px;height:30px;border-radius:50%;background:${getColor(a.nome)}22;color:${getColor(a.nome)};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:'Space Grotesk',sans-serif">${getInit(a.nome)}</div>
-      <div style="flex:1"><div style="font-size:12px;font-weight:600">${a.nome}</div><div style="font-size:10px;color:var(--text2)">${a.turma_nome||'—'}</div></div>
+      <div style="flex:1"><div style="font-size:12px;font-weight:600">${a.nome}</div><div style="font-size:10px;color:var(--text2)">${a.turma_nome||'—'} · ${a.turma_periodo||'—'}</div></div>
     </div>`).join('') || '<p style="font-size:12px;color:var(--text3);padding:14px;text-align:center">Nenhum aluno encontrado.</p>';
 }
 
@@ -2542,12 +2463,8 @@ async function verHistorico(alunoId) {
     const dt = new Date(p.data+'T12:00:00').toLocaleDateString('pt-BR');
     return [dt, (p.hora||'').slice(0,5), p.periodo||'—', p.atrasado?'⚠ Atrasado':'✓ OK'];
   });
-  resultadoTabela(
-    'Histórico de '+aluno.nome,
-    ['Data','Hora','Período','Status'],
-    rows,
-    {subtitulo:'Turma '+(aluno.turma_nome||'—')+' · '+total+' presenças · '+atrasos+' atrasos'}
-  );
+  resultadoTabela('Histórico de '+aluno.nome, ['Data','Hora','Período','Status'], rows,
+    {subtitulo:'Turma '+(aluno.turma_nome||'—')+' · '+(aluno.turma_periodo||'—')+' · '+total+' presenças · '+atrasos+' atrasos'});
 }
 
 // ════════════════════════════════════════════════
@@ -2558,16 +2475,20 @@ async function relRankingMes() {
   const hoje = new Date();
   const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0,10);
   const fim    = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).toISOString().slice(0,10);
-  const { data: pres } = await db.from('presencas').select('aluno_id').eq('escola_id',currentEscola.id).gte('data',inicio).lte('data',fim);
+  let q = db.from('presencas').select('aluno_id').eq('escola_id',currentEscola.id).gte('data',inicio).lte('data',fim);
+  q = aplicarFiltroTurno(q);
+  const { data: pres } = await q;
   const mapa = {};
   (pres||[]).forEach(p => { mapa[p.aluno_id] = (mapa[p.aluno_id]||0) + 1; });
-  const rows = alunosCache.map(a => [a.nome, a.turma_nome||'—', mapa[a.id]||0])
-    .filter(r => r[2] > 0)
-    .sort((a,b) => b[2] - a[2])
+  const rows = alunosFiltradosTurno()
+    .map(a => [a.nome, a.turma_nome||'—', a.turma_periodo||'—', mapa[a.id]||0])
+    .filter(r => r[3] > 0)
+    .sort((a,b) => b[3] - a[3])
     .slice(0, 50)
     .map((r,i) => [(i+1)+'º', ...r]);
   const mes = hoje.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-  resultadoTabela('Ranking de Presenças do Mês', ['Posição','Aluno','Turma','Presenças'], rows, {subtitulo:mes+' · Top 50 alunos mais frequentes'});
+  const sub = mes+' · Top 50'+(_turnoAnalise?' · Turno: '+_turnoAnalise:'');
+  resultadoTabela('Ranking de Presenças do Mês', ['Pos.','Aluno','Turma','Período','Presenças'], rows, {subtitulo:sub});
 }
 
 // ════════════════════════════════════════════════
@@ -2577,12 +2498,14 @@ async function relComparativoTurmas() {
   await refreshCache();
   const hoje = new Date();
   const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0,10);
-  const { data: pres } = await db.from('presencas').select('turma_id,atrasado').eq('escola_id',currentEscola.id).gte('data',inicio);
+  let q = db.from('presencas').select('turma_id,atrasado,periodo').eq('escola_id',currentEscola.id).gte('data',inicio);
+  q = aplicarFiltroTurno(q);
+  const { data: pres } = await q;
   let diasUteis = 0;
   for (let d = new Date(inicio); d <= hoje; d.setDate(d.getDate()+1)) {
     if (d.getDay() !== 0 && d.getDay() !== 6) diasUteis++;
   }
-  const rows = turmasCache.map(t => {
+  const rows = turmasFiltradosTurno().map(t => {
     const alunosTurma = alunosCache.filter(a => a.turma_id === t.id).length;
     const presTurma = (pres||[]).filter(p => p.turma_id === t.id);
     const atrasos = presTurma.filter(p => p.atrasado).length;
@@ -2590,7 +2513,8 @@ async function relComparativoTurmas() {
     const pct = esperado ? Math.round(presTurma.length / esperado * 100) : 0;
     return [t.nome, t.periodo, alunosTurma, presTurma.length, pct+'%', atrasos];
   }).sort((a,b) => parseInt(b[4]) - parseInt(a[4]));
-  resultadoTabela('Comparativo entre Turmas', ['Turma','Período','Alunos','Presenças','% Frequência','Atrasos'], rows, {subtitulo:'Mês atual · '+diasUteis+' dias úteis'});
+  const sub = 'Mês atual · '+diasUteis+' dias úteis'+(_turnoAnalise?' · Turno: '+_turnoAnalise:'');
+  resultadoTabela('Comparativo entre Turmas', ['Turma','Período','Alunos','Presenças','% Frequência','Atrasos'], rows, {subtitulo:sub});
 }
 
 // ════════════════════════════════════════════════
@@ -2600,10 +2524,12 @@ async function relHorarioMedio() {
   await refreshCache();
   const hoje = new Date();
   const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0,10);
-  const { data: pres } = await db.from('presencas').select('turma_id,hora').eq('escola_id',currentEscola.id).gte('data',inicio);
-  const rows = turmasCache.map(t => {
+  let q = db.from('presencas').select('turma_id,hora,periodo').eq('escola_id',currentEscola.id).gte('data',inicio);
+  q = aplicarFiltroTurno(q);
+  const { data: pres } = await q;
+  const rows = turmasFiltradosTurno().map(t => {
     const presTurma = (pres||[]).filter(p => p.turma_id === t.id && p.hora);
-    if (!presTurma.length) return [t.nome, t.periodo, '—', '—'];
+    if (!presTurma.length) return [t.nome, t.periodo, 0, '—'];
     const totalMin = presTurma.reduce((sum, p) => {
       const [h,m] = p.hora.split(':');
       return sum + parseInt(h)*60 + parseInt(m);
@@ -2613,7 +2539,8 @@ async function relHorarioMedio() {
     const mm = String(mediaMin%60).padStart(2,'0');
     return [t.nome, t.periodo, presTurma.length, hh+':'+mm];
   });
-  resultadoTabela('Horário Médio de Chegada', ['Turma','Período','Registros','Horário médio'], rows, {subtitulo:'Mês atual'});
+  const sub = 'Mês atual'+(_turnoAnalise?' · Turno: '+_turnoAnalise:'');
+  resultadoTabela('Horário Médio de Chegada', ['Turma','Período','Registros','Horário médio'], rows, {subtitulo:sub});
 }
 
 // ════════════════════════════════════════════════
@@ -2621,14 +2548,16 @@ async function relHorarioMedio() {
 // ════════════════════════════════════════════════
 async function relFrequenciaTurma() {
   await refreshCache();
-  const rows = await Promise.all(turmasCache.map(async t => {
+  const turmas = turmasFiltradosTurno();
+  const rows = await Promise.all(turmas.map(async t => {
     const [a,p] = await Promise.all([
       db.from('alunos').select('*',{count:'exact',head:true}).eq('ativo',true).eq('escola_id',currentEscola.id).eq('turma_id',t.id),
       db.from('presencas').select('*',{count:'exact',head:true}).eq('escola_id',currentEscola.id).eq('turma_id',t.id)
     ]);
     return [t.nome, t.ano_letivo||'—', t.periodo, a.count||0, p.count||0];
   }));
-  resultadoTabela('Frequência por Turma', ['Turma','Ano','Período','Alunos','Total Registros'], rows, {subtitulo:'Resumo geral (histórico completo)'});
+  const sub = 'Histórico completo'+(_turnoAnalise?' · Turno: '+_turnoAnalise:'');
+  resultadoTabela('Frequência por Turma', ['Turma','Ano','Período','Alunos','Total Registros'], rows, {subtitulo:sub});
 }
 
 // ════════════════════════════════════════════════
