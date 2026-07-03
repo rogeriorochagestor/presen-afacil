@@ -517,6 +517,30 @@ tr:last-child td{border-bottom:none}
     <div class="field"><label>Tolerância (min)</label><input type="number" id="cfg-tol" min="0" max="120"></div>
     <button class="btn btn-primary btn-sm" onclick="salvarConfig()">Salvar Horários</button>
     <div class="divider"></div>
+    <p class="sec">Calendário escolar — datas especiais</p>
+    <p style="font-size:11px;color:var(--text2);margin-bottom:10px">Cadastre qualquer data que afete a contagem de presenças ou faltas.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div class="field" style="margin:0"><label>Data</label><input type="date" id="cfg-feriado-data"></div>
+      <div class="field" style="margin:0">
+        <label>Tipo</label>
+        <select id="cfg-feriado-tipo" onchange="atualizarDescricaoFeriado()">
+          <option value="sem_aula">🚫 Sem aula (feriado, recesso)</option>
+          <option value="sem_falta">📋 Aula com presença opcional</option>
+          <option value="ponto_facultativo">🟡 Ponto facultativo</option>
+          <option value="conselho_classe">👩‍🏫 Conselho de classe</option>
+          <option value="luto">🖤 Luto oficial</option>
+          <option value="evento">🎉 Evento escolar</option>
+          <option value="outro">📌 Outro</option>
+        </select>
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:10px"><label>Descrição</label><input type="text" id="cfg-feriado-desc" placeholder="Detalhes opcionais..."></div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px 12px;margin-bottom:10px;font-size:11px" id="cfg-feriado-preview">
+      <b>Efeito:</b> selecione um tipo acima para ver o efeito.
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="adicionarFeriado()">+ Adicionar ao calendário</button>
+    <div id="lista-feriados" style="margin-top:14px;margin-bottom:4px"></div>
+    <div class="divider"></div>
     <p class="sec">PIN do modo portaria</p>
     <div class="field"><label>Novo PIN (4 dígitos)</label><input type="password" id="cfg-pin" maxlength="4"></div>
     <button class="btn btn-primary btn-sm" onclick="salvarPin()">Salvar PIN</button>
@@ -723,7 +747,14 @@ function beep(freq=880, dur=120) {
 
 const getColor = n => { let h=0; for(let c of (n||'X')) h=(h*31+c.charCodeAt(0))%COLORS.length; return COLORS[h]; };
 const getInit  = n => (n||'?').trim().split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
-const todayStr = () => new Date().toISOString().slice(0,10);
+const todayStr = () => {
+  const d = new Date();
+  // Usa data LOCAL do dispositivo (não UTC) para evitar virada de dia errada em fusos negativos
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+};
 const timeStr  = () => new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 function toast(msg, icon='✓', dur=3500) {
   const t = document.getElementById('toast');
@@ -866,6 +897,7 @@ async function initApp() {
     loadModels();
     renderTodayList();
     carregarPresentesHoje(); // cache anti-duplicata
+    getFeriados(); // cache de feriados para isDiaLetivoSync
   }
 }
 
@@ -2248,6 +2280,151 @@ async function loadConfig() {
   document.getElementById('cfg-h-not').value  = (currentEscola.hora_noturno||'19:00').slice(0,5);
   document.getElementById('cfg-h-int').value  = (currentEscola.hora_integral||'07:00').slice(0,5);
   document.getElementById('cfg-tol').value    = currentEscola.tolerancia_min ?? 10;
+  document.getElementById('cfg-feriado-data').value = todayStr();
+  atualizarDescricaoFeriado();
+  await renderFeriados();
+}
+
+// ─────────────────────────────────────────
+// CALENDÁRIO ESCOLAR — TIPOS E EFEITOS
+// ─────────────────────────────────────────
+
+const TIPO_FERIADO = {
+  sem_aula:          { label:'🚫 Sem aula',              efeito:'sem_aula',  cor:'var(--danger)',  desc:'Escola fechada. Nenhuma falta é computada. Avisos desativados.' },
+  sem_falta:         { label:'📋 Presença opcional',     efeito:'sem_falta', cor:'var(--accent)',  desc:'Escola aberta, mas faltas NÃO são computadas. Presenças são registradas normalmente.' },
+  ponto_facultativo: { label:'🟡 Ponto facultativo',     efeito:'sem_falta', cor:'var(--warning)', desc:'Presença facultativa. Faltas NÃO são computadas. Presenças registradas normalmente.' },
+  conselho_classe:   { label:'👩‍🏫 Conselho de classe',  efeito:'sem_falta', cor:'var(--warning)', desc:'Dia de conselho. Faltas NÃO são computadas para os alunos.' },
+  luto:              { label:'🖤 Luto oficial',           efeito:'sem_falta', cor:'#888',           desc:'Faltas NÃO são computadas. Avisos desativados por respeito.' },
+  evento:            { label:'🎉 Evento escolar',         efeito:'sem_falta', cor:'var(--success)', desc:'Evento especial. Faltas NÃO são computadas.' },
+  outro:             { label:'📌 Outro',                  efeito:'sem_falta', cor:'var(--text2)',   desc:'Defina manualmente. Faltas NÃO serão computadas neste dia.' },
+};
+
+function atualizarDescricaoFeriado() {
+  const tipo = document.getElementById('cfg-feriado-tipo')?.value || 'sem_aula';
+  const info = TIPO_FERIADO[tipo] || TIPO_FERIADO.outro;
+  const prev = document.getElementById('cfg-feriado-preview');
+  if (prev) prev.innerHTML = `<b style="color:${info.cor}">${info.label}</b> — ${info.desc}`;
+}
+
+// Cache de feriados em memória
+let _feriadosCache = null;
+
+async function getFeriados() {
+  if (_feriadosCache !== null) return _feriadosCache;
+  try {
+    const { data, error } = await db.from('feriados').select('*').eq('escola_id', currentEscola.id).order('data');
+    if (error) throw error;
+    _feriadosCache = data || [];
+  } catch(e) {
+    try { _feriadosCache = JSON.parse(localStorage.getItem('pf-feriados-'+currentEscola.id)||'[]'); }
+    catch(e2) { _feriadosCache = []; }
+  }
+  return _feriadosCache;
+}
+
+// Retorna o registro do feriado para uma data, ou null se for dia letivo normal
+function getFeriadoDodia(dataStr) {
+  if (!_feriadosCache) return null;
+  return _feriadosCache.find(f => f.data === dataStr) || null;
+}
+
+async function isDiaLetivo(dataStr) {
+  const d = new Date(dataStr + 'T12:00:00');
+  if (d.getDay() === 0 || d.getDay() === 6) return false;
+  const feriados = await getFeriados();
+  const f = feriados.find(f => f.data === dataStr);
+  // Só bloqueia se for tipo "sem_aula" (escola fechada)
+  if (f && (f.tipo === 'sem_aula' || !f.tipo)) return false;
+  return true;
+}
+
+function isDiaLetivoSync(dataStr) {
+  const d = new Date(dataStr + 'T12:00:00');
+  if (d.getDay() === 0 || d.getDay() === 6) return false;
+  if (!_feriadosCache) return true;
+  const f = _feriadosCache.find(x => x.data === dataStr);
+  if (f && (f.tipo === 'sem_aula' || !f.tipo)) return false;
+  return true;
+}
+
+// Verifica se faltas devem ser computadas nesse dia
+// Retorna false em: fins de semana, escola fechada, presença opcional/luto/evento
+function computaFaltaSync(dataStr) {
+  const d = new Date(dataStr + 'T12:00:00');
+  if (d.getDay() === 0 || d.getDay() === 6) return false;
+  if (!_feriadosCache) return true;
+  const f = _feriadosCache.find(x => x.data === dataStr);
+  if (!f) return true; // dia letivo normal
+  // "sem_aula" = escola fechada = não computa
+  // "sem_falta" e todos os outros tipos especiais = não computa falta
+  return false; // qualquer dia no calendário especial não computa falta
+}
+
+async function adicionarFeriado() {
+  const data = document.getElementById('cfg-feriado-data').value;
+  const desc = document.getElementById('cfg-feriado-desc').value.trim();
+  const tipo = document.getElementById('cfg-feriado-tipo').value || 'sem_aula';
+  if (!data) { toast('Selecione uma data.','⚠️'); return; }
+  const feriados = await getFeriados();
+  if (feriados.some(f => f.data === data)) { toast('Esta data já está no calendário.','⚠️'); return; }
+  const info = TIPO_FERIADO[tipo] || TIPO_FERIADO.outro;
+  const descricao = desc || info.label;
+  try {
+    const { error } = await db.from('feriados').insert({ escola_id: currentEscola.id, data, descricao, tipo });
+    if (error) throw error;
+  } catch(e) {
+    feriados.push({ data, descricao, tipo });
+    localStorage.setItem('pf-feriados-'+currentEscola.id, JSON.stringify(feriados));
+  }
+  _feriadosCache = null;
+  document.getElementById('cfg-feriado-desc').value = '';
+  await renderFeriados();
+  toast('Adicionado ao calendário: '+new Date(data+'T12:00:00').toLocaleDateString('pt-BR'),'✅');
+}
+
+async function removerFeriado(data) {
+  try {
+    await db.from('feriados').delete().eq('escola_id', currentEscola.id).eq('data', data);
+  } catch(e) {
+    const feriados = (await getFeriados()).filter(f => f.data !== data);
+    localStorage.setItem('pf-feriados-'+currentEscola.id, JSON.stringify(feriados));
+  }
+  _feriadosCache = null;
+  await renderFeriados();
+  toast('Removido do calendário.','🗑');
+}
+
+async function renderFeriados() {
+  const lista = document.getElementById('lista-feriados');
+  if (!lista) return;
+  const feriados = await getFeriados();
+  const hoje = todayStr();
+  const futuros  = feriados.filter(f => f.data >= hoje);
+  const passados = feriados.filter(f => f.data < hoje);
+
+  const renderGrupo = (grupo, titulo) => {
+    if (!grupo.length) return '';
+    return `<p style="font-size:10px;color:var(--text3);margin:10px 0 4px;font-weight:600;text-transform:uppercase">${titulo}</p>` +
+      grupo.map(f => {
+        const info = TIPO_FERIADO[f.tipo] || TIPO_FERIADO.sem_aula;
+        const dt = new Date(f.data+'T12:00:00');
+        const dow = dt.toLocaleDateString('pt-BR',{weekday:'short'});
+        const dtFmt = dt.toLocaleDateString('pt-BR',{day:'numeric',month:'long'});
+        return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:5px">
+          <span style="font-size:11px;font-weight:600;color:${info.cor};width:28px;flex-shrink:0">${dow}</span>
+          <span style="font-size:12px;font-weight:500;flex:1">${dtFmt}</span>
+          <span style="font-size:10px;color:var(--text2);flex:1">${info.label}</span>
+          <span style="font-size:11px;color:var(--text2);flex:2;font-style:italic">${f.descricao||''}</span>
+          <button class="btn btn-ghost btn-sm" style="color:var(--danger);flex-shrink:0" onclick="removerFeriado('${f.data}')">✕</button>
+        </div>`;
+      }).join('');
+  };
+
+  if (!feriados.length) {
+    lista.innerHTML = '<p style="font-size:11px;color:var(--text3);padding:10px 0">Nenhuma data especial cadastrada.</p>';
+    return;
+  }
+  lista.innerHTML = renderGrupo(futuros,'Próximas datas') + renderGrupo(passados,'Passadas');
 }
 async function salvarConfig() {
   const payload = {
@@ -2460,7 +2637,7 @@ async function relFrequenciaMensal() {
   });
   let diasUteis = 0;
   for (let d = new Date(inicio); d <= new Date(fim); d.setDate(d.getDate()+1)) {
-    if (d.getDay() !== 0 && d.getDay() !== 6) diasUteis++;
+    if (computaFaltaSync(d.toISOString().slice(0,10))) diasUteis++;
   }
   const rows = alunosFiltradosTurno().map(a => {
     const m = mapa[a.id] || { presencas:0, atrasos:0 };
@@ -2513,10 +2690,9 @@ async function relFaltasConsecutivas() {
     let consec = 0;
     const d = new Date(hoje);
     while (consec < 30) {
-      const dow = d.getDay();
-      if (dow !== 0 && dow !== 6) {
-        const ds = d.toISOString().slice(0,10);
-        if (datas.has(ds)) break;
+      const ds = d.toISOString().slice(0,10);
+      if (computaFaltaSync(ds)) {
+        if (datas.has(ds)) break; // teve presença nesse dia — para a contagem
         consec++;
       }
       d.setDate(d.getDate()-1);
@@ -2604,7 +2780,7 @@ async function relComparativoTurmas() {
   const { data: pres } = await q;
   let diasUteis = 0;
   for (let d = new Date(inicio); d <= hoje; d.setDate(d.getDate()+1)) {
-    if (d.getDay() !== 0 && d.getDay() !== 6) diasUteis++;
+    if (computaFaltaSync(d.toISOString().slice(0,10))) diasUteis++;
   }
   const rows = turmasFiltradosTurno().map(t => {
     const alunosTurma = alunosCache.filter(a => a.turma_id === t.id).length;
@@ -2794,6 +2970,47 @@ function tarefasInvalidarCache() {
 async function renderTarefas() {
   if (!currentEscola) return;
   await refreshCache();
+  await getFeriados(); // garante cache de feriados carregado
+
+  // Verifica se hoje é dia letivo / computa falta
+  const feriadoHoje = getFeriadoDodia(todayStr());
+  const escolaFechada = !isDiaLetivoSync(todayStr());
+  const naoComputaFalta = !computaFaltaSync(todayStr());
+
+  if (escolaFechada || naoComputaFalta) {
+    const d = new Date(todayStr()+'T12:00:00');
+    const dow = d.getDay();
+    let emoji = '📋', motivo = '';
+    if (dow === 0 || dow === 6) { emoji = '🏖️'; motivo = 'Final de semana'; }
+    else if (feriadoHoje) {
+      const info = TIPO_FERIADO[feriadoHoje.tipo] || TIPO_FERIADO.sem_aula;
+      emoji = info.label.split(' ')[0];
+      motivo = feriadoHoje.descricao || info.label;
+    }
+    const subMsg = escolaFechada
+      ? 'Escola fechada hoje — nenhuma falta computada.'
+      : 'As presenças são registradas normalmente, mas faltas não são computadas hoje.';
+    document.getElementById('tarefas-data').textContent =
+      d.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    document.getElementById('tf-kpi-ok').textContent = '—';
+    document.getElementById('tf-kpi-atrasados').textContent = '—';
+    document.getElementById('tf-kpi-faltas').textContent = '—';
+    document.getElementById('tf-kpi-pendentes').textContent = '—';
+    document.getElementById('tarefas-badge-resumo').textContent = '';
+    ['tf-lista-atrasados','tf-lista-ok'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<div class="empty" style="padding:10px"><p style="color:var(--text3)">—</p></div>';
+    });
+    const wrap = document.getElementById('tf-lista-faltas');
+    if (wrap) wrap.innerHTML = `<div class="empty" style="padding:30px;text-align:center">
+      <div style="font-size:32px;margin-bottom:8px">${emoji}</div>
+      <p style="font-size:15px;font-weight:600;margin-bottom:4px">${motivo}</p>
+      <p style="font-size:12px;color:var(--text2)">${subMsg}</p>
+    </div>`;
+    const tabEl = document.getElementById('tab-tarefas');
+    if (tabEl) { tabEl.querySelector('.tab-badge')?.remove(); tabEl.textContent='✉️ Tarefas'; }
+    return;
+  }
 
   // Atualiza data no cabeçalho
   const hoje = new Date();
