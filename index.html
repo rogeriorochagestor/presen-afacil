@@ -519,26 +519,61 @@ tr:last-child td{border-bottom:none}
     <div class="divider"></div>
     <p class="sec">Calendário escolar — datas especiais</p>
     <p style="font-size:11px;color:var(--text2);margin-bottom:10px">Cadastre qualquer data que afete a contagem de presenças ou faltas.</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-      <div class="field" style="margin:0"><label>Data</label><input type="date" id="cfg-feriado-data"></div>
-      <div class="field" style="margin:0">
-        <label>Tipo</label>
-        <select id="cfg-feriado-tipo" onchange="atualizarDescricaoFeriado()">
-          <option value="sem_aula">🚫 Sem aula (feriado, recesso)</option>
-          <option value="sem_falta">📋 Aula com presença opcional</option>
-          <option value="ponto_facultativo">🟡 Ponto facultativo</option>
-          <option value="conselho_classe">👩‍🏫 Conselho de classe</option>
-          <option value="luto">🖤 Luto oficial</option>
-          <option value="evento">🎉 Evento escolar</option>
-          <option value="outro">📌 Outro</option>
-        </select>
+
+    <!-- Seletor de modo: dia único ou período -->
+    <div class="row" style="gap:6px;margin-bottom:12px">
+      <button class="btn btn-primary btn-sm" id="btn-modo-dia" onclick="setModoCalendario('dia')">📅 Dia único</button>
+      <button class="btn btn-ghost btn-sm" id="btn-modo-periodo" onclick="setModoCalendario('periodo')">📆 Período (férias/recesso)</button>
+    </div>
+
+    <!-- Modo: dia único -->
+    <div id="cfg-modo-dia">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div class="field" style="margin:0"><label>Data</label><input type="date" id="cfg-feriado-data"></div>
+        <div class="field" style="margin:0">
+          <label>Tipo</label>
+          <select id="cfg-feriado-tipo" onchange="atualizarDescricaoFeriado()">
+            <option value="sem_aula">🚫 Sem aula (feriado, recesso)</option>
+            <option value="sem_falta">📋 Aula com presença opcional</option>
+            <option value="ponto_facultativo">🟡 Ponto facultativo</option>
+            <option value="conselho_classe">👩‍🏫 Conselho de classe</option>
+            <option value="luto">🖤 Luto oficial</option>
+            <option value="evento">🎉 Evento escolar</option>
+            <option value="outro">📌 Outro</option>
+          </select>
+        </div>
       </div>
+      <div class="field" style="margin-bottom:10px"><label>Descrição</label><input type="text" id="cfg-feriado-desc" placeholder="Detalhes opcionais..."></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px 12px;margin-bottom:10px;font-size:11px" id="cfg-feriado-preview">
+        <b>Efeito:</b> selecione um tipo acima para ver o efeito.
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="adicionarFeriado()">+ Adicionar ao calendário</button>
     </div>
-    <div class="field" style="margin-bottom:10px"><label>Descrição</label><input type="text" id="cfg-feriado-desc" placeholder="Detalhes opcionais..."></div>
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px 12px;margin-bottom:10px;font-size:11px" id="cfg-feriado-preview">
-      <b>Efeito:</b> selecione um tipo acima para ver o efeito.
+
+    <!-- Modo: período -->
+    <div id="cfg-modo-periodo" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div class="field" style="margin:0"><label>Data início</label><input type="date" id="cfg-periodo-inicio"></div>
+        <div class="field" style="margin:0"><label>Data fim</label><input type="date" id="cfg-periodo-fim"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div class="field" style="margin:0">
+          <label>Tipo</label>
+          <select id="cfg-periodo-tipo">
+            <option value="ferias">🏖️ Férias escolares</option>
+            <option value="recesso">🗓️ Recesso escolar</option>
+            <option value="sem_aula">🚫 Sem aula (outro motivo)</option>
+            <option value="sem_falta">📋 Presença opcional</option>
+          </select>
+        </div>
+        <div class="field" style="margin:0"><label>Descrição</label><input type="text" id="cfg-periodo-desc" placeholder="Ex: Férias de julho..."></div>
+      </div>
+      <div id="cfg-periodo-preview" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px 12px;margin-bottom:10px;font-size:11px;color:var(--text2)">
+        Selecione início e fim para ver quantos dias serão adicionados.
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="adicionarPeriodo()">+ Adicionar período ao calendário</button>
     </div>
-    <button class="btn btn-primary btn-sm" onclick="adicionarFeriado()">+ Adicionar ao calendário</button>
+
     <div id="lista-feriados" style="margin-top:14px;margin-bottom:4px"></div>
     <div class="divider"></div>
     <p class="sec">PIN do modo portaria</p>
@@ -2282,6 +2317,12 @@ async function loadConfig() {
   document.getElementById('cfg-tol').value    = currentEscola.tolerancia_min ?? 10;
   document.getElementById('cfg-feriado-data').value = todayStr();
   atualizarDescricaoFeriado();
+  setModoCalendario('dia');
+  // Listeners de preview do período
+  ['cfg-periodo-inicio','cfg-periodo-fim','cfg-periodo-tipo'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', atualizarPreviewPeriodo);
+  });
   await renderFeriados();
 }
 
@@ -2298,6 +2339,95 @@ const TIPO_FERIADO = {
   evento:            { label:'🎉 Evento escolar',         efeito:'sem_falta', cor:'var(--success)', desc:'Evento especial. Faltas NÃO são computadas.' },
   outro:             { label:'📌 Outro',                  efeito:'sem_falta', cor:'var(--text2)',   desc:'Defina manualmente. Faltas NÃO serão computadas neste dia.' },
 };
+
+function setModoCalendario(modo) {
+  document.getElementById('cfg-modo-dia').style.display     = modo==='dia'     ? '' : 'none';
+  document.getElementById('cfg-modo-periodo').style.display = modo==='periodo' ? '' : 'none';
+  document.getElementById('btn-modo-dia').className     = modo==='dia'     ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+  document.getElementById('btn-modo-periodo').className = modo==='periodo' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+  if (modo==='periodo') atualizarPreviewPeriodo();
+}
+
+function atualizarPreviewPeriodo() {
+  const ini = document.getElementById('cfg-periodo-inicio')?.value;
+  const fim = document.getElementById('cfg-periodo-fim')?.value;
+  const prev = document.getElementById('cfg-periodo-preview');
+  if (!prev) return;
+  if (!ini || !fim) { prev.textContent = 'Selecione início e fim para ver quantos dias serão adicionados.'; return; }
+  if (fim < ini) { prev.textContent = '⚠️ A data fim deve ser igual ou posterior ao início.'; return; }
+  // Conta dias
+  let total = 0, uteis = 0;
+  const d = new Date(ini+'T12:00:00');
+  const fimDate = new Date(fim+'T12:00:00');
+  while (d <= fimDate) {
+    total++;
+    if (d.getDay() !== 0 && d.getDay() !== 6) uteis++;
+    d.setDate(d.getDate()+1);
+  }
+  const tipo = document.getElementById('cfg-periodo-tipo')?.value || 'ferias';
+  const tipoLabel = {ferias:'🏖️ Férias', recesso:'🗓️ Recesso', sem_aula:'🚫 Sem aula', sem_falta:'📋 Presença opcional'}[tipo]||'';
+  prev.innerHTML = `<b>${tipoLabel}</b> · ${total} dias no total · <b>${uteis} dias úteis</b> serão adicionados ao calendário (finais de semana ignorados).`;
+}
+
+async function adicionarPeriodo() {
+  const ini = document.getElementById('cfg-periodo-inicio').value;
+  const fim = document.getElementById('cfg-periodo-fim').value;
+  const tipo = document.getElementById('cfg-periodo-tipo').value || 'ferias';
+  const desc = document.getElementById('cfg-periodo-desc').value.trim();
+  if (!ini || !fim) { toast('Selecione início e fim.','⚠️'); return; }
+  if (fim < ini) { toast('Data fim deve ser igual ou posterior ao início.','⚠️'); return; }
+
+  const TIPOS_PERIODO = {
+    ferias:   { label:'🏖️ Férias escolares',  tipo_db:'sem_aula'  },
+    recesso:  { label:'🗓️ Recesso escolar',   tipo_db:'sem_aula'  },
+    sem_aula: { label:'🚫 Sem aula',           tipo_db:'sem_aula'  },
+    sem_falta:{ label:'📋 Presença opcional',  tipo_db:'sem_falta' },
+  };
+  const info = TIPOS_PERIODO[tipo] || TIPOS_PERIODO.ferias;
+  const descricao = desc || info.label;
+
+  // Monta lista de datas (só dias úteis — fins de semana não precisam ser cadastrados)
+  const datas = [];
+  const d = new Date(ini+'T12:00:00');
+  const fimDate = new Date(fim+'T12:00:00');
+  const feriadosAtual = await getFeriados();
+  const existentes = new Set(feriadosAtual.map(f=>f.data));
+  while (d <= fimDate) {
+    const dow = d.getDay();
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (dow !== 0 && dow !== 6 && !existentes.has(ds)) {
+      datas.push({ escola_id: currentEscola.id, data: ds, descricao, tipo: info.tipo_db });
+    }
+    d.setDate(d.getDate()+1);
+  }
+
+  if (!datas.length) { toast('Nenhum dia útil novo no período selecionado.','⚠️'); return; }
+
+  // Insere em lotes de 50
+  const btn = document.querySelector('#cfg-modo-periodo .btn-primary');
+  if (btn) { btn.disabled=true; btn.textContent='Adicionando...'; }
+  let ok=0, err=0;
+  for (let i=0; i<datas.length; i+=50) {
+    const lote = datas.slice(i,i+50);
+    try {
+      const { error } = await db.from('feriados').insert(lote);
+      if (error) throw error;
+      ok += lote.length;
+    } catch(e) {
+      // Fallback localStorage
+      feriadosAtual.push(...lote);
+      ok += lote.length;
+    }
+  }
+  try { localStorage.setItem('pf-feriados-'+currentEscola.id, JSON.stringify(feriadosAtual)); } catch(e2) {}
+  _feriadosCache = null;
+  if (btn) { btn.disabled=false; btn.textContent='+ Adicionar período ao calendário'; }
+  document.getElementById('cfg-periodo-inicio').value = '';
+  document.getElementById('cfg-periodo-fim').value = '';
+  document.getElementById('cfg-periodo-desc').value = '';
+  await renderFeriados();
+  toast(`${ok} dia(s) adicionado(s) ao calendário!`,'✅',5000);
+}
 
 function atualizarDescricaoFeriado() {
   const tipo = document.getElementById('cfg-feriado-tipo')?.value || 'sem_aula';
@@ -2399,32 +2529,76 @@ async function renderFeriados() {
   if (!lista) return;
   const feriados = await getFeriados();
   const hoje = todayStr();
-  const futuros  = feriados.filter(f => f.data >= hoje);
-  const passados = feriados.filter(f => f.data < hoje);
-
-  const renderGrupo = (grupo, titulo) => {
-    if (!grupo.length) return '';
-    return `<p style="font-size:10px;color:var(--text3);margin:10px 0 4px;font-weight:600;text-transform:uppercase">${titulo}</p>` +
-      grupo.map(f => {
-        const info = TIPO_FERIADO[f.tipo] || TIPO_FERIADO.sem_aula;
-        const dt = new Date(f.data+'T12:00:00');
-        const dow = dt.toLocaleDateString('pt-BR',{weekday:'short'});
-        const dtFmt = dt.toLocaleDateString('pt-BR',{day:'numeric',month:'long'});
-        return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:5px">
-          <span style="font-size:11px;font-weight:600;color:${info.cor};width:28px;flex-shrink:0">${dow}</span>
-          <span style="font-size:12px;font-weight:500;flex:1">${dtFmt}</span>
-          <span style="font-size:10px;color:var(--text2);flex:1">${info.label}</span>
-          <span style="font-size:11px;color:var(--text2);flex:2;font-style:italic">${f.descricao||''}</span>
-          <button class="btn btn-ghost btn-sm" style="color:var(--danger);flex-shrink:0" onclick="removerFeriado('${f.data}')">✕</button>
-        </div>`;
-      }).join('');
-  };
 
   if (!feriados.length) {
     lista.innerHTML = '<p style="font-size:11px;color:var(--text3);padding:10px 0">Nenhuma data especial cadastrada.</p>';
     return;
   }
+
+  // Agrupa datas consecutivas com mesmo tipo+descrição em períodos
+  function agrupar(lista) {
+    if (!lista.length) return [];
+    const grupos = [];
+    let grupo = { ...lista[0], dataFim: lista[0].data, count: 1 };
+    for (let i = 1; i < lista.length; i++) {
+      const f = lista[i];
+      const prev = new Date(grupo.dataFim+'T12:00:00');
+      // Avança para o próximo dia útil
+      do { prev.setDate(prev.getDate()+1); } while (prev.getDay()===0||prev.getDay()===6);
+      const proxUtil = `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}-${String(prev.getDate()).padStart(2,'0')}`;
+      if (f.data === proxUtil && f.tipo === grupo.tipo && f.descricao === grupo.descricao) {
+        grupo.dataFim = f.data;
+        grupo.count++;
+      } else {
+        grupos.push(grupo);
+        grupo = { ...f, dataFim: f.data, count: 1 };
+      }
+    }
+    grupos.push(grupo);
+    return grupos;
+  }
+
+  const futuros  = feriados.filter(f => f.data >= hoje);
+  const passados = feriados.filter(f => f.data < hoje);
+
+  const renderGrupo = (lista, titulo) => {
+    if (!lista.length) return '';
+    const grupos = agrupar(lista);
+    return `<p style="font-size:10px;color:var(--text3);margin:10px 0 4px;font-weight:600;text-transform:uppercase">${titulo}</p>` +
+      grupos.map(g => {
+        const info = TIPO_FERIADO[g.tipo] || TIPO_FERIADO.sem_aula;
+        const dtIni = new Date(g.data+'T12:00:00');
+        const dtFim = new Date(g.dataFim+'T12:00:00');
+        const periodo = g.count > 1
+          ? dtIni.toLocaleDateString('pt-BR',{day:'numeric',month:'short'})+' a '+dtFim.toLocaleDateString('pt-BR',{day:'numeric',month:'short'})+` (${g.count} dias)`
+          : dtIni.toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'long'});
+        return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:5px">
+          <span style="font-size:13px;flex-shrink:0">${info.label.split(' ')[0]}</span>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:600">${periodo}</div>
+            <div style="font-size:10px;color:var(--text2)">${info.label.replace(/^\S+\s/,'')} ${g.descricao?' · '+g.descricao:''}</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" style="color:var(--danger);flex-shrink:0" onclick="removerPeriodo('${g.data}','${g.dataFim}')" title="Remover ${g.count > 1 ? 'período' : 'data'}">✕</button>
+        </div>`;
+      }).join('');
+  };
+
   lista.innerHTML = renderGrupo(futuros,'Próximas datas') + renderGrupo(passados,'Passadas');
+}
+
+async function removerPeriodo(dataIni, dataFim) {
+  const n = dataIni === dataFim ? '1 data' : 'o período';
+  if (!confirm(`Remover ${n} do calendário?\n${dataIni === dataFim ? dataIni : dataIni+' até '+dataFim}`)) return;
+  // Remove todas as datas do intervalo
+  try {
+    await db.from('feriados').delete().eq('escola_id', currentEscola.id).gte('data', dataIni).lte('data', dataFim);
+  } catch(e) {
+    const atuais = (await getFeriados()).filter(f => f.data < dataIni || f.data > dataFim);
+    localStorage.setItem('pf-feriados-'+currentEscola.id, JSON.stringify(atuais));
+  }
+  _feriadosCache = null;
+  await renderFeriados();
+  toast('Removido do calendário.','🗑');
 }
 async function salvarConfig() {
   const payload = {
