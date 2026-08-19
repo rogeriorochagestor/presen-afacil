@@ -1263,6 +1263,25 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
     <p class="sec">Trocar senha</p>
     <div class="field"><label>Nova senha</label><input type="password" id="cfg-senha" placeholder="mín. 6 caracteres"></div>
     <button class="btn btn-primary btn-sm" onclick="trocarSenha()">Trocar Senha</button>
+    <div class="divider"></div>
+    <p class="sec">⚠️ Zona de perigo</p>
+    <div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:var(--r);padding:16px">
+      <p style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--danger)">🗑 Zerar registros de presença</p>
+      <p style="font-size:11px;color:var(--text2);margin-bottom:14px;line-height:1.6">
+        Apaga <b>todos</b> os registros de presença da escola — útil para iniciar um novo ano letivo ou período.<br>
+        <b>Alunos, turmas e configurações não são afetados.</b> Esta ação é irreversível.
+      </p>
+      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+        <div class="field" style="margin:0;flex:1;min-width:180px">
+          <label>Digite <b>CONFIRMAR</b> para habilitar</label>
+          <input type="text" id="cfg-zerar-confirm" placeholder="CONFIRMAR" oninput="verificarZerar()">
+        </div>
+        <button class="btn btn-sm" id="btn-zerar" disabled onclick="zerarPresencas()"
+          style="background:rgba(239,68,68,.15);color:var(--danger);border:1px solid rgba(239,68,68,.3);opacity:.4;cursor:not-allowed">
+          🗑 Zerar presenças
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -3064,7 +3083,61 @@ async function exportCSV() {
   toast('CSV exportado.','⬇');
 }
 
-async function loadConfig() {
+function verificarZerar() {
+  const val = document.getElementById('cfg-zerar-confirm')?.value || '';
+  const btn = document.getElementById('btn-zerar');
+  if (!btn) return;
+  const ok = val.trim().toUpperCase() === 'CONFIRMAR';
+  btn.disabled = !ok;
+  btn.style.opacity = ok ? '1' : '.4';
+  btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+}
+
+async function zerarPresencas() {
+  if (!currentEscola) return;
+  const val = document.getElementById('cfg-zerar-confirm')?.value || '';
+  if (val.trim().toUpperCase() !== 'CONFIRMAR') return;
+
+  // Segunda confirmação com informação do que será apagado
+  const { count } = await db.from('presencas')
+    .select('*', { count: 'exact', head: true })
+    .eq('escola_id', currentEscola.id);
+
+  const confirmMsg = `⚠️ ATENÇÃO — AÇÃO IRREVERSÍVEL\n\nIsso vai apagar PERMANENTEMENTE:\n• ${count || 0} registro(s) de presença\n• Todo o histórico de presenças da escola\n\nNÃO serão apagados:\n• Alunos e turmas\n• Configurações\n• Calendário escolar\n\nTem certeza absoluta?`;
+
+  if (!confirm(confirmMsg)) return;
+  if (!confirm('Última confirmação: apagar todos os registros de presença?')) return;
+
+  const btn = document.getElementById('btn-zerar');
+  btn.disabled = true;
+  btn.textContent = '⏳ Apagando...';
+
+  // Apaga em lotes de 1000 para não travar
+  let total = 0;
+  while (true) {
+    const { data, error } = await db.from('presencas')
+      .select('id')
+      .eq('escola_id', currentEscola.id)
+      .limit(1000);
+    if (error || !data?.length) break;
+    const ids = data.map(r => r.id);
+    await db.from('presencas').delete().in('id', ids);
+    total += ids.length;
+    btn.textContent = `⏳ Apagando... ${total}`;
+  }
+
+  // Limpa caches locais
+  presentesHoje = new Set();
+  presentesHojeData = '';
+  tarefasInvalidarCache();
+
+  // Reseta campo
+  document.getElementById('cfg-zerar-confirm').value = '';
+  verificarZerar();
+  btn.textContent = '🗑 Zerar presenças';
+
+  toast(`✅ ${total} registro(s) de presença apagados com sucesso.`, '🗑', 6000);
+}
   if (!currentEscola) return;
   document.getElementById('cfg-h-mat').value  = (currentEscola.hora_matutino||'07:00').slice(0,5);
   document.getElementById('cfg-h-vesp').value = (currentEscola.hora_vespertino||'13:00').slice(0,5);
