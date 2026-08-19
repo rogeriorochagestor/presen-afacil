@@ -631,7 +631,7 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
    KIOSK / BANNER
 ═══════════════════════════════════════ */
 .kiosk-banner{background:rgba(91,141,238,.08);border:1px solid rgba(91,141,238,.2);border-radius:var(--rs);padding:8px 12px;font-size:11px;color:var(--text2);display:flex;align-items:center;gap:8px;margin-bottom:16px}
-.kiosk-exit{position:fixed;top:0;right:0;padding-top:calc(env(safe-area-inset-top) + 4px);width:44px;height:44px;background:transparent;border:none;color:rgba(255,255,255,.35);font-size:13px;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:999}
+.kiosk-exit{position:fixed;top:0;right:0;padding-top:calc(env(safe-area-inset-top) + 4px);width:56px;height:56px;background:rgba(0,0,0,.4);border:none;color:rgba(255,255,255,.7);font-size:18px;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:999;border-bottom-left-radius:16px;backdrop-filter:blur(8px)}
 .kiosk-mode .kiosk-exit{display:flex}
 .kiosk-mode .sidebar{display:none !important}
 .kiosk-mode .main-content{margin-left:0 !important}
@@ -1258,17 +1258,29 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
   <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="fecharListaManual()">Fechar</button></div>
 </div></div>
 
-<div class="modal-bg" id="modal-pin"><div class="modal" style="max-width:300px">
-  <h2 id="pin-title">Digite o PIN</h2>
-  <div class="pin-display" id="pin-display"></div>
-  <div class="pin-pad">
-    <button class="pin-key" onclick="pinDigit(1)">1</button><button class="pin-key" onclick="pinDigit(2)">2</button><button class="pin-key" onclick="pinDigit(3)">3</button>
-    <button class="pin-key" onclick="pinDigit(4)">4</button><button class="pin-key" onclick="pinDigit(5)">5</button><button class="pin-key" onclick="pinDigit(6)">6</button>
-    <button class="pin-key" onclick="pinDigit(7)">7</button><button class="pin-key" onclick="pinDigit(8)">8</button><button class="pin-key" onclick="pinDigit(9)">9</button>
-    <button class="pin-key" onclick="pinClear()">✕</button><button class="pin-key" onclick="pinDigit(0)">0</button><button class="pin-key" onclick="pinBack()">⌫</button>
+<div class="modal-bg" id="modal-pin">
+  <div class="modal" style="max-width:340px;padding:28px 24px;text-align:center">
+    <p style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);margin-bottom:6px" id="pin-title">Digite o PIN</p>
+    <!-- Display dos pontos -->
+    <div id="pin-display" style="font-size:42px;letter-spacing:16px;min-height:60px;display:flex;align-items:center;justify-content:center;margin:10px 0 20px;color:var(--accent)"></div>
+    <!-- Teclado numérico grande -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+      <button onclick="pinDigit(1)" style="height:72px;font-size:28px;font-weight:600;font-family:'Space Grotesk',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:14px;color:var(--text);cursor:pointer;transition:background .1s" onpointerdown="this.style.background='var(--surface3)'" onpointerup="this.style.background='var(--surface2)'">1</button>
+      <button onclick="pinDigit(2)" style="height:72px;font-size:28px;font-weight:600;font-family:'Space Grotesk',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:14px;color:var(--text);cursor:pointer;transition:background .1s" onpointerdown="this.style.background='var(--surface3)'" onpointerup="this.style.background='var(--surface2)'">2</button>
+      <button onclick="pinDigit(3)" style="height:72px;font-size:28px;font-weight:600;font-family:'Space Grotesk',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:14px;color:var(--text);cursor:pointer;transition:background .1s" onpointerdown="this.style.background='var(--surface3)'" onpointerup="this.style.background='var(--surface2)'">3</button>
+      <button onclick="pinDigit(4)" style="height:72px;font-size:28px;font-weight:600;font-family:'Space Grotesk',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:14px;color:var(--text);cursor:pointer;transition:background .1s" onpointerdown="this.style.background='var(--surface3)'" onpointerup="this.style.background='var(--surface2)'">4</button>
+      <button onclick="pinDigit(5)" style="height:72px;font-size:28px;font-weight:600;font-family:'Space Grotesk',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:14px;color:var(--text);cursor:pointer;transition:background .1s" onpointerdown="this.style.background='var(--surface3)'" onpointerup="this.style.background='var(--surface2)'">5</button>
+      <button onclick="pinDigit(6)" style="height:72px;font-size:28px;font-weight:600;font-family:'Space Grotesk',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:14px;color:var(--text);cursor:pointer;transition:background .1s" onpointerdown="this.style.background='var(--surface3)'" onpointerup="this.style.background='var(--surface2)'">6</button>
+      <button onclick="pinDigit(7)" style="height:72px;font-size:28px;font-weight:600;font-family:'Space Grotesk',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:14px;color:var(--text);cursor:pointer;transition:background .1s" onpointerdown="this.style.background='var(--surface3)'" onpointerup="this.style.background='var(--surface2)'">7</button>
+      <button onclick="pinDigit(8)" style="height:72px;font-size:28px;font-weight:600;font-family:'Space Grotesk',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:14px;color:var(--text);cursor:pointer;transition:background .1s" onpointerdown="this.style.background='var(--surface3)'" onpointerup="this.style.background='var(--surface2)'">8</button>
+      <button onclick="pinDigit(9)" style="height:72px;font-size:28px;font-weight:600;font-family:'Space Grotesk',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:14px;color:var(--text);cursor:pointer;transition:background .1s" onpointerdown="this.style.background='var(--surface3)'" onpointerup="this.style.background='var(--surface2)'">9</button>
+      <button onclick="pinClear()" style="height:72px;font-size:22px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;color:var(--danger);cursor:pointer;transition:background .1s" onpointerdown="this.style.background='var(--surface3)'" onpointerup="this.style.background='var(--surface2)'">✕</button>
+      <button onclick="pinDigit(0)" style="height:72px;font-size:28px;font-weight:600;font-family:'Space Grotesk',sans-serif;background:var(--surface2);border:1px solid var(--border);border-radius:14px;color:var(--text);cursor:pointer;transition:background .1s" onpointerdown="this.style.background='var(--surface3)'" onpointerup="this.style.background='var(--surface2)'">0</button>
+      <button onclick="pinBack()" style="height:72px;font-size:22px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;color:var(--text2);cursor:pointer;transition:background .1s" onpointerdown="this.style.background='var(--surface3)'" onpointerup="this.style.background='var(--surface2)'">⌫</button>
+    </div>
+    <button class="btn btn-ghost" onclick="fecharPin()" style="width:100%;justify-content:center;height:48px;font-size:14px">Cancelar</button>
   </div>
-  <button class="btn btn-ghost btn-sm" onclick="fecharPin()" style="width:100%;justify-content:center">Cancelar</button>
-</div></div>
+</div>
 
 <script>
 const SUPA_URL = 'https://awtzeflakcffshkvtmsf.supabase.co';
