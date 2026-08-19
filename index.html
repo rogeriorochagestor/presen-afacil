@@ -970,17 +970,18 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
 
     <!-- Filtros de turno e turma -->
     <div class="filters" style="margin-bottom:12px">
-      <select id="chamada-turno" onchange="carregarChamada()">
+      <select id="chamada-turno" onchange="_popularTurmasChamada()">
         <option value="">Selecione o turno...</option>
         <option value="Matutino">☀️ Matutino</option>
         <option value="Vespertino">🌤️ Vespertino</option>
         <option value="Noturno">🌙 Noturno</option>
         <option value="Integral">📚 Integral</option>
       </select>
-      <select id="chamada-turma" onchange="carregarChamada()">
+      <select id="chamada-turma">
         <option value="">Todas as turmas do turno</option>
       </select>
-      <input type="date" id="chamada-data" onchange="carregarChamada()">
+      <input type="date" id="chamada-data">
+      <button class="btn btn-primary btn-sm" onclick="carregarChamada()">🔍 Carregar</button>
     </div>
 
     <!-- Estado inicial -->
