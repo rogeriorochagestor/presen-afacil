@@ -717,14 +717,120 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
 .alunos-bulk-bar{display:none;align-items:center;gap:10px;background:var(--surface2);border:1px solid rgba(91,141,238,.3);border-radius:var(--r);padding:10px 14px;margin-bottom:10px}
 
 /* Responsividade */
+/* ═══════════════════════════════════════
+   MOBILE — iPhone (< 768px)
+   Sidebar vira barra de navegação inferior
+═══════════════════════════════════════ */
 @media(max-width:768px){
-  .sidebar{width:var(--sidebar-collapsed)}
-  .sidebar-logo span,.nav-label,.sidebar-school,.user-info,.sidebar-school{display:none}
-  .sidebar-logo{gap:0;justify-content:center}
-  .nav-item{justify-content:center;padding:10px}
-  .user-card{justify-content:center}
-  .user-avatar{margin:0}
-  .main-content{margin-left:var(--sidebar-collapsed)}
+  /* Sidebar vira bottom nav */
+  .sidebar {
+    width: 100% !important;
+    height: auto;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    flex-direction: row;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    z-index: 200;
+    overflow: visible;
+  }
+  .sidebar-header { display: none; }
+  .sidebar-footer  { display: none; }
+  .sidebar-nav {
+    display: flex;
+    flex-direction: row;
+    padding: 6px 4px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom));
+    overflow-x: auto;
+    overflow-y: visible;
+    gap: 2px;
+    flex: 1;
+  }
+  .sidebar-nav::-webkit-scrollbar { display: none; }
+  .nav-section-label { display: none; }
+  .nav-item {
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 10px;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    min-width: 56px;
+    border-radius: 10px;
+  }
+  .nav-item::before { display: none; }
+  .nav-icon { font-size: 20px; width: auto; }
+  .nav-label {
+    display: block !important;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: inherit;
+  }
+  .nav-badge { position: absolute; top: 4px; right: 4px; }
+
+  /* Conteúdo acima da bottom nav */
+  .main-content {
+    margin-left: 0 !important;
+    margin-bottom: calc(60px + env(safe-area-inset-bottom));
+    width: 100%;
+  }
+
+  /* Topbar compacta */
+  .topbar { height: 48px; padding: 0 14px; }
+  .topbar-title { font-size: 14px; }
+
+  /* Páginas com padding menor */
+  .page { padding: 14px; }
+
+  /* Scanner ocupa mais espaço */
+  .scanner-wrapper {
+    max-width: 100%;
+    aspect-ratio: 3/4;
+  }
+
+  /* Kiosk — sem bottom nav */
+  .kiosk-mode .sidebar { display: none !important; }
+  .kiosk-mode .main-content { margin-bottom: 0 !important; }
+
+  /* Oculta colunas extras na tabela de alunos — info vai no card da 2ª coluna */
+  .col-desktop { display: table-cell; }
+  #alunos-grid th:nth-child(3),
+  #alunos-grid th:nth-child(4),
+  #alunos-grid th:nth-child(5),
+  #alunos-grid th:nth-child(6),
+  #alunos-grid td.col-desktop { display: none; }
+
+  /* Filtros em coluna */
+  .filters { gap: 6px; }
+  .filters input, .filters select { max-width: 100%; min-width: 0; flex: 1 1 calc(50% - 3px); }
+
+  /* KPIs em 2 colunas */
+  .kpi-card { min-width: calc(50% - 6px); }
+
+  /* Toast mais largo */
+  #toast { right: 10px; left: 10px; }
+  .toast-item { font-size: 13px; }
+
+  /* Modal ocupa mais tela */
+  .modal { border-radius: 16px; padding: 20px; }
+
+  /* Tabelas responsivas */
+  .table-wrap { border-radius: 10px; }
+  th, td { padding: 9px 10px; font-size: 12px; }
+
+  /* Botões menores */
+  .btn { padding: 8px 12px; font-size: 12px; }
+  .btn-sm { padding: 5px 9px; font-size: 11px; }
+}
+
+/* iPhone muito pequeno < 390px */
+@media(max-width:390px){
+  .nav-item { min-width: 48px; padding: 6px 6px; }
+  .nav-label { font-size: 8px; }
+  .page { padding: 10px; }
 }
 </style>
 </head>
@@ -2403,33 +2509,32 @@ async function renderAlunos() {
     const inativo = a.ativo === false;
     const marcado = _alunosSelecionados.has(a.id);
     const fotoTag = temFoto
-      ? '<span class="badge badge-success">✓ Sim</span>'
-      : '<span class="badge badge-warning">✗ Não</span>';
-    const telTag = temTel
-      ? `<span style="font-size:10px;color:var(--text2)">${[a.telefone_resp&&'1',a.telefone_resp2&&'2'].filter(Boolean).join(' e ')}</span>`
-      : '<span style="font-size:10px;color:var(--text3)">—</span>';
+      ? '<span class="badge badge-success" style="font-size:9px">✓ Foto</span>'
+      : '<span class="badge badge-warning" style="font-size:9px">✗ Foto</span>';
     const statusTag = inativo
-      ? '<span class="badge" style="background:rgba(239,68,68,.15);color:var(--danger)">Inativo</span>'
-      : '<span class="badge badge-success">Ativo</span>';
-    return `<tr style="${inativo?'opacity:.5':''}">
-      <td><input type="checkbox" class="check-aluno" data-id="${a.id}" ${marcado?'checked':''} onchange="toggleSelecionarAluno('${a.id}', this.checked)"></td>
-      <td><div style="display:flex;align-items:center;gap:8px">
-        <div style="width:26px;height:26px;border-radius:50%;background:${getColor(a.nome)}22;color:${getColor(a.nome)};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:'Space Grotesk',sans-serif;flex-shrink:0">${getInit(a.nome)}</div>
-        <span style="font-size:12px;font-weight:600">${a.nome}</span>
-      </div></td>
-      <td style="font-size:11px;color:var(--text2)">${a.turma_nome||'—'}</td>
-      <td>${fotoTag}</td>
-      <td>${telTag}</td>
-      <td>${statusTag}</td>
-      <td><div class="row" style="gap:4px;justify-content:flex-end">
-        <button class="btn btn-ghost btn-sm" onclick="editarAluno('${a.id}')" title="Editar">✏️</button>
-        <button class="btn btn-ghost btn-sm" onclick="atualizarFoto('${a.id}')" title="Foto">📸</button>
-        ${inativo
-          ? `<button class="btn btn-success btn-sm" onclick="reativarAluno('${a.id}')" title="Reativar">↩️ Ativar</button>
-             <button class="btn btn-sm" style="background:rgba(239,68,68,.15);color:var(--danger);border:1px solid rgba(239,68,68,.3)" onclick="excluirDefinitivamente('${a.id}','${a.nome.replace(/'/g,"\\'")}')">🗑 Excluir</button>`
-          : `<button class="btn btn-ghost btn-sm" style="color:var(--warning)" onclick="excluirAluno('${a.id}')" title="Inativar">⏸ Inativar</button>`
-        }
-      </div></td>
+      ? '<span class="badge" style="background:rgba(239,68,68,.15);color:var(--danger);font-size:9px">Inativo</span>'
+      : '<span class="badge badge-success" style="font-size:9px">Ativo</span>';
+    const acoesHtml = inativo
+      ? `<button class="btn btn-success btn-sm" onclick="reativarAluno('${a.id}')">↩️</button><button class="btn btn-sm" style="background:rgba(239,68,68,.15);color:var(--danger);border:1px solid rgba(239,68,68,.3)" onclick="excluirDefinitivamente('${a.id}','${a.nome.replace(/'/g,"\'")}')">🗑</button>`
+      : `<button class="btn btn-ghost btn-sm" onclick="editarAluno('${a.id}')">✏️</button><button class="btn btn-ghost btn-sm" onclick="atualizarFoto('${a.id}')">📸</button><button class="btn btn-ghost btn-sm" style="color:var(--warning)" onclick="excluirAluno('${a.id}')">⏸</button>`;
+    return `<tr style="${inativo?'opacity:.55':''}">
+      <td style="width:32px"><input type="checkbox" class="check-aluno" data-id="${a.id}" ${marcado?'checked':''} onchange="toggleSelecionarAluno('${a.id}', this.checked)" style="width:16px;height:16px;accent-color:var(--accent)"></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:30px;height:30px;border-radius:50%;background:${getColor(a.nome)}22;color:${getColor(a.nome)};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:'Space Grotesk',sans-serif;flex-shrink:0">${getInit(a.nome)}</div>
+          <div style="min-width:0;flex:1">
+            <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.nome}</div>
+            <div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:2px;align-items:center">
+              <span style="font-size:10px;color:var(--text2)">${a.turma_nome||'—'}</span>${fotoTag}${statusTag}
+            </div>
+          </div>
+        </div>
+      </td>
+      <td class="col-desktop" style="font-size:11px;color:var(--text2)">${a.turma_nome||'—'}</td>
+      <td class="col-desktop">${fotoTag}</td>
+      <td class="col-desktop">${temTel?`<span style="font-size:10px;color:var(--text2)">${[a.telefone_resp&&'1',a.telefone_resp2&&'2'].filter(Boolean).join(' e ')}</span>`:'<span style="font-size:10px;color:var(--text3)">—</span>'}</td>
+      <td class="col-desktop">${statusTag}</td>
+      <td style="white-space:nowrap"><div style="display:flex;gap:3px;justify-content:flex-end">${acoesHtml}</div></td>
     </tr>`;
   }).join('');
 
