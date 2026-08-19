@@ -4423,6 +4423,9 @@ async function carregarChamada() {
   const turmaId = document.getElementById('chamada-turma')?.value || '';
   const data = document.getElementById('chamada-data')?.value || todayStr();
 
+  // Garante cache atualizado
+  await refreshCache();
+
   // Atualiza select de turmas quando troca turno
   await _popularTurmasChamada();
   if (document.getElementById('chamada-turma')) {
@@ -4431,6 +4434,10 @@ async function carregarChamada() {
 
   if (!turno) {
     document.getElementById('chamada-vazia').style.display = '';
+    document.getElementById('chamada-vazia').innerHTML = `
+      <div style="font-size:40px;margin-bottom:12px">📝</div>
+      <p style="font-size:14px;font-weight:600;margin-bottom:6px">Selecione o turno para iniciar</p>
+      <p style="font-size:12px">Escolha o turno e a turma acima para carregar a lista de alunos.</p>`;
     document.getElementById('chamada-conteudo').style.display = 'none';
     document.getElementById('chamada-footer').style.display = 'none';
     return;
@@ -4449,17 +4456,27 @@ async function carregarChamada() {
     return;
   }
 
-  // Busca alunos do turno/turma
-  let alunos = alunosCache.filter(a => a.turma_periodo === turno || !turno);
+  // Busca alunos — compara periodo ignorando case e espaços
+  const turnoNorm = turno.trim().toLowerCase();
+  let alunos = alunosCache.filter(a => {
+    const periodo = (a.turma_periodo || '').trim().toLowerCase();
+    return periodo === turnoNorm || periodo === 'integral';
+  });
   if (turmaId) alunos = alunos.filter(a => a.turma_id === turmaId);
   alunos = alunos.sort((a, b) => a.nome.localeCompare(b.nome));
 
   if (!alunos.length) {
+    // Diagnóstico: mostra quantos alunos há no cache e quais períodos existem
+    const periodos = [...new Set(alunosCache.map(a => a.turma_periodo))].join(', ') || 'nenhum';
     document.getElementById('chamada-vazia').style.display = '';
     document.getElementById('chamada-vazia').innerHTML = `
       <div style="font-size:40px;margin-bottom:12px">👤</div>
       <p style="font-size:14px;font-weight:600">Nenhum aluno encontrado</p>
-      <p style="font-size:12px;color:var(--text2)">Verifique se há alunos ativos neste turno/turma.</p>`;
+      <p style="font-size:12px;color:var(--text2)">
+        ${alunosCache.length} aluno(s) no cache.<br>
+        Períodos encontrados: ${periodos}<br>
+        Verifique se as turmas têm o período configurado corretamente.
+      </p>`;
     document.getElementById('chamada-conteudo').style.display = 'none';
     document.getElementById('chamada-footer').style.display = 'none';
     return;
