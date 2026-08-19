@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0f1117">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -631,11 +631,28 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
    KIOSK / BANNER
 ═══════════════════════════════════════ */
 .kiosk-banner{background:rgba(91,141,238,.08);border:1px solid rgba(91,141,238,.2);border-radius:var(--rs);padding:8px 12px;font-size:11px;color:var(--text2);display:flex;align-items:center;gap:8px;margin-bottom:16px}
-.kiosk-exit{position:fixed;top:14px;right:14px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:var(--danger);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:16px;display:none;align-items:center;justify-content:center;z-index:999}
+.kiosk-exit{position:fixed;top:0;right:0;padding-top:calc(env(safe-area-inset-top) + 4px);width:44px;height:44px;background:transparent;border:none;color:rgba(255,255,255,.35);font-size:13px;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:999}
 .kiosk-mode .kiosk-exit{display:flex}
-.kiosk-mode .sidebar{display:none}
-.kiosk-mode .main-content{margin-left:0}
-.kiosk-mode .topbar{display:none}
+.kiosk-mode .sidebar{display:none !important}
+.kiosk-mode .main-content{margin-left:0 !important}
+.kiosk-mode .topbar{display:none !important}
+.kiosk-mode #page-scanner{padding:0;max-width:100%;position:fixed;inset:0;display:flex !important;flex-direction:column;background:#000}
+.kiosk-mode .scanner-wrapper{max-width:100%;width:100%;flex:1;aspect-ratio:unset;border-radius:0;border:none;box-shadow:none}
+.kiosk-mode #video{width:100%;height:100%;object-fit:cover}
+.kiosk-mode .kiosk-banner,.kiosk-mode .filters,.kiosk-mode .sec,.kiosk-mode #today-list,.kiosk-mode .divider,.kiosk-mode #result-area,.kiosk-mode .scanner-controls{display:none !important}
+.kiosk-header{display:none;position:fixed;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top) + 8px) 16px 14px;background:linear-gradient(rgba(0,0,0,.7),transparent);z-index:50;justify-content:space-between;align-items:center}
+.kiosk-mode .kiosk-header{display:flex}
+.kiosk-school-name{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:rgba(255,255,255,.85)}
+.kiosk-time{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:.02em}
+.kiosk-controls{display:none;position:fixed;bottom:0;left:0;right:0;padding:14px 20px;padding-bottom:calc(14px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(0,0,0,.85));z-index:50;gap:14px;justify-content:center;align-items:center}
+.kiosk-mode .kiosk-controls{display:flex}
+.btn-camera{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);color:#fff;backdrop-filter:blur(8px);border-radius:50%;width:50px;height:50px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;flex-shrink:0}
+.btn-camera:active{transform:scale(.9);opacity:.7}
+.kiosk-mode .confirm-card{padding:32px 24px;border-radius:24px;max-width:340px}
+.kiosk-mode .big-avatar{width:96px;height:96px;font-size:40px;margin-bottom:18px}
+.kiosk-mode .confirm-card .nome{font-size:26px}
+.kiosk-mode .confirm-actions .btn-lg{padding:18px;font-size:17px;border-radius:var(--r);min-height:58px}
+*{touch-action:manipulation}
 
 /* ═══════════════════════════════════════
    MODAIS
@@ -817,6 +834,12 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
   </div>
 
   <div class="page" id="page-scanner">
+    <!-- Header visível só no modo kiosk -->
+    <div class="kiosk-header">
+      <div class="kiosk-school-name" id="kiosk-school-name">PresençaFácil</div>
+      <div class="kiosk-time" id="kiosk-clock">--:--</div>
+    </div>
+
     <div class="kiosk-banner">🔒 <span id="gestor-banner">...</span><button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="ativarKiosk()">🔐 Modo Portaria</button></div>
     <div class="filters" style="margin-bottom:8px">
       <select id="filter-scanner-turno" onchange="filtrarScanner()">
@@ -842,6 +865,14 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
       <button class="btn btn-ghost btn-sm" onclick="recarregarFaces()">🔄</button>
       <button class="btn btn-ghost btn-sm" onclick="abrirListaManual()">📋 Manual</button>
     </div>
+
+    <!-- Controles inferiores — só visíveis no modo kiosk -->
+    <div class="kiosk-controls">
+      <button class="btn-camera" onclick="alternarCamera()" title="Alternar câmera">🔄</button>
+      <button class="btn btn-ghost" id="btn-start-kiosk" onclick="startScanner()" style="display:none;color:#fff;border-color:rgba(255,255,255,.3)">▶ Iniciar</button>
+      <button class="btn-camera" onclick="abrirListaManual()" title="Registro manual">📋</button>
+    </div>
+
     <div id="result-area"></div>
     <div class="divider"></div>
     <p class="sec">Últimas presenças hoje</p>
@@ -1396,8 +1427,8 @@ async function doLogout() {
   currentUser = null; currentProfile = null; currentEscola = null;
   localDescriptors = []; alunosCache = []; turmasCache = [];
   modelsLoaded = false;
-  document.body.classList.remove('kiosk-mode');
-  kioskActive = false;
+  if (kioskActive) desativarKiosk();
+  else document.body.classList.remove('kiosk-mode');
   try { await db.auth.signOut(); } catch(e) {}
   // O Supabase já remove a sessão do localStorage via signOut()
   // Não mexemos em mais nada para não corromper outros dados
@@ -1908,21 +1939,54 @@ function setScanStatus(type,text) {
   if (tx) tx.textContent=text;
 }
 
+let _cameraFacing = 'user'; // 'user' = frontal, 'environment' = traseira
+let _kioskClockTimer = null;
+
+function alternarCamera() {
+  _cameraFacing = _cameraFacing === 'user' ? 'environment' : 'user';
+  const icon = _cameraFacing === 'environment' ? '🔁' : '🔄';
+  toast(_cameraFacing === 'environment' ? 'Câmera traseira' : 'Câmera frontal', icon, 2000);
+  if (scanRunning) { stopScanner(); setTimeout(startScanner, 400); }
+}
+
 async function startScanner() {
   if (!modelsLoaded) { toast('Aguarde a IA carregar...','⏳'); return; }
   const video = document.getElementById('video');
   try {
-    scanStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}});
+    // iPhone: câmera traseira com resolução alta para melhor reconhecimento
+    const constraints = {
+      video: {
+        facingMode: _cameraFacing,
+        width:  { ideal: 1280 },
+        height: { ideal: 720 },
+        frameRate: { ideal: 30, max: 60 }
+      }
+    };
+    scanStream = await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject = scanStream;
     await video.play();
     document.getElementById('btn-start').style.display='none';
     document.getElementById('btn-stop').style.display='';
+    const bk = document.getElementById('btn-start-kiosk');
+    if (bk) bk.style.display='none';
     scanRunning = true;
     setScanStatus('looking','Procurando rostos...');
     runDetection();
   } catch(e) {
-    setScanStatus('error','Sem acesso à câmera');
-    toast('Permita o acesso à câmera.','⚠️');
+    // Fallback: tenta com constraints mais simples (compatibilidade)
+    try {
+      scanStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:_cameraFacing}});
+      video.srcObject = scanStream;
+      await video.play();
+      document.getElementById('btn-start').style.display='none';
+      document.getElementById('btn-stop').style.display='';
+      scanRunning = true;
+      setScanStatus('looking','Procurando rostos...');
+      runDetection();
+    } catch(e2) {
+      setScanStatus('error','Sem acesso à câmera');
+      toast('Permita o acesso à câmera nas configurações do Safari.','⚠️',5000);
+    }
   }
 }
 
@@ -3188,8 +3252,30 @@ function ativarKiosk() {
   if (!localStorage.getItem('pf-kiosk-pin')) { toast('Defina um PIN em Configurações.','⚠️',5000); return; }
   document.body.classList.add('kiosk-mode');
   kioskActive = true;
+  // Preenche nome da escola no header kiosk
+  const schoolEl = document.getElementById('kiosk-school-name');
+  if (schoolEl && currentEscola) schoolEl.textContent = currentEscola.nome;
+  // Inicia relógio
+  function atualizarRelogio() {
+    const el = document.getElementById('kiosk-clock');
+    if (el) el.textContent = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  }
+  atualizarRelogio();
+  _kioskClockTimer = setInterval(atualizarRelogio, 10000);
+  // Inicia scanner
   if (!scanRunning) startScanner();
-  toast('Modo portaria ativo. Toque no ✕ para sair.','🔒',4000);
+  // Mantém tela acesa (Wake Lock API — suportada no iOS 16.4+)
+  if ('wakeLock' in navigator) {
+    navigator.wakeLock.request('screen').catch(()=>{});
+  }
+  toast('Modo portaria ativo.','🔒',3000);
+}
+
+function desativarKiosk() {
+  document.body.classList.remove('kiosk-mode');
+  kioskActive = false;
+  if (_kioskClockTimer) { clearInterval(_kioskClockTimer); _kioskClockTimer = null; }
+  toast('Portaria desativada.','🔓');
 }
 function askExitKiosk() {
   pinBuffer = '';
@@ -3204,8 +3290,8 @@ function pinDigit(d) {
   if (pinBuffer.length===4) {
     setTimeout(()=>{
       if (pinBuffer === localStorage.getItem('pf-kiosk-pin')) {
-        document.body.classList.remove('kiosk-mode'); kioskActive=false;
-        fecharPin(); toast('Portaria desativada.','🔓');
+        desativarKiosk();
+        fecharPin();
       } else {
         document.getElementById('pin-display').textContent='❌'; beep(200,300);
         setTimeout(()=>{ pinBuffer=''; document.getElementById('pin-display').textContent=''; },1000);
