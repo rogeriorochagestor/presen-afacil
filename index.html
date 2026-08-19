@@ -722,114 +722,84 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
    Sidebar vira barra de navegação inferior
 ═══════════════════════════════════════ */
 @media(max-width:768px){
-  /* Sidebar vira bottom nav */
   .sidebar {
     width: 100% !important;
-    height: auto;
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    flex-direction: row;
-    border-right: none;
-    border-top: 1px solid var(--border);
-    z-index: 200;
-    overflow: visible;
+    height: auto !important;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    flex-direction: row !important;
+    border-right: none !important;
+    border-top: 1px solid var(--border) !important;
+    z-index: 200 !important;
+    overflow: hidden !important;
+    position: fixed !important;
   }
-  .sidebar-header { display: none; }
-  .sidebar-footer  { display: none; }
+  .sidebar-header,.sidebar-footer { display: none !important; }
   .sidebar-nav {
-    display: flex;
-    flex-direction: row;
-    padding: 6px 4px;
-    padding-bottom: calc(6px + env(safe-area-inset-bottom));
-    overflow-x: auto;
-    overflow-y: visible;
-    gap: 2px;
-    flex: 1;
+    display: flex !important;
+    flex-direction: row !important;
+    padding: 4px 0 !important;
+    padding-bottom: calc(4px + env(safe-area-inset-bottom)) !important;
+    overflow: hidden !important;
+    flex: 1 !important;
+    width: 100% !important;
+    justify-content: space-around !important;
+    align-items: center !important;
   }
-  .sidebar-nav::-webkit-scrollbar { display: none; }
-  .nav-section-label { display: none; }
+  .nav-section-label { display: none !important; }
   .nav-item {
-    flex-direction: column;
-    gap: 2px;
-    padding: 6px 10px;
-    justify-content: center;
-    align-items: center;
-    flex-shrink: 0;
-    min-width: 56px;
-    border-radius: 10px;
+    flex-direction: column !important;
+    gap: 1px !important;
+    padding: 5px 2px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    border-radius: 8px !important;
   }
-  .nav-item::before { display: none; }
-  .nav-icon { font-size: 20px; width: auto; }
+  .nav-item::before { display: none !important; }
+  .nav-icon { font-size: 18px !important; width: auto !important; }
   .nav-label {
     display: block !important;
-    font-size: 9px;
-    font-weight: 500;
-    letter-spacing: 0;
-    color: inherit;
+    font-size: 9px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0 !important;
+    color: inherit !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 56px !important;
   }
-  .nav-badge { position: absolute; top: 4px; right: 4px; }
-
-  /* Conteúdo acima da bottom nav */
-  .main-content {
-    margin-left: 0 !important;
-    margin-bottom: calc(60px + env(safe-area-inset-bottom));
-    width: 100%;
-  }
-
-  /* Topbar compacta */
-  .topbar { height: 48px; padding: 0 14px; }
+  .nav-badge { position: absolute !important; top: 2px !important; right: 4px !important; font-size: 8px !important; min-width: 14px !important; height: 14px !important; }
+  .main-content { margin-left: 0 !important; padding-bottom: calc(68px + env(safe-area-inset-bottom)) !important; width: 100% !important; }
+  .topbar { height: 46px; padding: 0 14px; }
   .topbar-title { font-size: 14px; }
-
-  /* Páginas com padding menor */
-  .page { padding: 14px; }
-
-  /* Scanner ocupa mais espaço */
-  .scanner-wrapper {
-    max-width: 100%;
-    aspect-ratio: 3/4;
-  }
-
-  /* Kiosk — sem bottom nav */
+  .page { padding: 12px; }
+  .scanner-wrapper { max-width: 100%; aspect-ratio: 3/4; }
   .kiosk-mode .sidebar { display: none !important; }
-  .kiosk-mode .main-content { margin-bottom: 0 !important; }
-
-  /* Oculta colunas extras na tabela de alunos — info vai no card da 2ª coluna */
+  .kiosk-mode .main-content { padding-bottom: 0 !important; }
   .col-desktop { display: table-cell; }
   #alunos-grid th:nth-child(3),
   #alunos-grid th:nth-child(4),
   #alunos-grid th:nth-child(5),
   #alunos-grid th:nth-child(6),
   #alunos-grid td.col-desktop { display: none; }
-
-  /* Filtros em coluna */
   .filters { gap: 6px; }
   .filters input, .filters select { max-width: 100%; min-width: 0; flex: 1 1 calc(50% - 3px); }
-
-  /* KPIs em 2 colunas */
   .kpi-card { min-width: calc(50% - 6px); }
-
-  /* Toast mais largo */
   #toast { right: 10px; left: 10px; }
   .toast-item { font-size: 13px; }
-
-  /* Modal ocupa mais tela */
   .modal { border-radius: 16px; padding: 20px; }
-
-  /* Tabelas responsivas */
   .table-wrap { border-radius: 10px; }
-  th, td { padding: 9px 10px; font-size: 12px; }
-
-  /* Botões menores */
+  th, td { padding: 8px 10px; font-size: 12px; }
   .btn { padding: 8px 12px; font-size: 12px; }
   .btn-sm { padding: 5px 9px; font-size: 11px; }
 }
-
-/* iPhone muito pequeno < 390px */
 @media(max-width:390px){
-  .nav-item { min-width: 48px; padding: 6px 6px; }
-  .nav-label { font-size: 8px; }
+  .nav-icon { font-size: 16px !important; }
+  .nav-label { font-size: 8px !important; max-width: 44px !important; }
   .page { padding: 10px; }
 }
 </style>
@@ -1274,10 +1244,10 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
       <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
         <div class="field" style="margin:0;flex:1;min-width:180px">
           <label>Digite <b>CONFIRMAR</b> para habilitar</label>
-          <input type="text" id="cfg-zerar-confirm" placeholder="CONFIRMAR" oninput="verificarZerar()">
+          <input type="text" id="cfg-zerar-confirm" placeholder="CONFIRMAR" oninput="verificarZerar()" autocomplete="off" autocorrect="off" autocapitalize="off">
         </div>
-        <button class="btn btn-sm" id="btn-zerar" disabled onclick="zerarPresencas()"
-          style="background:rgba(239,68,68,.15);color:var(--danger);border:1px solid rgba(239,68,68,.3);opacity:.4;cursor:not-allowed">
+        <button class="btn btn-sm" id="btn-zerar" onclick="zerarPresencas()"
+          style="background:rgba(239,68,68,.15);color:var(--danger);border:1px solid rgba(239,68,68,.3)">
           🗑 Zerar presenças
         </button>
       </div>
@@ -3084,13 +3054,14 @@ async function exportCSV() {
 }
 
 function verificarZerar() {
-  const val = document.getElementById('cfg-zerar-confirm')?.value || '';
+  const val = (document.getElementById('cfg-zerar-confirm')?.value || '').trim().toUpperCase();
   const btn = document.getElementById('btn-zerar');
   if (!btn) return;
-  const ok = val.trim().toUpperCase() === 'CONFIRMAR';
+  const ok = val === 'CONFIRMAR';
   btn.disabled = !ok;
   btn.style.opacity = ok ? '1' : '.4';
   btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+  btn.style.pointerEvents = ok ? 'auto' : 'none';
 }
 
 async function zerarPresencas() {
@@ -3147,6 +3118,9 @@ async function zerarPresencas() {
   document.getElementById('cfg-feriado-data').value = todayStr();
   atualizarDescricaoFeriado();
   setModoCalendario('dia');
+  // Inicializa botão zerar como desabilitado
+  const cfgZerar = document.getElementById('cfg-zerar-confirm');
+  if (cfgZerar) { cfgZerar.value = ''; verificarZerar(); }
   // Listeners de preview do período
   ['cfg-periodo-inicio','cfg-periodo-fim','cfg-periodo-tipo'].forEach(id => {
     const el = document.getElementById(id);
