@@ -4413,24 +4413,28 @@ async function _popularTurmasChamada() {
   const turno = document.getElementById('chamada-turno')?.value || '';
   const sel = document.getElementById('chamada-turma');
   if (!sel) return;
+  const valorAtual = sel.value; // preserva seleção
   const turmasFilt = turno ? turmasCache.filter(t => t.periodo === turno) : turmasCache;
   sel.innerHTML = '<option value="">Todas as turmas do turno</option>' +
     turmasFilt.map(t => `<option value="${t.id}">${t.nome} (${t.periodo})</option>`).join('');
+  // Restaura seleção se ainda existir
+  if (valorAtual && turmasFilt.find(t => t.id === valorAtual)) {
+    sel.value = valorAtual;
+  }
 }
 
 async function carregarChamada() {
   const turno = document.getElementById('chamada-turno')?.value || '';
-  const turmaId = document.getElementById('chamada-turma')?.value || '';
   const data = document.getElementById('chamada-data')?.value || todayStr();
 
   // Garante cache atualizado
   await refreshCache();
 
-  // Atualiza select de turmas quando troca turno
+  // Sempre atualiza o select de turmas baseado no turno
   await _popularTurmasChamada();
-  if (document.getElementById('chamada-turma')) {
-    document.getElementById('chamada-turma').value = turmaId;
-  }
+
+  // Pega o turmaId APÓS popular (pode ter mudado)
+  const turmaId = document.getElementById('chamada-turma')?.value || '';
 
   if (!turno) {
     document.getElementById('chamada-vazia').style.display = '';
@@ -4456,7 +4460,7 @@ async function carregarChamada() {
     return;
   }
 
-  // Busca alunos — compara periodo ignorando case e espaços
+  // Busca alunos — compara periodo normalizando
   const turnoNorm = turno.trim().toLowerCase();
   let alunos = alunosCache.filter(a => {
     const periodo = (a.turma_periodo || '').trim().toLowerCase();
@@ -4466,16 +4470,14 @@ async function carregarChamada() {
   alunos = alunos.sort((a, b) => a.nome.localeCompare(b.nome));
 
   if (!alunos.length) {
-    // Diagnóstico: mostra quantos alunos há no cache e quais períodos existem
-    const periodos = [...new Set(alunosCache.map(a => a.turma_periodo))].join(', ') || 'nenhum';
+    const periodos = [...new Set(alunosCache.map(a => a.turma_periodo||'null'))].join(', ');
     document.getElementById('chamada-vazia').style.display = '';
     document.getElementById('chamada-vazia').innerHTML = `
       <div style="font-size:40px;margin-bottom:12px">👤</div>
       <p style="font-size:14px;font-weight:600">Nenhum aluno encontrado</p>
       <p style="font-size:12px;color:var(--text2)">
         ${alunosCache.length} aluno(s) no cache.<br>
-        Períodos encontrados: ${periodos}<br>
-        Verifique se as turmas têm o período configurado corretamente.
+        Períodos: ${periodos}
       </p>`;
     document.getElementById('chamada-conteudo').style.display = 'none';
     document.getElementById('chamada-footer').style.display = 'none';
@@ -4485,9 +4487,11 @@ async function carregarChamada() {
   _chamadaAlunos = alunos;
   _chamadaFaltosos = new Set();
 
-  // Busca quem já tem presença hoje neste turno/turma
-  let q = db.from('presencas').select('aluno_id').eq('escola_id', currentEscola.id).eq('data', data);
-  if (turno) q = q.eq('periodo', turno);
+  // Busca quem já tem presença hoje
+  let q = db.from('presencas').select('aluno_id')
+    .eq('escola_id', currentEscola.id)
+    .eq('data', data)
+    .eq('periodo', turno);
   if (turmaId) q = q.eq('turma_id', turmaId);
   const { data: presHoje } = await q;
   _chamadaJaRegistrados = new Set((presHoje || []).map(p => p.aluno_id));
@@ -4496,7 +4500,6 @@ async function carregarChamada() {
   document.getElementById('chamada-conteudo').style.display = '';
   document.getElementById('chamada-footer').style.display = '';
 
-  // Info no topo
   const dtFmt = new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'});
   const turmaLabel = turmaId ? (turmasCache.find(t => t.id === turmaId)?.nome || turno) : turno;
   document.getElementById('chamada-info').textContent = `${turmaLabel} · ${dtFmt}`;
