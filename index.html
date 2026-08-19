@@ -1957,9 +1957,19 @@ let _kioskClockTimer = null;
 
 function alternarCamera() {
   _cameraFacing = _cameraFacing === 'user' ? 'environment' : 'user';
+  // Frontal precisa de espelho, traseira não
+  _aplicarEspelhoCamera();
   const icon = _cameraFacing === 'environment' ? '🔁' : '🔄';
   toast(_cameraFacing === 'environment' ? 'Câmera traseira' : 'Câmera frontal', icon, 2000);
   if (scanRunning) { stopScanner(); setTimeout(startScanner, 400); }
+}
+
+function _aplicarEspelhoCamera() {
+  const mirror = _cameraFacing === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+  const v = document.getElementById('video');
+  const o = document.getElementById('overlay');
+  if (v) v.style.transform = mirror;
+  if (o) o.style.transform = mirror;
 }
 
 async function startScanner() {
@@ -1978,6 +1988,7 @@ async function startScanner() {
     scanStream = await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject = scanStream;
     await video.play();
+    _aplicarEspelhoCamera(); // espelho correto para frontal/traseira
     document.getElementById('btn-start').style.display='none';
     document.getElementById('btn-stop').style.display='';
     const bk = document.getElementById('btn-start-kiosk');
