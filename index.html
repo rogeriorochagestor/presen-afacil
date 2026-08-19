@@ -3186,6 +3186,8 @@ async function zerarPresencas() {
 
   toast(`✅ ${total} registro(s) de presença apagados com sucesso.`, '🗑', 6000);
 }
+
+async function loadConfig() {
   if (!currentEscola) return;
   document.getElementById('cfg-h-mat').value  = (currentEscola.hora_matutino||'07:00').slice(0,5);
   document.getElementById('cfg-h-vesp').value = (currentEscola.hora_vespertino||'13:00').slice(0,5);
