@@ -4126,6 +4126,21 @@ window.addEventListener('load', () => {
   updateConnStatus();
   if (navigator.onLine && offlineQueue.size() > 0) setTimeout(syncOfflineQueue, 3000);
 });
+
+// Ping automático ao Supabase a cada 5 dias — evita pausa do plano gratuito
+(async function pingSupabase() {
+  const CHAVE = 'pf-last-ping';
+  const INTERVALO = 5 * 24 * 60 * 60 * 1000; // 5 dias em ms
+  try {
+    const ultimo = parseInt(localStorage.getItem(CHAVE) || '0');
+    if (Date.now() - ultimo > INTERVALO) {
+      await db.from('escolas').select('id', { count: 'exact', head: true });
+      localStorage.setItem(CHAVE, String(Date.now()));
+      console.log('Ping Supabase OK — banco ativo.');
+    }
+  } catch(e) { console.warn('Ping falhou:', e.message); }
+  setTimeout(pingSupabase, INTERVALO);
+})();
 </script>
   </div><!-- /.main-content -->
 </div><!-- /#screen-app -->
