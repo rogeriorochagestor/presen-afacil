@@ -851,6 +851,7 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
     <nav class="sidebar-nav" id="tabs-gestor" style="display:none">
       <div class="nav-section-label">Operação</div>
       <button class="nav-item active" onclick="switchTab(this,'scanner')"><span class="nav-icon">📷</span><span class="nav-label">Scanner</span></button>
+      <button class="nav-item" onclick="switchTab(this,'chamada')"><span class="nav-icon">📝</span><span class="nav-label">Chamada</span></button>
       <button class="nav-item" id="tab-tarefas" onclick="switchTab(this,'tarefas')"><span class="nav-icon">✉️</span><span class="nav-label">Tarefas</span></button>
       <button class="nav-item" onclick="switchTab(this,'presencas')"><span class="nav-icon">📋</span><span class="nav-label">Presenças</span></button>
       <div class="nav-section-label">Cadastros</div>
@@ -954,6 +955,80 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
     <div class="divider"></div>
     <p class="sec">Últimas presenças hoje</p>
     <div id="today-list"><div class="empty"><p>Nenhuma presença hoje.</p></div></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- CHAMADA INVERTIDA                           -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="page" id="page-chamada">
+    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px">
+      <div>
+        <p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700">Chamada</p>
+        <p style="font-size:11px;color:var(--text2)" id="chamada-info">Marque apenas os alunos que faltaram.</p>
+      </div>
+    </div>
+
+    <!-- Filtros de turno e turma -->
+    <div class="filters" style="margin-bottom:12px">
+      <select id="chamada-turno" onchange="carregarChamada()">
+        <option value="">Selecione o turno...</option>
+        <option value="Matutino">☀️ Matutino</option>
+        <option value="Vespertino">🌤️ Vespertino</option>
+        <option value="Noturno">🌙 Noturno</option>
+        <option value="Integral">📚 Integral</option>
+      </select>
+      <select id="chamada-turma" onchange="carregarChamada()">
+        <option value="">Todas as turmas do turno</option>
+      </select>
+      <input type="date" id="chamada-data" onchange="carregarChamada()">
+    </div>
+
+    <!-- Estado inicial -->
+    <div id="chamada-vazia" style="text-align:center;padding:40px 16px;color:var(--text3)">
+      <div style="font-size:40px;margin-bottom:12px">📝</div>
+      <p style="font-size:14px;font-weight:600;margin-bottom:6px">Selecione o turno para iniciar</p>
+      <p style="font-size:12px">Escolha o turno e a turma acima para carregar a lista de alunos.</p>
+    </div>
+
+    <!-- Lista de alunos carregada -->
+    <div id="chamada-conteudo" style="display:none">
+
+      <!-- Resumo -->
+      <div class="kpi-row" style="margin-bottom:14px">
+        <div class="kpi-card">
+          <div class="kpi-label">Total na turma</div>
+          <div class="kpi-value" id="ch-total" style="font-size:22px">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Marcados faltosos</div>
+          <div class="kpi-value" id="ch-faltas" style="font-size:22px;color:var(--danger)">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Receberão presença</div>
+          <div class="kpi-value" id="ch-presentes" style="font-size:22px;color:var(--success)">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Já registrados hoje</div>
+          <div class="kpi-value" id="ch-ja-registrados" style="font-size:22px;color:var(--text2)">0</div>
+        </div>
+      </div>
+
+      <!-- Instrução -->
+      <div style="background:rgba(91,141,238,.08);border:1px solid rgba(91,141,238,.2);border-radius:var(--rs);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text2)">
+        💡 <b>Como funciona:</b> toque nos alunos que <b>faltaram</b>. Ao clicar em <b>Finalizar</b>, o sistema registra presença para todos os <b>não marcados</b> automaticamente.
+      </div>
+
+      <!-- Lista de alunos -->
+      <div id="chamada-lista" style="margin-bottom:80px"></div>
+
+    </div>
+
+    <!-- Botão flutuante Finalizar -->
+    <div id="chamada-footer" style="display:none;position:fixed;bottom:calc(68px + env(safe-area-inset-bottom));left:0;right:0;padding:12px 16px;background:linear-gradient(transparent,var(--bg) 40%);z-index:90">
+      <button class="btn btn-primary" style="width:100%;justify-content:center;height:50px;font-size:15px" onclick="finalizarChamada()">
+        ✅ Finalizar e registrar presenças
+      </button>
+    </div>
   </div>
 
   <div class="page" id="page-alunos">
@@ -1808,7 +1883,7 @@ setInterval(() => {
 
 // Mapa de títulos para a topbar
 const PAGE_TITLES = {
-  'scanner':'Scanner', 'alunos':'Alunos', 'turmas':'Turmas',
+  'scanner':'Scanner', 'chamada':'Chamada', 'alunos':'Alunos', 'turmas':'Turmas',
   'presencas':'Presenças', 'tarefas':'Tarefas Diárias', 'analises':'Análises e Relatórios',
   'config':'Configurações', 'dono-escolas':'Escolas', 'dono-gestores':'Gestores',
   'dono-stats':'Estatísticas', 'dono-backup':'Backup'
@@ -1830,6 +1905,7 @@ function switchTab(el, id) {
   if (id==='dono-stats')    renderStatsDono();
   if (id==='dono-backup')   renderBackup();
   if (id==='scanner')       { filtrarScanner(); renderTodayList(); }
+  if (id==='chamada')       iniciarChamada();
   if (id==='alunos')        renderAlunos();
   if (id==='turmas')        renderTurmas();
   if (id==='presencas')     { loadTurmaFilter(); renderPresencas(); }
@@ -4305,6 +4381,283 @@ function atualizarBadgeTarefas() {
   if (page && page.classList.contains('active')) renderTarefas();
   // Senão atualiza só o badge contando pendentes salvos
   else _atualizarKpiPendentes();
+}
+
+// ════════════════════════════════════════════════
+// CHAMADA INVERTIDA
+// Professor marca só os faltosos — sistema registra
+// presença para todos os demais ao finalizar
+// ════════════════════════════════════════════════
+
+let _chamadaFaltosos = new Set(); // IDs dos marcados como faltosos
+let _chamadaAlunos = [];          // Lista completa de alunos da turma/turno
+let _chamadaJaRegistrados = new Set(); // Já têm presença hoje
+
+async function iniciarChamada() {
+  if (!currentEscola) return;
+  await refreshCache();
+  // Popula data com hoje
+  const dataInput = document.getElementById('chamada-data');
+  if (dataInput && !dataInput.value) dataInput.value = todayStr();
+  // Popula turmas
+  await _popularTurmasChamada();
+  // Reseta estado
+  _chamadaFaltosos = new Set();
+  _chamadaAlunos = [];
+  document.getElementById('chamada-vazia').style.display = '';
+  document.getElementById('chamada-conteudo').style.display = 'none';
+  document.getElementById('chamada-footer').style.display = 'none';
+}
+
+async function _popularTurmasChamada() {
+  const turno = document.getElementById('chamada-turno')?.value || '';
+  const sel = document.getElementById('chamada-turma');
+  if (!sel) return;
+  const turmasFilt = turno ? turmasCache.filter(t => t.periodo === turno) : turmasCache;
+  sel.innerHTML = '<option value="">Todas as turmas do turno</option>' +
+    turmasFilt.map(t => `<option value="${t.id}">${t.nome} (${t.periodo})</option>`).join('');
+}
+
+async function carregarChamada() {
+  const turno = document.getElementById('chamada-turno')?.value || '';
+  const turmaId = document.getElementById('chamada-turma')?.value || '';
+  const data = document.getElementById('chamada-data')?.value || todayStr();
+
+  // Atualiza select de turmas quando troca turno
+  await _popularTurmasChamada();
+  if (document.getElementById('chamada-turma')) {
+    document.getElementById('chamada-turma').value = turmaId;
+  }
+
+  if (!turno) {
+    document.getElementById('chamada-vazia').style.display = '';
+    document.getElementById('chamada-conteudo').style.display = 'none';
+    document.getElementById('chamada-footer').style.display = 'none';
+    return;
+  }
+
+  // Verifica se é dia letivo
+  await getFeriados();
+  if (!computaFaltaSync(data)) {
+    document.getElementById('chamada-vazia').style.display = '';
+    document.getElementById('chamada-vazia').innerHTML = `
+      <div style="font-size:40px;margin-bottom:12px">🎉</div>
+      <p style="font-size:14px;font-weight:600;margin-bottom:6px">Sem aula neste dia</p>
+      <p style="font-size:12px;color:var(--text2)">A data selecionada é um feriado, fim de semana ou dia sem aula.</p>`;
+    document.getElementById('chamada-conteudo').style.display = 'none';
+    document.getElementById('chamada-footer').style.display = 'none';
+    return;
+  }
+
+  // Busca alunos do turno/turma
+  let alunos = alunosCache.filter(a => a.turma_periodo === turno || !turno);
+  if (turmaId) alunos = alunos.filter(a => a.turma_id === turmaId);
+  alunos = alunos.sort((a, b) => a.nome.localeCompare(b.nome));
+
+  if (!alunos.length) {
+    document.getElementById('chamada-vazia').style.display = '';
+    document.getElementById('chamada-vazia').innerHTML = `
+      <div style="font-size:40px;margin-bottom:12px">👤</div>
+      <p style="font-size:14px;font-weight:600">Nenhum aluno encontrado</p>
+      <p style="font-size:12px;color:var(--text2)">Verifique se há alunos ativos neste turno/turma.</p>`;
+    document.getElementById('chamada-conteudo').style.display = 'none';
+    document.getElementById('chamada-footer').style.display = 'none';
+    return;
+  }
+
+  _chamadaAlunos = alunos;
+  _chamadaFaltosos = new Set();
+
+  // Busca quem já tem presença hoje neste turno/turma
+  let q = db.from('presencas').select('aluno_id').eq('escola_id', currentEscola.id).eq('data', data);
+  if (turno) q = q.eq('periodo', turno);
+  if (turmaId) q = q.eq('turma_id', turmaId);
+  const { data: presHoje } = await q;
+  _chamadaJaRegistrados = new Set((presHoje || []).map(p => p.aluno_id));
+
+  document.getElementById('chamada-vazia').style.display = 'none';
+  document.getElementById('chamada-conteudo').style.display = '';
+  document.getElementById('chamada-footer').style.display = '';
+
+  // Info no topo
+  const dtFmt = new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'});
+  const turmaLabel = turmaId ? (turmasCache.find(t => t.id === turmaId)?.nome || turno) : turno;
+  document.getElementById('chamada-info').textContent = `${turmaLabel} · ${dtFmt}`;
+
+  _atualizarKpisChamada();
+  _renderListaChamada();
+}
+
+function _atualizarKpisChamada() {
+  const total = _chamadaAlunos.length;
+  const jaReg = _chamadaJaRegistrados.size;
+  const faltosos = _chamadaFaltosos.size;
+  // Dos que ainda não foram registrados, quantos receberão presença
+  const semRegistro = _chamadaAlunos.filter(a => !_chamadaJaRegistrados.has(a.id));
+  const receberao = semRegistro.filter(a => !_chamadaFaltosos.has(a.id)).length;
+
+  document.getElementById('ch-total').textContent = total;
+  document.getElementById('ch-faltas').textContent = faltosos;
+  document.getElementById('ch-presentes').textContent = receberao;
+  document.getElementById('ch-ja-registrados').textContent = jaReg;
+}
+
+function _renderListaChamada() {
+  const lista = document.getElementById('chamada-lista');
+  if (!lista) return;
+
+  // Separa: já registrados / pendentes
+  const pendentes = _chamadaAlunos.filter(a => !_chamadaJaRegistrados.has(a.id));
+  const jaFeitos  = _chamadaAlunos.filter(a =>  _chamadaJaRegistrados.has(a.id));
+
+  let html = '';
+
+  if (pendentes.length) {
+    html += `<p class="sec">Pendentes (${pendentes.length})</p>`;
+    html += pendentes.map(a => {
+      const faltou = _chamadaFaltosos.has(a.id);
+      return `<div onclick="toggleFalta('${a.id}')" style="
+        display:flex;align-items:center;gap:12px;
+        padding:13px 14px;border-radius:var(--rs);
+        margin-bottom:6px;cursor:pointer;
+        border:2px solid ${faltou ? 'rgba(248,113,113,.4)' : 'var(--border)'};
+        background:${faltou ? 'rgba(248,113,113,.08)' : 'var(--surface)'};
+        transition:all .15s;user-select:none">
+        <div style="
+          width:32px;height:32px;border-radius:50%;
+          background:${faltou ? 'var(--danger)' : getColor(a.nome)+'22'};
+          color:${faltou ? '#fff' : getColor(a.nome)};
+          display:flex;align-items:center;justify-content:center;
+          font-size:11px;font-weight:700;font-family:'Space Grotesk',sans-serif;
+          flex-shrink:0;transition:all .15s">
+          ${faltou ? '✕' : getInit(a.nome)}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+            color:${faltou ? 'var(--danger)' : 'var(--text)'}">
+            ${a.nome}
+          </div>
+          <div style="font-size:10px;color:var(--text2)">${a.turma_nome || '—'}</div>
+        </div>
+        <div style="font-size:11px;font-weight:600;color:${faltou ? 'var(--danger)' : 'var(--text3)'}">
+          ${faltou ? 'FALTOU' : 'Presente'}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  if (jaFeitos.length) {
+    html += `<p class="sec" style="margin-top:16px">Já registrados hoje (${jaFeitos.length})</p>`;
+    html += jaFeitos.map(a => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;
+        border-radius:var(--rs);margin-bottom:4px;opacity:.45;
+        background:rgba(52,211,153,.05);border:1px solid rgba(52,211,153,.15)">
+        <div style="width:28px;height:28px;border-radius:50%;background:rgba(52,211,153,.15);
+          color:var(--success);display:flex;align-items:center;justify-content:center;
+          font-size:10px;font-weight:700;font-family:'Space Grotesk',sans-serif;flex-shrink:0">
+          ✓
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.nome}</div>
+          <div style="font-size:10px;color:var(--text2)">${a.turma_nome || '—'}</div>
+        </div>
+        <span class="badge badge-success" style="font-size:9px">Registrado</span>
+      </div>`).join('');
+  }
+
+  lista.innerHTML = html || '<div class="empty"><p>Nenhum aluno para exibir.</p></div>';
+}
+
+function toggleFalta(alunoId) {
+  // Não permite marcar quem já tem presença registrada
+  if (_chamadaJaRegistrados.has(alunoId)) return;
+  if (_chamadaFaltosos.has(alunoId)) {
+    _chamadaFaltosos.delete(alunoId);
+  } else {
+    _chamadaFaltosos.add(alunoId);
+  }
+  _atualizarKpisChamada();
+  _renderListaChamada();
+}
+
+async function finalizarChamada() {
+  const turno = document.getElementById('chamada-turno')?.value || '';
+  const turmaId = document.getElementById('chamada-turma')?.value || '';
+  const data = document.getElementById('chamada-data')?.value || todayStr();
+
+  // Alunos que receberão presença = pendentes NÃO marcados como faltosos
+  const aReceberPresenca = _chamadaAlunos.filter(a =>
+    !_chamadaJaRegistrados.has(a.id) && !_chamadaFaltosos.has(a.id)
+  );
+
+  if (!aReceberPresenca.length && _chamadaFaltosos.size === 0) {
+    toast('Nenhum aluno pendente. Chamada já finalizada.', '✅', 4000);
+    return;
+  }
+
+  const totalFaltas = _chamadaFaltosos.size;
+  const totalPresencas = aReceberPresenca.length;
+  if (!confirm(`Confirmar chamada?\n\n✅ ${totalPresencas} presença(s) serão registradas\n❌ ${totalFaltas} falta(s) serão computadas\n\nEsta ação não pode ser desfeita.`)) return;
+
+  const btn = document.querySelector('#page-chamada .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Registrando...'; }
+
+  // Calcula atraso baseado no horário configurado
+  const horaMap = {
+    'Matutino':   currentEscola?.hora_matutino,
+    'Vespertino': currentEscola?.hora_vespertino,
+    'Noturno':    currentEscola?.hora_noturno,
+    'Integral':   currentEscola?.hora_integral
+  };
+  const horaEntrada = horaMap[turno] || '07:00';
+  const horaAtual = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  const tol = currentEscola?.tolerancia_min || 0;
+  const [hh, mm] = horaEntrada.split(':');
+  const limite = new Date();
+  limite.setHours(parseInt(hh), parseInt(mm) + tol, 0, 0);
+  const atrasado = new Date() > limite;
+
+  // Monta registros de presença em lote
+  const registros = aReceberPresenca.map(a => ({
+    escola_id: currentEscola.id,
+    aluno_id: a.id,
+    aluno_nome: a.nome,
+    turma_id: a.turma_id,
+    turma_nome: a.turma_nome,
+    periodo: turno || a.turma_periodo || 'Matutino',
+    data,
+    hora: horaAtual,
+    atrasado: data === todayStr() ? atrasado : false
+  }));
+
+  // Insere em lotes de 100
+  let ok = 0, erros = 0;
+  for (let i = 0; i < registros.length; i += 100) {
+    const lote = registros.slice(i, i + 100);
+    const { error } = await db.from('presencas').insert(lote);
+    if (error) erros += lote.length;
+    else ok += lote.length;
+  }
+
+  // Atualiza cache de presentes
+  aReceberPresenca.forEach(a => {
+    presentesHoje.add(a.id);
+    _chamadaJaRegistrados.add(a.id);
+  });
+
+  if (btn) { btn.disabled = false; btn.textContent = '✅ Finalizar e registrar presenças'; }
+
+  if (erros) {
+    toast(`⚠️ ${ok} registradas, ${erros} com erro.`, '⚠️', 6000);
+  } else {
+    toast(`✅ Chamada finalizada! ${ok} presença(s) registrada(s), ${totalFaltas} falta(s).`, '✅', 5000);
+    beep(880, 120); setTimeout(() => beep(1320, 150), 130);
+  }
+
+  // Recarrega a lista mostrando estado atualizado
+  _renderListaChamada();
+  _atualizarKpisChamada();
+  setTimeout(atualizarBadgeTarefas, 1000);
 }
 
 // ════════════════════════════════════════════════
