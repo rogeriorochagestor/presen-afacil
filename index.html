@@ -1389,7 +1389,10 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
   <div class="field"><label>Responsável 2 — nome (opcional)</label><input type="text" id="a-resp2"></div>
   <div class="field"><label>WhatsApp do Responsável 2</label><input type="tel" id="a-tel2" placeholder="65 99999-9999"></div>
   <p class="sec" id="a-cam-label">Foto facial</p>
-  <div class="modal-cam"><video id="modal-video" autoplay muted playsinline></video></div>
+  <div style="position:relative">
+    <div class="modal-cam"><video id="modal-video" autoplay muted playsinline style="transform:scaleX(-1)"></video></div>
+    <button onclick="alternarCameraModal()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);border-radius:50%;width:38px;height:38px;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)" title="Alternar câmera">🔄</button>
+  </div>
   <div id="a-status" style="font-size:11px;color:var(--text2);min-height:16px">Câmera iniciando...</div>
   <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="fecharAluno()">Cancelar</button><button class="btn btn-ghost btn-sm" onclick="salvarAlunoSemFoto()">Só dados</button><button class="btn btn-success btn-sm" id="btn-cap-aluno" onclick="capturarAluno()">📸 Capturar</button></div>
 </div></div>
@@ -2770,22 +2773,39 @@ async function editarAluno(id) {
 
 async function atualizarFoto(id) { await editarAluno(id); }
 
+let _modalCameraFacing = 'user'; // frontal por padrão
+
 async function iniciarCamModal() {
   try {
-    modalStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:320},height:{ideal:320}}});
+    if (modalStream) { modalStream.getTracks().forEach(t=>t.stop()); modalStream=null; }
+    modalStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: _modalCameraFacing, width:{ideal:640}, height:{ideal:640} }
+    });
     const v = document.getElementById('modal-video');
-    v.srcObject=modalStream; await v.play();
+    v.srcObject = modalStream;
+    await v.play();
+    // Espelha só a câmera frontal
+    v.style.transform = _modalCameraFacing === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
     if (document.getElementById('a-status').textContent.startsWith('Câmera')) {
-      document.getElementById('a-status').textContent='✅ Posicione o rosto';
+      document.getElementById('a-status').textContent =
+        _modalCameraFacing === 'user' ? '✅ Câmera frontal — posicione o rosto' : '✅ Câmera traseira — posicione o rosto';
     }
   } catch(e) {
-    document.getElementById('a-status').textContent='⚠️ Câmera indisponível';
+    document.getElementById('a-status').textContent='⚠️ Sem acesso à câmera. Verifique as permissões.';
   }
+}
+
+async function alternarCameraModal() {
+  _modalCameraFacing = _modalCameraFacing === 'user' ? 'environment' : 'user';
+  document.getElementById('a-status').textContent =
+    _modalCameraFacing === 'user' ? 'Câmera frontal...' : 'Câmera traseira...';
+  await iniciarCamModal();
 }
 
 function fecharAluno() {
   document.getElementById('modal-aluno').classList.remove('open');
   if (modalStream) { modalStream.getTracks().forEach(t=>t.stop()); modalStream=null; }
+  _modalCameraFacing = 'user'; // volta para frontal na próxima abertura
 }
 
 async function salvarAlunoSemFoto() {
