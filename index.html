@@ -875,7 +875,7 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
         </div>
         <button class="btn-logout" onclick="doLogout()" title="Sair">⏻</button>
       </div>
-      <div style="text-align:center;font-size:9px;color:var(--text3);margin-top:6px;letter-spacing:.05em">v3.1 · 21/08/2026</div>
+      <div style="text-align:center;font-size:9px;color:var(--text3);margin-top:6px;letter-spacing:.05em">v3.2 · 21/08/2026</div>
     </div>
   </aside>
 
@@ -1449,6 +1449,20 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
   <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="fecharTurma()">Cancelar</button><button class="btn btn-primary btn-sm" onclick="salvarTurma()">Salvar</button></div>
 </div></div>
 
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-card">
+    <div class="big-avatar" id="conf-avatar">?</div>
+    <h2>É você?</h2>
+    <p class="nome" id="conf-nome">—</p>
+    <p class="turma" id="conf-turma">—</p>
+    <div id="conf-confianca" style="margin:6px 0;font-size:11px;color:var(--text2);text-align:center"></div>
+    <div class="confirm-actions">
+      <button class="btn btn-success btn-lg" onclick="confirmarPresenca()">✓ SIM, SOU EU</button>
+      <button class="btn btn-ghost" onclick="naoSouEu()">✗ Não sou eu</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-aluno"><div class="modal">
   <h2 id="m-aluno-title">Cadastrar Aluno</h2>
   <div class="field"><label>Nome</label><input type="text" id="a-nome"></div>
@@ -1585,17 +1599,26 @@ let modelsLoaded = false, appReady = false;
 let scanStream = null, modalStream = null;
 let scanRunning = false, scanTimer = null;
 let lastConfirmedAt = 0;
-let recentlyConfirmedIds = new Map(); // id -> timestamp
+let recentlyConfirmedIds = new Map();
 let localDescriptors = [], alunosCache = [], turmasCache = [];
 let confirmCandidate = null;
 let kioskActive = false, pinBuffer = '';
 const COLORS = ['#4f8ef7','#7c3aed','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16'];
 let editingAluno=null, editingTurma=null, editingEscola=null, editingGestor=null;
-// Cache em memória dos alunos que já marcaram presença hoje — evita duplicatas sem consultar banco
-let presentesHoje = new Set(); // Set de aluno_id
-let presentesHojeData = '';    // data do cache — se mudar o dia, limpa automaticamente
-let _todosAlunosCache = null;  // cache de alunos incluindo inativos (para filtro de status)
+let presentesHoje = new Set();
+let presentesHojeData = '';
+let _todosAlunosCache = null;
 let _todosAlunosCacheTime = 0;
+
+// Fila offline — salva presenças localmente quando sem conexão
+const OFFLINE_KEY = 'pf-offline-queue';
+const offlineQueue = {
+  get: () => { try { return JSON.parse(localStorage.getItem(OFFLINE_KEY)||'[]'); } catch(e) { return []; } },
+  add: (item) => { const q = offlineQueue.get(); q.push({...item, _offlineId: Date.now()}); try { localStorage.setItem(OFFLINE_KEY, JSON.stringify(q)); } catch(e) {} },
+  remove: (id) => { const q = offlineQueue.get().filter(x=>x._offlineId!==id); try { localStorage.setItem(OFFLINE_KEY, JSON.stringify(q)); } catch(e) {} },
+  clear: () => { try { localStorage.removeItem(OFFLINE_KEY); } catch(e) {} },
+  size: () => offlineQueue.get().length
+};
 
 let audioCtx = null;
 function beep(freq=880, dur=120) {
@@ -5113,30 +5136,7 @@ async function exportarMapaPDF() {
   toast('PDF gerado!','📄',3000);
 }
 
-async function abrirMapaSala(turmaId) {
-  _mapaTurmaId = turmaId;
-  _mapaDados = {};
-  const turma = turmasCache.find(t => t.id === turmaId);
-  document.getElementById('mapa-titulo').textContent = 'Mapa de Sala — ' + (turma?.nome || '');
 
-  // Carrega alunos da turma
-  await refreshCache();
-  _mapaAlunosDaTurma = alunosCache.filter(a => a.turma_id === turmaId).sort((a,b) => a.nome.localeCompare(b.nome));
-
-  // Carrega mapa salvo (localStorage por turma)
-  const saved = localStorage.getItem('pf-mapa-' + turmaId);
-  if (saved) {
-    try { _mapaDados = JSON.parse(saved); } catch(e) { _mapaDados = {}; }
-  }
-
-  document.getElementById('modal-mapa').classList.add('open');
-  renderMapaEditor();
-}
-
-function fecharMapaSala() {
-  document.getElementById('modal-mapa').classList.remove('open');
-  _mapaTurmaId = null;
-}
 
 function updateConnStatus() {
   const dot = document.getElementById('conn-dot');
