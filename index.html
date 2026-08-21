@@ -875,7 +875,7 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
         </div>
         <button class="btn-logout" onclick="doLogout()" title="Sair">⏻</button>
       </div>
-      <div style="text-align:center;font-size:9px;color:var(--text3);margin-top:6px;letter-spacing:.05em">v2.7 · 21/08/2026</div>
+      <div style="text-align:center;font-size:9px;color:var(--text3);margin-top:6px;letter-spacing:.05em">v2.8 · 21/08/2026</div>
     </div>
   </aside>
 
@@ -2243,19 +2243,8 @@ async function startScanner() {
   if (!modelsLoaded) { toast('Aguarde a IA carregar...','⏳'); return; }
   const video = document.getElementById('video');
   try {
-    // Resolução ideal para face-api: 640x480 é o ponto ideal entre qualidade e velocidade
-    const constraints = {
-      video: {
-        facingMode: _cameraFacing,
-        width:  { ideal: 640, max: 1280 },
-        height: { ideal: 480, max: 720 },
-        frameRate: { ideal: 24, max: 30 }
-      }
-    };
-    scanStream = await navigator.mediaDevices.getUserMedia(constraints);
+    scanStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:_cameraFacing,width:{ideal:640},height:{ideal:480}}});
     video.srcObject = scanStream;
-    video.setAttribute('playsinline','');
-    video.setAttribute('muted','');
     await video.play();
     _aplicarEspelhoCamera();
     document.getElementById('btn-start').style.display='none';
@@ -2264,27 +2253,10 @@ async function startScanner() {
     if (bk) bk.style.display='none';
     scanRunning = true;
     setScanStatus('looking','Procurando rostos...');
-    // Aguarda vídeo estabilizar antes de detectar
-    setTimeout(runDetection, 800);
+    runDetection();
   } catch(e) {
-    try {
-      // Fallback mais simples para iPhone
-      scanStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: _cameraFacing }
-      });
-      video.srcObject = scanStream;
-      video.setAttribute('playsinline','');
-      await video.play();
-      _aplicarEspelhoCamera();
-      document.getElementById('btn-start').style.display='none';
-      document.getElementById('btn-stop').style.display='';
-      scanRunning = true;
-      setScanStatus('looking','Procurando rostos...');
-      setTimeout(runDetection, 800);
-    } catch(e2) {
-      setScanStatus('error','Sem acesso à câmera');
-      toast('Permita o acesso à câmera nas configurações do Safari.','⚠️',5000);
-    }
+    setScanStatus('error','Sem acesso à câmera');
+    toast('Permita o acesso à câmera nas configurações do Safari.','⚠️',5000);
   }
 }
 
@@ -2321,45 +2293,40 @@ async function runDetection() {
 
   const video = document.getElementById('video');
   const canvas = document.getElementById('overlay');
-  if (!video || !canvas || video.readyState < 2 || !video.videoWidth) {
-    scanTimer = setTimeout(runDetection, 500);
+  if (!video || !canvas || video.readyState < 2) {
+    scanTimer = setTimeout(runDetection, 400);
     return;
   }
-  // Usa dimensões do elemento renderizado (não do stream) — crítico para Safari/iPhone
-  const displayW = video.clientWidth  || video.videoWidth;
-  const displayH = video.clientHeight || video.videoHeight;
-  canvas.width  = displayW;
-  canvas.height = displayH;
+  canvas.width = video.videoWidth || video.clientWidth;
+  canvas.height = video.videoHeight || video.clientHeight;
   const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, displayW, displayH);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
   try {
-    const dets = await faceapi.detectAllFaces(video, new faceapi.SsdMobilenetv1Options({minConfidence:0.5})).withFaceLandmarks().withFaceDescriptors();
+    const dets = await faceapi.detectAllFaces(video, new faceapi.SsdMobilenetv1Options({minConfidence:0.7})).withFaceLandmarks().withFaceDescriptors();
     if (!dets.length) {
       setScanStatus('looking','Procurando rostos...');
       scanTimer = setTimeout(runDetection,700); return;
     }
-    setScanStatus('found', dets.length+' rosto(s) detectado(s)');
-    const resized = faceapi.resizeResults(dets, { width: displayW, height: displayH });
-    resized.forEach(d => {
-      const b = d.detection.box;
-      ctx.strokeStyle = '#4f8ef7';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(b.x, b.y, b.width, b.height);
+    setScanStatus('found',dets.length+' rosto(s) detectado(s)');
+    const resized = faceapi.resizeResults(dets,{width:canvas.width,height:canvas.height});
+    resized.forEach(d=>{
+      const b=d.detection.box;
+      ctx.strokeStyle='#4f8ef7'; ctx.lineWidth=2;
+      ctx.strokeRect(b.x,b.y,b.width,b.height);
     });
     if (localDescriptors.length>0) {
       const labeled = localDescriptors.map(a=>new faceapi.LabeledFaceDescriptors(a.id,[a.descriptor]));
-      const matcher = new faceapi.FaceMatcher(labeled, 0.6);
+      const matcher = new faceapi.FaceMatcher(labeled, 0.38);
       for (const d of resized) {
         const match = matcher.findBestMatch(d.descriptor);
-        if (match.label !== 'unknown' && match.distance < 0.6) {
+        if (match.label !== 'unknown' && match.distance < 0.38) {
           if (recentlyConfirmedIds.has(match.label)) {
             setScanStatus('found','✓ '+(localDescriptors.find(a=>a.id===match.label)?.nome.split(' ')[0]||'')+' já registrado');
             continue;
           }
           const aluno = localDescriptors.find(a=>a.id===match.label);
           if (aluno) {
-            // Calcula % de confiança para exibir no card (distância 0 = 100%, 0.38 = 0%)
-            aluno._confianca = Math.round((1 - match.distance / 0.6) * 100);
+            aluno._confianca = Math.round((1 - match.distance / 0.38) * 100);
             mostrarConfirmacao(aluno);
             scanTimer = setTimeout(runDetection, 500);
             return;
