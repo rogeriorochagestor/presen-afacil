@@ -11,27 +11,11 @@
 <link rel="manifest" href="manifest.json">
 <title>PresençaFácil</title>
 <script>
-  // Registra o Service Worker
+  // Remove qualquer service worker existente para garantir que o app sempre carrega a versão mais recente
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js')
-        .then(r => {
-          console.log('SW registrado:', r.scope);
-          // Força atualização se houver nova versão
-          r.addEventListener('updatefound', () => {
-            const newSW = r.installing;
-            newSW.addEventListener('statechange', () => {
-              if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('Nova versão disponível — recarregando...');
-                window.location.reload();
-              }
-            });
-          });
-        })
-        .catch(e => console.warn('SW falhou:', e));
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister());
     });
-    // Detecta quando SW atualiza e recarrega a página automaticamente
-    navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
   }
 </script>
 <script>
@@ -887,7 +871,7 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
         </div>
         <button class="btn-logout" onclick="doLogout()" title="Sair">⏻</button>
       </div>
-      <div style="text-align:center;font-size:9px;color:var(--text3);margin-top:6px;letter-spacing:.05em">v2.1 · 21/08/2026</div>
+      <div style="text-align:center;font-size:9px;color:var(--text3);margin-top:6px;letter-spacing:.05em">v2.2 · 21/08/2026</div>
     </div>
   </aside>
 
@@ -2329,10 +2313,10 @@ async function runDetection() {
     });
     if (localDescriptors.length>0) {
       const labeled = localDescriptors.map(a=>new faceapi.LabeledFaceDescriptors(a.id,[a.descriptor]));
-      const matcher = new faceapi.FaceMatcher(labeled, 0.45);
+      const matcher = new faceapi.FaceMatcher(labeled, 0.6);
       for (const d of resized) {
         const match = matcher.findBestMatch(d.descriptor);
-        if (match.label !== 'unknown' && match.distance < 0.45) {
+        if (match.label !== 'unknown' && match.distance < 0.6) {
           if (recentlyConfirmedIds.has(match.label)) {
             setScanStatus('found','✓ '+(localDescriptors.find(a=>a.id===match.label)?.nome.split(' ')[0]||'')+' já registrado');
             continue;
@@ -2340,7 +2324,7 @@ async function runDetection() {
           const aluno = localDescriptors.find(a=>a.id===match.label);
           if (aluno) {
             // Calcula % de confiança para exibir no card (distância 0 = 100%, 0.38 = 0%)
-            aluno._confianca = Math.round((1 - match.distance / 0.45) * 100);
+            aluno._confianca = Math.round((1 - match.distance / 0.6) * 100);
             mostrarConfirmacao(aluno);
             scanTimer = setTimeout(runDetection, 500);
             return;
