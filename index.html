@@ -852,6 +852,7 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
       <div class="nav-section-label">Operação</div>
       <button class="nav-item active" onclick="switchTab(this,'scanner')"><span class="nav-icon">📷</span><span class="nav-label">Scanner</span></button>
       <button class="nav-item" onclick="switchTab(this,'chamada')"><span class="nav-icon">📝</span><span class="nav-label">Chamada</span></button>
+      <button class="nav-item" onclick="switchTab(this,'mapa-sala')"><span class="nav-icon">🗺️</span><span class="nav-label">Mapa</span></button>
       <button class="nav-item" id="tab-tarefas" onclick="switchTab(this,'tarefas')"><span class="nav-icon">✉️</span><span class="nav-label">Tarefas</span></button>
       <button class="nav-item" onclick="switchTab(this,'presencas')"><span class="nav-icon">📋</span><span class="nav-label">Presenças</span></button>
       <div class="nav-section-label">Cadastros</div>
@@ -1062,6 +1063,85 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
       <thead><tr><th style="width:32px"><input type="checkbox" id="check-all-alunos" onchange="toggleSelecionarTodosAlunos(this.checked)"></th><th>Aluno</th><th>Turma</th><th>Foto</th><th>WhatsApp</th><th>Status</th><th></th></tr></thead>
       <tbody id="alunos-grid"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">Carregando...</td></tr></tbody>
     </table></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- MAPA DE SALA                               -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="page" id="page-mapa-sala">
+
+    <!-- PASSO 1: Seleção de turma -->
+    <div id="mapa-step-turma">
+      <p style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;margin-bottom:4px">Mapa de Sala</p>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:18px">Selecione a turma para editar ou visualizar o mapa de sala.</p>
+      <div class="filters" style="margin-bottom:14px">
+        <select id="mapa-filter-turno" onchange="renderTurmasMapa()">
+          <option value="">Todos os turnos</option>
+          <option value="Matutino">☀️ Matutino</option>
+          <option value="Vespertino">🌤️ Vespertino</option>
+          <option value="Noturno">🌙 Noturno</option>
+        </select>
+        <input type="text" id="mapa-filter-busca" placeholder="Buscar turma..." oninput="renderTurmasMapa()">
+      </div>
+      <div id="mapa-turmas-lista"></div>
+    </div>
+
+    <!-- PASSO 2: Editor do mapa -->
+    <div id="mapa-step-editor" style="display:none">
+      <div class="row" style="align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="voltarMapaTurmas()">← Turmas</button>
+        <div style="flex:1">
+          <p style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;margin:0" id="mapa-titulo-editor">Mapa de Sala</p>
+          <p style="font-size:11px;color:var(--text2);margin:0" id="mapa-sub-editor">Clique em uma carteira para atribuir um aluno</p>
+        </div>
+        <div class="row" style="gap:6px;flex-wrap:wrap">
+          <label style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:5px">
+            Fileiras:
+            <select id="mapa-linhas" onchange="renderMapaEditor()" style="padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);font-size:12px">
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6" selected>6</option>
+              <option value="7">7</option>
+            </select>
+          </label>
+          <button class="btn btn-ghost btn-sm" onclick="limparMapaSala()">🗑 Limpar</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportarMapaPDF()">📄 PDF</button>
+          <button class="btn btn-primary btn-sm" onclick="salvarMapaSala()">💾 Salvar</button>
+        </div>
+      </div>
+
+      <!-- Quadro -->
+      <div style="background:var(--surface2);border:2px solid var(--border2);border-radius:var(--rs);padding:8px;text-align:center;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:16px">
+        ⬛ QUADRO / FRENTE DA SALA
+      </div>
+
+      <!-- Grade 5 colunas -->
+      <div id="mapa-grade" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px"></div>
+
+      <!-- Legenda -->
+      <div class="row" style="gap:14px;font-size:11px;color:var(--text2)">
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:var(--accent-glow);border:1px solid var(--accent);display:inline-block"></span>Ocupada</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:var(--surface2);border:1px solid var(--border);display:inline-block"></span>Vazia</span>
+        <span style="color:var(--text3)" id="mapa-ocupacao-info"></span>
+      </div>
+    </div>
+
+    <!-- PASSO 3: Seleção de aluno para a carteira -->
+    <div id="mapa-step-aluno" style="display:none">
+      <div class="row" style="align-items:center;gap:10px;margin-bottom:16px">
+        <button class="btn btn-ghost btn-sm" onclick="voltarMapaEditor()">← Mapa</button>
+        <div>
+          <p style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;margin:0">Selecionar Aluno</p>
+          <p style="font-size:11px;color:var(--text2);margin:0" id="mapa-carteira-info"></p>
+        </div>
+      </div>
+      <input type="text" id="mapa-aluno-busca" placeholder="Buscar aluno da turma..." oninput="filtrarAlunosMapa()"
+        style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:10px 13px;color:var(--text);font-size:13px;outline:none;margin-bottom:12px">
+      <div id="mapa-aluno-lista"></div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="removerAlunoCarteira()">🗑 Remover aluno desta carteira</button>
+      </div>
+    </div>
   </div>
 
   <div class="page" id="page-turmas">
@@ -1331,70 +1411,6 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
   </div>
 </div>
 
-<div class="modal-bg" id="modal-mapa" style="align-items:flex-start;padding:16px;overflow-y:auto">
-  <div class="modal" style="max-width:720px;width:100%">
-    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-      <div>
-        <h2 style="margin:0" id="mapa-titulo">Mapa de Sala</h2>
-        <p style="font-size:11px;color:var(--text2);margin-top:3px">Clique em uma carteira para atribuir um aluno</p>
-      </div>
-      <div class="row" style="gap:6px;flex-wrap:wrap">
-        <div class="field" style="margin:0;display:flex;align-items:center;gap:6px">
-          <label style="font-size:11px;white-space:nowrap">Fileiras:</label>
-          <select id="mapa-linhas" onchange="renderMapaEditor()" style="padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);font-size:12px">
-            <option value="4">4 (20 lugares)</option>
-            <option value="5">5 (25 lugares)</option>
-            <option value="6" selected>6 (30 lugares)</option>
-            <option value="7">7 (35 lugares)</option>
-          </select>
-        </div>
-        <button class="btn btn-ghost btn-sm" onclick="limparMapaSala()">🗑 Limpar</button>
-        <button class="btn btn-ghost btn-sm" onclick="exportarMapaPDF()">📄 PDF</button>
-        <button class="btn btn-primary btn-sm" onclick="salvarMapaSala()">💾 Salvar</button>
-        <button class="btn btn-ghost btn-sm" onclick="fecharMapaSala()">✕</button>
-      </div>
-    </div>
-
-    <!-- Quadro negro -->
-    <div style="background:var(--surface2);border:2px solid var(--border2);border-radius:var(--rs);padding:8px;text-align:center;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:20px">
-      ⬛ QUADRO / FRENTE DA SALA
-    </div>
-
-    <!-- Grade de carteiras (5 colunas) -->
-    <div id="mapa-grade" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px"></div>
-
-    <!-- Legenda -->
-    <div class="row" style="gap:12px;font-size:11px;color:var(--text2);flex-wrap:wrap">
-      <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:4px;background:var(--accent-glow);border:1px solid var(--accent);display:inline-block"></span>Ocupada</span>
-      <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);display:inline-block"></span>Vazia</span>
-    </div>
-  </div>
-</div>
-
-<!-- Modal de seleção de aluno para a carteira -->
-<div class="modal-bg" id="modal-mapa-aluno">
-  <div class="modal" style="max-width:380px">
-    <h2>Atribuir aluno — <span id="mapa-carteira-label"></span></h2>
-    <input type="text" id="mapa-aluno-busca" placeholder="Buscar aluno..." oninput="filtrarAlunosMapaModal()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px;color:var(--text);font-size:13px;outline:none;margin-bottom:10px">
-    <div id="mapa-aluno-lista" style="max-height:320px;overflow-y:auto;margin-bottom:12px"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost btn-sm" onclick="removerAlunoCarteira()">🗑 Remover</button>
-      <button class="btn btn-ghost btn-sm" onclick="fecharMapaAluno()">Cancelar</button>
-    </div>
-  </div>
-</div>
-  <div class="confirm-card">
-    <div class="big-avatar" id="conf-avatar">?</div>
-    <h2>É você?</h2>
-    <p class="nome" id="conf-nome">—</p>
-    <p class="turma" id="conf-turma">—</p>
-    <div id="conf-confianca" style="margin:6px 0;font-size:11px;color:var(--text2);text-align:center"></div>
-    <div class="confirm-actions">
-      <button class="btn btn-success btn-lg" onclick="confirmarPresenca()">✓ SIM, SOU EU</button>
-      <button class="btn btn-ghost" onclick="naoSouEu()">✗ Não sou eu</button>
-    </div>
-  </div>
-</div>
 
 <div class="modal-bg" id="modal-escola"><div class="modal">
   <h2 id="m-esc-title">Nova Escola</h2>
@@ -1938,7 +1954,8 @@ setInterval(() => {
 
 // Mapa de títulos para a topbar
 const PAGE_TITLES = {
-  'scanner':'Scanner', 'chamada':'Chamada', 'alunos':'Alunos', 'turmas':'Turmas',
+  'scanner':'Scanner', 'chamada':'Chamada', 'mapa-sala':'Mapa de Sala',
+  'alunos':'Alunos', 'turmas':'Turmas',
   'presencas':'Presenças', 'tarefas':'Tarefas Diárias', 'analises':'Análises e Relatórios',
   'config':'Configurações', 'dono-escolas':'Escolas', 'dono-gestores':'Gestores',
   'dono-stats':'Estatísticas', 'dono-backup':'Backup'
@@ -1961,6 +1978,7 @@ function switchTab(el, id) {
   if (id==='dono-backup')   renderBackup();
   if (id==='scanner')       { filtrarScanner(); renderTodayList(); }
   if (id==='chamada')       iniciarChamada();
+  if (id==='mapa-sala')     iniciarMapaSala();
   if (id==='alunos')        renderAlunos();
   if (id==='turmas')        renderTurmas();
   if (id==='presencas')     { loadTurmaFilter(); renderPresencas(); }
@@ -2519,7 +2537,7 @@ async function renderTurmas() {
   document.getElementById('turmas-count').textContent = turmasCache.length+' turma(s) · '+lista.length+' exibida(s)';
   const rows = await Promise.all(lista.map(async t => {
     const { count } = await db.from('alunos').select('*',{count:'exact',head:true}).eq('turma_id',t.id).eq('ativo',true);
-    return '<tr><td><b>'+t.nome+'</b></td><td>'+(t.ano_letivo||'—')+'</td><td><span class="badge badge-info">'+t.periodo+'</span></td><td>'+(count||0)+'</td><td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="editarTurma(\''+t.id+'\')">✏️</button> <button class="btn btn-ghost btn-sm" onclick="abrirMapaSala(\''+t.id+'\')" title="Mapa de sala">🗺️ Mapa</button> <button class="btn btn-danger btn-sm" onclick="excluirTurma(\''+t.id+'\')">🗑</button></td></tr>';
+    return '<tr><td><b>'+t.nome+'</b></td><td>'+(t.ano_letivo||'—')+'</td><td><span class="badge badge-info">'+t.periodo+'</span></td><td>'+(count||0)+'</td><td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="editarTurma(\''+t.id+'\')">✏️</button> <button class="btn btn-danger btn-sm" onclick="excluirTurma(\''+t.id+'\')">🗑</button></td></tr>';
   }));
   document.getElementById('turmas-body').innerHTML = rows.join('')||'<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">Nenhuma turma.</td></tr>';
 }
@@ -4755,13 +4773,275 @@ async function finalizarChamada() {
 }
 
 // ════════════════════════════════════════════════
-// MAPA DE SALA
+// MAPA DE SALA — fluxo em 3 passos na mesma página
 // ════════════════════════════════════════════════
 
 let _mapaTurmaId = null;
-let _mapaDados = {};       // { 'L1C1': {aluno_id, nome} }
+let _mapaDados = {};
 let _mapaCarteiraAtual = null;
 let _mapaAlunosDaTurma = [];
+
+function _showMapaStep(step) {
+  ['mapa-step-turma','mapa-step-editor','mapa-step-aluno'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = id === step ? '' : 'none';
+  });
+}
+
+async function iniciarMapaSala() {
+  await refreshCache();
+  _mapaTurmaId = null;
+  _showMapaStep('mapa-step-turma');
+  renderTurmasMapa();
+}
+
+function renderTurmasMapa() {
+  const turno = document.getElementById('mapa-filter-turno')?.value || '';
+  const q = (document.getElementById('mapa-filter-busca')?.value || '').toLowerCase();
+  let lista = turmasCache.filter(t =>
+    (!turno || t.periodo === turno) &&
+    (!q || t.nome.toLowerCase().includes(q))
+  );
+  const container = document.getElementById('mapa-turmas-lista');
+  if (!lista.length) {
+    container.innerHTML = '<div class="empty"><p>Nenhuma turma encontrada.</p></div>';
+    return;
+  }
+  container.innerHTML = lista.map(t => {
+    const saved = localStorage.getItem('pf-mapa-' + t.id);
+    const alocados = saved ? Object.keys(JSON.parse(saved||'{}')).length : 0;
+    return `<div onclick="selecionarTurmaMapa('${t.id}')" style="
+      display:flex;align-items:center;gap:14px;
+      padding:14px 16px;border-radius:var(--r);
+      border:1px solid var(--border);background:var(--surface);
+      margin-bottom:8px;cursor:pointer;
+      transition:border-color .15s,background .15s"
+      onmouseenter="this.style.borderColor='var(--accent)';this.style.background='var(--surface2)'"
+      onmouseleave="this.style.borderColor='var(--border)';this.style.background='var(--surface)'">
+      <div style="font-size:28px">🗺️</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700;font-family:'Space Grotesk',sans-serif">${t.nome}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">${t.periodo} · ${alocados > 0 ? alocados+' aluno(s) mapeados' : 'Mapa em branco'}</div>
+      </div>
+      <span style="font-size:11px;color:var(--text3)">Editar →</span>
+    </div>`;
+  }).join('');
+}
+
+async function selecionarTurmaMapa(turmaId) {
+  _mapaTurmaId = turmaId;
+  _mapaDados = {};
+  const turma = turmasCache.find(t => t.id === turmaId);
+
+  // Carrega alunos
+  await refreshCache();
+  _mapaAlunosDaTurma = alunosCache
+    .filter(a => a.turma_id === turmaId)
+    .sort((a,b) => a.nome.localeCompare(b.nome));
+
+  // Carrega mapa salvo
+  const saved = localStorage.getItem('pf-mapa-' + turmaId);
+  if (saved) { try { _mapaDados = JSON.parse(saved); } catch(e) { _mapaDados = {}; } }
+
+  document.getElementById('mapa-titulo-editor').textContent = turma?.nome || 'Mapa de Sala';
+  document.getElementById('mapa-sub-editor').textContent =
+    `${turma?.periodo || ''} · ${_mapaAlunosDaTurma.length} aluno(s) · clique em uma carteira`;
+
+  _showMapaStep('mapa-step-editor');
+  renderMapaEditor();
+}
+
+function voltarMapaTurmas() {
+  _showMapaStep('mapa-step-turma');
+  renderTurmasMapa();
+}
+
+function voltarMapaEditor() {
+  _showMapaStep('mapa-step-editor');
+  renderMapaEditor();
+}
+
+function renderMapaEditor() {
+  const linhas = parseInt(document.getElementById('mapa-linhas')?.value) || 6;
+  const colunas = 5;
+  const grade = document.getElementById('mapa-grade');
+  if (!grade) return;
+  grade.innerHTML = '';
+
+  for (let l = 1; l <= linhas; l++) {
+    for (let c = 1; c <= colunas; c++) {
+      const key = `L${l}C${c}`;
+      const aluno = _mapaDados[key];
+      const cell = document.createElement('div');
+      cell.onclick = () => abrirSelecaoAluno(key, l, c);
+      cell.style.cssText = `
+        border-radius:10px;border:2px solid ${aluno?'var(--accent)':'var(--border)'};
+        background:${aluno?'var(--accent-glow)':'var(--surface2)'};
+        padding:8px 4px;text-align:center;cursor:pointer;
+        min-height:62px;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:2px;
+        transition:all .15s;position:relative;`;
+      cell.innerHTML = `
+        <div style="font-size:8px;color:var(--text3);font-weight:600;position:absolute;top:4px;left:6px">${l}${String.fromCharCode(64+c)}</div>
+        ${aluno
+          ? `<div style="font-size:10px;font-weight:700;color:var(--accent);line-height:1.25;word-break:break-word;padding:0 4px">${_duasPartes(aluno.nome)}</div>`
+          : `<div style="font-size:20px;color:var(--border2)">+</div>`}`;
+      grade.appendChild(cell);
+    }
+  }
+
+  // Atualiza contador
+  const total = linhas * colunas;
+  const ocupados = Object.keys(_mapaDados).length;
+  const el = document.getElementById('mapa-ocupacao-info');
+  if (el) el.textContent = `${ocupados} de ${total} carteiras ocupadas`;
+}
+
+function _duasPartes(nome) {
+  return (nome||'').trim().split(/\s+/).slice(0,2).join(' ');
+}
+
+function abrirSelecaoAluno(key, linha, coluna) {
+  _mapaCarteiraAtual = key;
+  const letraColuna = String.fromCharCode(64+coluna);
+  document.getElementById('mapa-carteira-info').textContent =
+    `Fileira ${linha} · Coluna ${letraColuna} (${key})`;
+  document.getElementById('mapa-aluno-busca').value = '';
+  filtrarAlunosMapa();
+  _showMapaStep('mapa-step-aluno');
+  setTimeout(() => document.getElementById('mapa-aluno-busca').focus(), 150);
+}
+
+function filtrarAlunosMapa() {
+  const q = (document.getElementById('mapa-aluno-busca')?.value || '').toLowerCase().trim();
+  const ocupados = new Set(
+    Object.entries(_mapaDados)
+      .filter(([k]) => k !== _mapaCarteiraAtual)
+      .map(([,v]) => v.aluno_id)
+  );
+  const atual = _mapaDados[_mapaCarteiraAtual]?.aluno_id;
+  const filtrados = _mapaAlunosDaTurma.filter(a => !q || a.nome.toLowerCase().includes(q));
+  const container = document.getElementById('mapa-aluno-lista');
+  if (!filtrados.length) {
+    container.innerHTML = '<div class="empty"><p>Nenhum aluno encontrado.</p></div>';
+    return;
+  }
+  container.innerHTML = filtrados.map(a => {
+    const jaAlocado = ocupados.has(a.id);
+    const isAtual = a.id === atual;
+    return `<div onclick="${jaAlocado?'':` selecionarAlunoCarteira('${a.id}','${a.nome.replace(/'/g,"\\'")}') `}"
+      style="display:flex;align-items:center;gap:12px;padding:12px 14px;
+      border-radius:var(--rs);margin-bottom:6px;cursor:${jaAlocado?'default':'pointer'};
+      border:2px solid ${isAtual?'var(--accent)':jaAlocado?'var(--border)':'var(--border)'};
+      background:${isAtual?'var(--accent-glow)':jaAlocado?'var(--surface)':'var(--surface)'};
+      opacity:${jaAlocado&&!isAtual?.5:1};
+      transition:all .1s"
+      ${!jaAlocado?`onmouseenter="this.style.borderColor='var(--accent)';this.style.background='var(--surface2)'" onmouseleave="this.style.borderColor='var(--border)';this.style.background='var(--surface)'"`:''}>
+      <div style="width:36px;height:36px;border-radius:50%;background:${getColor(a.nome)}22;
+        color:${getColor(a.nome)};display:flex;align-items:center;justify-content:center;
+        font-size:11px;font-weight:700;flex-shrink:0;font-family:'Space Grotesk',sans-serif">
+        ${getInit(a.nome)}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+          ${_duasPartes(a.nome)}
+        </div>
+        <div style="font-size:10px;color:var(--text2);margin-top:1px">${a.nome}</div>
+      </div>
+      ${isAtual?'<span class="badge badge-success">✓ Nesta carteira</span>':jaAlocado?'<span style="font-size:10px;color:var(--text3)">Já alocado</span>':'<span style="font-size:10px;color:var(--text3)">→ Selecionar</span>'}
+    </div>`;
+  }).join('');
+}
+
+function selecionarAlunoCarteira(alunoId, nome) {
+  if (!_mapaCarteiraAtual) return;
+  _mapaDados[_mapaCarteiraAtual] = { aluno_id: alunoId, nome };
+  voltarMapaEditor();
+}
+
+function removerAlunoCarteira() {
+  if (!_mapaCarteiraAtual) return;
+  delete _mapaDados[_mapaCarteiraAtual];
+  voltarMapaEditor();
+}
+
+function salvarMapaSala() {
+  if (!_mapaTurmaId) return;
+  try {
+    localStorage.setItem('pf-mapa-' + _mapaTurmaId, JSON.stringify(_mapaDados));
+    toast('Mapa salvo!', '💾', 3000);
+    renderTurmasMapa();
+  } catch(e) { toast('Erro ao salvar.', '❌'); }
+}
+
+function limparMapaSala() {
+  if (!confirm('Limpar todo o mapa desta sala?')) return;
+  _mapaDados = {};
+  renderMapaEditor();
+  toast('Mapa limpo.', '🗑');
+}
+
+async function exportarMapaPDF() {
+  if (!window.jspdf) { toast('PDF indisponível.','❌'); return; }
+  const { jsPDF } = window.jspdf;
+  const turma = turmasCache.find(t => t.id === _mapaTurmaId);
+  const linhas = parseInt(document.getElementById('mapa-linhas')?.value) || 6;
+  const colunas = 5;
+
+  const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+  const PW=297, PH=210, M=14;
+  const W = PW-M*2;
+
+  // Cabeçalho
+  doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(30,30,30);
+  doc.text('Mapa de Sala — '+(turma?.nome||''), M, M+6);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(100,100,100);
+  doc.text((turma?.periodo||'')+' · '+new Date().toLocaleDateString('pt-BR'), M, M+11);
+
+  // Quadro
+  doc.setFillColor(40,40,40);
+  doc.roundedRect(M, M+15, W, 7, 1.5, 1.5, 'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
+  doc.text('QUADRO / FRENTE DA SALA', PW/2, M+19.8, {align:'center'});
+
+  // Carteiras
+  const startY = M+27;
+  const cellW = (W-(colunas-1)*3)/colunas;
+  const availH = PH - startY - M - 10;
+  const cellH = (availH-(linhas-1)*3)/linhas;
+
+  for (let l=1;l<=linhas;l++) {
+    for (let c=1;c<=colunas;c++) {
+      const key=`L${l}C${c}`;
+      const aluno=_mapaDados[key];
+      const x=M+(c-1)*(cellW+3);
+      const y=startY+(l-1)*(cellH+3);
+      if (aluno) { doc.setFillColor(235,242,255); doc.setDrawColor(91,141,238); }
+      else       { doc.setFillColor(250,251,253); doc.setDrawColor(200,205,215); }
+      doc.setLineWidth(0.35);
+      doc.roundedRect(x, y, cellW, cellH, 1.5, 1.5, 'FD');
+      // Código
+      doc.setFontSize(5.5); doc.setTextColor(170,175,190); doc.setFont('helvetica','normal');
+      doc.text(`${l}${String.fromCharCode(64+c)}`, x+1.5, y+4);
+      // Nome
+      if (aluno) {
+        doc.setFontSize(8); doc.setTextColor(30,70,160); doc.setFont('helvetica','bold');
+        const partes = doc.splitTextToSize(_duasPartes(aluno.nome), cellW-4);
+        const ty = y+cellH/2 + (partes.length===1?1.5:0);
+        doc.text(partes, x+cellW/2, ty, {align:'center', baseline:'middle'});
+      }
+    }
+  }
+
+  // Rodapé
+  doc.setFontSize(6.5); doc.setTextColor(160,160,160); doc.setFont('helvetica','normal');
+  doc.text('PresençaFácil · '+new Date().toLocaleString('pt-BR'), M, PH-5);
+  const ocup = Object.keys(_mapaDados).length;
+  doc.text(`${ocup} de ${linhas*colunas} carteiras ocupadas`, PW-M, PH-5, {align:'right'});
+
+  doc.save('mapa-'+( turma?.nome||'sala').replace(/[^a-z0-9]/gi,'-')+'.pdf');
+  toast('PDF gerado!','📄',3000);
+}
 
 async function abrirMapaSala(turmaId) {
   _mapaTurmaId = turmaId;
