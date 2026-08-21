@@ -875,7 +875,7 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
         </div>
         <button class="btn-logout" onclick="doLogout()" title="Sair">⏻</button>
       </div>
-      <div style="text-align:center;font-size:9px;color:var(--text3);margin-top:6px;letter-spacing:.05em">v2.9 · 21/08/2026</div>
+      <div style="text-align:center;font-size:9px;color:var(--text3);margin-top:6px;letter-spacing:.05em">v3.1 · 21/08/2026</div>
     </div>
   </aside>
 
@@ -1889,24 +1889,9 @@ function periodoAtual() {
 
 // Reconstrói localDescriptors apenas para o período ativo (melhora performance)
 function _atualizarDescritoresPeriodo() {
-  const periodo = periodoAtual();
   localDescriptors = [];
-  let fonte = alunosCache;
-
-  // Filtra pelo período se detectado
-  if (periodo) {
-    const filtrado = alunosCache.filter(a =>
-      a.turma_periodo === periodo ||
-      a.turma_periodo === 'Integral' ||
-      !a.turma_periodo
-    );
-    // Só aplica filtro se houver alunos com foto no período
-    const temFoto = filtrado.some(a => a.descriptor);
-    if (temFoto) fonte = filtrado;
-    // Se não houver ninguém com foto no período, carrega todos (modo seguro)
-  }
-
-  for (const a of fonte) {
+  // Carrega TODOS os alunos com foto — o filtro por turno/turma é feito manualmente pelo gestor
+  for (const a of alunosCache) {
     if (!a.descriptor) continue;
     let arr = a.descriptor;
     if (typeof arr === 'string') { try { arr = JSON.parse(arr); } catch(e) { continue; } }
@@ -1919,13 +1904,10 @@ function _atualizarDescritoresPeriodo() {
       descriptor: new Float32Array(arr)
     });
   }
-
   // Atualiza banner
   const banner = document.getElementById('gestor-banner');
   if (banner && currentEscola) {
-    const p = localDescriptors.length === 0 ? 'sem foto cadastrada' :
-              periodo && fonte !== alunosCache ? periodo : 'todos os períodos';
-    banner.textContent = currentEscola.nome + ' · ' + localDescriptors.length + ' aluno(s) com foto carregados (' + p + ')';
+    banner.textContent = currentEscola.nome + ' · ' + localDescriptors.length + ' aluno(s) com foto carregados';
   }
 }
 
@@ -2283,7 +2265,7 @@ function stopScanner() {
 
 async function runDetection() {
   if (!scanRunning) return;
-  if (document.getElementById('confirm-overlay').classList.contains('show')) {
+  if (document.getElementById('confirm-overlay')?.classList.contains('show')) {
     scanTimer = setTimeout(runDetection, 500);
     return;
   }
@@ -5154,6 +5136,18 @@ async function abrirMapaSala(turmaId) {
 function fecharMapaSala() {
   document.getElementById('modal-mapa').classList.remove('open');
   _mapaTurmaId = null;
+}
+
+function updateConnStatus() {
+  const dot = document.getElementById('conn-dot');
+  if (!dot) return;
+  const online = navigator.onLine;
+  dot.style.background = online ? 'var(--success)' : 'var(--warning)';
+  dot.style.boxShadow = online ? '0 0 5px var(--success)' : '0 0 5px var(--warning)';
+  dot.title = online ? 'Online' : 'Sem conexão';
+  dot.className = online ? 'conn-dot' : 'conn-dot offline';
+  const banner = document.getElementById('offline-banner');
+  if (banner) banner.classList.toggle('show', !online);
 }
 
 async function syncOfflineQueue() {
