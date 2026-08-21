@@ -875,7 +875,7 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
         </div>
         <button class="btn-logout" onclick="doLogout()" title="Sair">⏻</button>
       </div>
-      <div style="text-align:center;font-size:9px;color:var(--text3);margin-top:6px;letter-spacing:.05em">v2.8 · 21/08/2026</div>
+      <div style="text-align:center;font-size:9px;color:var(--text3);margin-top:6px;letter-spacing:.05em">v2.9 · 21/08/2026</div>
     </div>
   </aside>
 
@@ -1892,14 +1892,20 @@ function _atualizarDescritoresPeriodo() {
   const periodo = periodoAtual();
   localDescriptors = [];
   let fonte = alunosCache;
-  // Filtra pelo período se detectado — turmas Integral sempre incluídas
+
+  // Filtra pelo período se detectado
   if (periodo) {
-    fonte = alunosCache.filter(a =>
+    const filtrado = alunosCache.filter(a =>
       a.turma_periodo === periodo ||
       a.turma_periodo === 'Integral' ||
-      !a.turma_periodo  // turma sem período definido: inclui por segurança
+      !a.turma_periodo
     );
+    // Só aplica filtro se houver alunos com foto no período
+    const temFoto = filtrado.some(a => a.descriptor);
+    if (temFoto) fonte = filtrado;
+    // Se não houver ninguém com foto no período, carrega todos (modo seguro)
   }
+
   for (const a of fonte) {
     if (!a.descriptor) continue;
     let arr = a.descriptor;
@@ -1913,10 +1919,12 @@ function _atualizarDescritoresPeriodo() {
       descriptor: new Float32Array(arr)
     });
   }
-  // Atualiza banner com info de período
+
+  // Atualiza banner
   const banner = document.getElementById('gestor-banner');
   if (banner && currentEscola) {
-    const p = periodo || 'todos os períodos';
+    const p = localDescriptors.length === 0 ? 'sem foto cadastrada' :
+              periodo && fonte !== alunosCache ? periodo : 'todos os períodos';
     banner.textContent = currentEscola.nome + ' · ' + localDescriptors.length + ' aluno(s) com foto carregados (' + p + ')';
   }
 }
