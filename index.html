@@ -15,9 +15,23 @@
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('sw.js')
-        .then(r => console.log('SW registrado:', r.scope))
+        .then(r => {
+          console.log('SW registrado:', r.scope);
+          // Força atualização se houver nova versão
+          r.addEventListener('updatefound', () => {
+            const newSW = r.installing;
+            newSW.addEventListener('statechange', () => {
+              if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('Nova versão disponível — recarregando...');
+                window.location.reload();
+              }
+            });
+          });
+        })
         .catch(e => console.warn('SW falhou:', e));
     });
+    // Detecta quando SW atualiza e recarrega a página automaticamente
+    navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
   }
 </script>
 <script>
