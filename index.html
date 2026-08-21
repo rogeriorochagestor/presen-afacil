@@ -1331,7 +1331,58 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
   </div>
 </div>
 
-<div class="confirm-overlay" id="confirm-overlay">
+<div class="modal-bg" id="modal-mapa" style="align-items:flex-start;padding:16px;overflow-y:auto">
+  <div class="modal" style="max-width:720px;width:100%">
+    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div>
+        <h2 style="margin:0" id="mapa-titulo">Mapa de Sala</h2>
+        <p style="font-size:11px;color:var(--text2);margin-top:3px">Clique em uma carteira para atribuir um aluno</p>
+      </div>
+      <div class="row" style="gap:6px;flex-wrap:wrap">
+        <div class="field" style="margin:0;display:flex;align-items:center;gap:6px">
+          <label style="font-size:11px;white-space:nowrap">Fileiras:</label>
+          <select id="mapa-linhas" onchange="renderMapaEditor()" style="padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);font-size:12px">
+            <option value="4">4 (20 lugares)</option>
+            <option value="5">5 (25 lugares)</option>
+            <option value="6" selected>6 (30 lugares)</option>
+            <option value="7">7 (35 lugares)</option>
+          </select>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="limparMapaSala()">🗑 Limpar</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportarMapaPDF()">📄 PDF</button>
+        <button class="btn btn-primary btn-sm" onclick="salvarMapaSala()">💾 Salvar</button>
+        <button class="btn btn-ghost btn-sm" onclick="fecharMapaSala()">✕</button>
+      </div>
+    </div>
+
+    <!-- Quadro negro -->
+    <div style="background:var(--surface2);border:2px solid var(--border2);border-radius:var(--rs);padding:8px;text-align:center;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:20px">
+      ⬛ QUADRO / FRENTE DA SALA
+    </div>
+
+    <!-- Grade de carteiras (5 colunas) -->
+    <div id="mapa-grade" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px"></div>
+
+    <!-- Legenda -->
+    <div class="row" style="gap:12px;font-size:11px;color:var(--text2);flex-wrap:wrap">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:4px;background:var(--accent-glow);border:1px solid var(--accent);display:inline-block"></span>Ocupada</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);display:inline-block"></span>Vazia</span>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de seleção de aluno para a carteira -->
+<div class="modal-bg" id="modal-mapa-aluno">
+  <div class="modal" style="max-width:380px">
+    <h2>Atribuir aluno — <span id="mapa-carteira-label"></span></h2>
+    <input type="text" id="mapa-aluno-busca" placeholder="Buscar aluno..." oninput="filtrarAlunosMapaModal()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px;color:var(--text);font-size:13px;outline:none;margin-bottom:10px">
+    <div id="mapa-aluno-lista" style="max-height:320px;overflow-y:auto;margin-bottom:12px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="removerAlunoCarteira()">🗑 Remover</button>
+      <button class="btn btn-ghost btn-sm" onclick="fecharMapaAluno()">Cancelar</button>
+    </div>
+  </div>
+</div>
   <div class="confirm-card">
     <div class="big-avatar" id="conf-avatar">?</div>
     <h2>É você?</h2>
@@ -2468,7 +2519,7 @@ async function renderTurmas() {
   document.getElementById('turmas-count').textContent = turmasCache.length+' turma(s) · '+lista.length+' exibida(s)';
   const rows = await Promise.all(lista.map(async t => {
     const { count } = await db.from('alunos').select('*',{count:'exact',head:true}).eq('turma_id',t.id).eq('ativo',true);
-    return '<tr><td><b>'+t.nome+'</b></td><td>'+(t.ano_letivo||'—')+'</td><td><span class="badge badge-info">'+t.periodo+'</span></td><td>'+(count||0)+'</td><td><button class="btn btn-ghost btn-sm" onclick="editarTurma(\''+t.id+'\')">✏️</button> <button class="btn btn-danger btn-sm" onclick="excluirTurma(\''+t.id+'\')">🗑</button></td></tr>';
+    return '<tr><td><b>'+t.nome+'</b></td><td>'+(t.ano_letivo||'—')+'</td><td><span class="badge badge-info">'+t.periodo+'</span></td><td>'+(count||0)+'</td><td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="editarTurma(\''+t.id+'\')">✏️</button> <button class="btn btn-ghost btn-sm" onclick="abrirMapaSala(\''+t.id+'\')" title="Mapa de sala">🗺️ Mapa</button> <button class="btn btn-danger btn-sm" onclick="excluirTurma(\''+t.id+'\')">🗑</button></td></tr>';
   }));
   document.getElementById('turmas-body').innerHTML = rows.join('')||'<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">Nenhuma turma.</td></tr>';
 }
@@ -4704,8 +4755,232 @@ async function finalizarChamada() {
 }
 
 // ════════════════════════════════════════════════
-// SISTEMA OFFLINE — fila local + sync automático
+// MAPA DE SALA
 // ════════════════════════════════════════════════
+
+let _mapaTurmaId = null;
+let _mapaDados = {};       // { 'L1C1': {aluno_id, nome} }
+let _mapaCarteiraAtual = null;
+let _mapaAlunosDaTurma = [];
+
+async function abrirMapaSala(turmaId) {
+  _mapaTurmaId = turmaId;
+  _mapaDados = {};
+  const turma = turmasCache.find(t => t.id === turmaId);
+  document.getElementById('mapa-titulo').textContent = 'Mapa de Sala — ' + (turma?.nome || '');
+
+  // Carrega alunos da turma
+  await refreshCache();
+  _mapaAlunosDaTurma = alunosCache.filter(a => a.turma_id === turmaId).sort((a,b) => a.nome.localeCompare(b.nome));
+
+  // Carrega mapa salvo (localStorage por turma)
+  const saved = localStorage.getItem('pf-mapa-' + turmaId);
+  if (saved) {
+    try { _mapaDados = JSON.parse(saved); } catch(e) { _mapaDados = {}; }
+  }
+
+  document.getElementById('modal-mapa').classList.add('open');
+  renderMapaEditor();
+}
+
+function fecharMapaSala() {
+  document.getElementById('modal-mapa').classList.remove('open');
+  _mapaTurmaId = null;
+}
+
+function renderMapaEditor() {
+  const linhas = parseInt(document.getElementById('mapa-linhas').value) || 6;
+  const colunas = 5;
+  const grade = document.getElementById('mapa-grade');
+  grade.innerHTML = '';
+
+  for (let l = 1; l <= linhas; l++) {
+    for (let c = 1; c <= colunas; c++) {
+      const key = `L${l}C${c}`;
+      const aluno = _mapaDados[key];
+      const primeirosDois = aluno ? _duasPartes(aluno.nome) : null;
+      const cell = document.createElement('div');
+      cell.onclick = () => abrirSelecaoAluno(key, l, c);
+      cell.style.cssText = `
+        border-radius:10px;
+        border:2px solid ${aluno ? 'var(--accent)' : 'var(--border)'};
+        background:${aluno ? 'var(--accent-glow)' : 'var(--surface2)'};
+        padding:8px 6px;
+        text-align:center;
+        cursor:pointer;
+        min-height:64px;
+        display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:3px;
+        transition:all .15s;
+        position:relative;
+      `;
+      cell.innerHTML = `
+        <div style="font-size:9px;color:var(--text3);font-weight:600;position:absolute;top:5px;left:7px">${l}${String.fromCharCode(64+c)}</div>
+        ${aluno
+          ? `<div style="font-size:11px;font-weight:700;color:var(--accent);line-height:1.2;word-break:break-word">${primeirosDois}</div>`
+          : `<div style="font-size:18px;color:var(--border2)">+</div>`
+        }`;
+      grade.appendChild(cell);
+    }
+  }
+}
+
+// Retorna os dois primeiros nomes de um nome completo
+function _duasPartes(nome) {
+  const partes = (nome || '').trim().split(/\s+/);
+  return partes.slice(0, 2).join(' ');
+}
+
+function abrirSelecaoAluno(key, linha, coluna) {
+  _mapaCarteiraAtual = key;
+  document.getElementById('mapa-carteira-label').textContent =
+    `Fileira ${linha}, Coluna ${String.fromCharCode(64+coluna)}`;
+  document.getElementById('mapa-aluno-busca').value = '';
+  filtrarAlunosMapaModal();
+  document.getElementById('modal-mapa-aluno').classList.add('open');
+  setTimeout(() => document.getElementById('mapa-aluno-busca').focus(), 100);
+}
+
+function fecharMapaAluno() {
+  document.getElementById('modal-mapa-aluno').classList.remove('open');
+  _mapaCarteiraAtual = null;
+}
+
+function filtrarAlunosMapaModal() {
+  const q = (document.getElementById('mapa-aluno-busca').value || '').toLowerCase().trim();
+  // Alunos já ocupando carteira
+  const ocupados = new Set(Object.entries(_mapaDados)
+    .filter(([k]) => k !== _mapaCarteiraAtual)
+    .map(([, v]) => v.aluno_id));
+
+  const filtrados = _mapaAlunosDaTurma.filter(a =>
+    (!q || a.nome.toLowerCase().includes(q))
+  );
+
+  document.getElementById('mapa-aluno-lista').innerHTML = filtrados.map(a => {
+    const jaOcupado = ocupados.has(a.id);
+    return `<div onclick="${jaOcupado ? '' : `selecionarAlunoCarteira('${a.id}','${a.nome.replace(/'/g,"\\'")}')`}"
+      style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--rs);cursor:${jaOcupado?'default':'pointer'};
+      opacity:${jaOcupado?.45:1};background:${_mapaDados[_mapaCarteiraAtual]?.aluno_id===a.id?'var(--accent-glow)':'transparent'}">
+      <div style="width:28px;height:28px;border-radius:50%;background:${getColor(a.nome)}22;color:${getColor(a.nome)};
+        display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;font-family:'Space Grotesk',sans-serif">
+        ${getInit(a.nome)}
+      </div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600">${_duasPartes(a.nome)}</div>
+        <div style="font-size:10px;color:var(--text2)">${jaOcupado?'Já alocado':'Disponível'}</div>
+      </div>
+      ${_mapaDados[_mapaCarteiraAtual]?.aluno_id===a.id?'<span style="font-size:10px;color:var(--accent)">✓ Atual</span>':''}
+    </div>`;
+  }).join('') || '<p style="text-align:center;color:var(--text3);padding:16px;font-size:12px">Nenhum aluno encontrado.</p>';
+}
+
+function selecionarAlunoCarteira(alunoId, nome) {
+  if (!_mapaCarteiraAtual) return;
+  _mapaDados[_mapaCarteiraAtual] = { aluno_id: alunoId, nome };
+  fecharMapaAluno();
+  renderMapaEditor();
+}
+
+function removerAlunoCarteira() {
+  if (!_mapaCarteiraAtual) return;
+  delete _mapaDados[_mapaCarteiraAtual];
+  fecharMapaAluno();
+  renderMapaEditor();
+}
+
+function salvarMapaSala() {
+  if (!_mapaTurmaId) return;
+  try {
+    localStorage.setItem('pf-mapa-' + _mapaTurmaId, JSON.stringify(_mapaDados));
+    toast('Mapa salvo!', '💾', 3000);
+  } catch(e) { toast('Erro ao salvar.', '❌'); }
+}
+
+function limparMapaSala() {
+  if (!confirm('Limpar todo o mapa desta sala?')) return;
+  _mapaDados = {};
+  renderMapaEditor();
+  toast('Mapa limpo.', '🗑');
+}
+
+async function exportarMapaPDF() {
+  if (!window.jspdf) { toast('PDF indisponível.','❌'); return; }
+  const { jsPDF } = window.jspdf;
+  const turma = turmasCache.find(t => t.id === _mapaTurmaId);
+  const linhas = parseInt(document.getElementById('mapa-linhas').value) || 6;
+  const colunas = 5;
+
+  // Landscape para caber melhor
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const PW = 297, PH = 210;
+  const MARGIN = 14;
+  const usableW = PW - MARGIN * 2;
+  const usableH = PH - MARGIN * 2;
+
+  // Cabeçalho
+  doc.setFontSize(14); doc.setTextColor(30,30,30);
+  doc.setFont('helvetica','bold');
+  doc.text('Mapa de Sala', MARGIN, MARGIN + 5);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10); doc.setTextColor(100,100,100);
+  doc.text((turma?.nome||'') + ' · ' + (turma?.periodo||'') + ' · ' + new Date().toLocaleDateString('pt-BR'), MARGIN, MARGIN + 10);
+
+  // Quadro
+  doc.setFillColor(40,40,40);
+  doc.roundedRect(MARGIN, MARGIN + 15, usableW, 8, 2, 2, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(8); doc.setFont('helvetica','bold');
+  doc.text('QUADRO / FRENTE DA SALA', PW/2, MARGIN + 20.5, {align:'center'});
+
+  // Grade de carteiras
+  const startY = MARGIN + 28;
+  const cellW = (usableW - (colunas-1)*4) / colunas;
+  const cellH = (usableH - startY + MARGIN - (linhas-1)*4) / linhas;
+
+  for (let l = 1; l <= linhas; l++) {
+    for (let c = 1; c <= colunas; c++) {
+      const key = `L${l}C${c}`;
+      const aluno = _mapaDados[key];
+      const x = MARGIN + (c-1) * (cellW + 4);
+      const y = startY + (l-1) * (cellH + 4);
+
+      // Fundo da carteira
+      if (aluno) {
+        doc.setFillColor(235, 242, 255);
+        doc.setDrawColor(91, 141, 238);
+      } else {
+        doc.setFillColor(248, 249, 252);
+        doc.setDrawColor(200, 200, 210);
+      }
+      doc.setLineWidth(0.4);
+      doc.roundedRect(x, y, cellW, cellH, 2, 2, 'FD');
+
+      // Código da carteira
+      doc.setFontSize(6); doc.setTextColor(160,160,175); doc.setFont('helvetica','normal');
+      doc.text(`${l}${String.fromCharCode(64+c)}`, x+1.5, y+4);
+
+      // Nome do aluno
+      if (aluno) {
+        const nomeExib = _duasPartes(aluno.nome);
+        doc.setFontSize(8); doc.setTextColor(40,80,160); doc.setFont('helvetica','bold');
+        const linhasNome = doc.splitTextToSize(nomeExib, cellW - 4);
+        const totalH = linhasNome.length * 4;
+        const textY = y + cellH/2 - totalH/2 + 4;
+        doc.text(linhasNome, x + cellW/2, textY, {align:'center'});
+      }
+    }
+  }
+
+  // Rodapé
+  doc.setFontSize(7); doc.setTextColor(160,160,160); doc.setFont('helvetica','normal');
+  doc.text('PresençaFácil · Emitido em ' + new Date().toLocaleString('pt-BR'), MARGIN, PH - 6);
+  doc.text('Total: ' + Object.keys(_mapaDados).length + ' alunos alocados de ' + (linhas*colunas) + ' carteiras', PW - MARGIN, PH - 6, {align:'right'});
+
+  const fname = 'mapa-sala-' + (turma?.nome||'turma').replace(/[^a-z0-9]/gi,'-').toLowerCase() + '.pdf';
+  doc.save(fname);
+  toast('PDF gerado!', '📄', 3000);
+}
 const OFFLINE_KEY = 'pf-offline-queue';
 
 const offlineQueue = {
