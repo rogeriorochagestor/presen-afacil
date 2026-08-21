@@ -875,7 +875,7 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
         </div>
         <button class="btn-logout" onclick="doLogout()" title="Sair">⏻</button>
       </div>
-      <div style="text-align:center;font-size:9px;color:var(--text3);margin-top:6px;letter-spacing:.05em">v2.5 · 21/08/2026</div>
+      <div style="text-align:center;font-size:9px;color:var(--text3);margin-top:6px;letter-spacing:.05em">v2.6 · 21/08/2026</div>
     </div>
   </aside>
 
@@ -1833,15 +1833,35 @@ async function loadModels() {
 
 async function refreshCache() {
   if (!currentEscola) return;
-  const [rt, ra] = await Promise.all([
-    db.from('turmas').select('*').eq('ativo',true).order('nome'),
-    db.from('alunos').select('*').eq('ativo',true).order('nome')
-  ]);
+
+  // Busca turmas normalmente
+  const rt = await db.from('turmas').select('*').eq('ativo',true).order('nome');
   turmasCache = rt.data || [];
+
+  // Busca alunos SEM descriptor primeiro (rápido)
+  const ra = await db.from('alunos')
+    .select('id,nome,ativo,turma_id,telefone_resp,nome_resp,telefone_resp2,nome_resp2,codigo_sigeduca')
+    .eq('escola_id', currentEscola.id)
+    .eq('ativo', true)
+    .order('nome');
+
   alunosCache = (ra.data||[]).map(a => {
     const t = turmasCache.find(x=>x.id===a.turma_id);
-    return { ...a, turma_nome: t?.nome||null, turma_periodo: t?.periodo||null };
+    return { ...a, turma_nome: t?.nome||null, turma_periodo: t?.periodo||null, descriptor: null };
   });
+
+  // Busca descriptores separadamente (só os que têm foto)
+  const rd = await db.from('alunos')
+    .select('id,descriptor')
+    .eq('escola_id', currentEscola.id)
+    .eq('ativo', true)
+    .not('descriptor', 'is', null);
+
+  // Mescla descriptores no cache
+  const descMap = {};
+  (rd.data||[]).forEach(a => { if (a.descriptor) descMap[a.id] = a.descriptor; });
+  alunosCache = alunosCache.map(a => ({ ...a, descriptor: descMap[a.id] || null }));
+
   // Atualiza descritores filtrados pelo período atual
   _atualizarDescritoresPeriodo();
 }
