@@ -875,7 +875,7 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
         </div>
         <button class="btn-logout" onclick="doLogout()" title="Sair">⏻</button>
       </div>
-      <div style="text-align:center;font-size:9px;color:var(--text3);margin-top:6px;letter-spacing:.05em">v2.3 · 21/08/2026</div>
+      <div style="text-align:center;font-size:9px;color:var(--text3);margin-top:6px;letter-spacing:.05em">v2.5 · 21/08/2026</div>
     </div>
   </aside>
 
@@ -1109,7 +1109,7 @@ tbody tr:hover { background: rgba(255,255,255,.02); }
           </label>
           <button class="btn btn-ghost btn-sm" onclick="limparMapaSala()">🗑 Limpar</button>
           <button class="btn btn-ghost btn-sm" onclick="exportarMapaPDF()">📄 PDF</button>
-          <button class="btn btn-primary btn-sm" onclick="salvarMapaSala()">💾 Salvar</button>
+          <button class="btn btn-primary btn-sm" id="btn-salvar-mapa" onclick="salvarMapaSala()">💾 Salvar</button>
         </div>
       </div>
 
@@ -1979,7 +1979,7 @@ function switchTab(el, id) {
   if (id==='dono-gestores') renderGestoresDono();
   if (id==='dono-stats')    renderStatsDono();
   if (id==='dono-backup')   renderBackup();
-  if (id==='scanner')       { filtrarScanner(); renderTodayList(); }
+  if (id==='scanner')       { refreshCache().then(() => { filtrarScanner(); renderTodayList(); }); }
   if (id==='chamada')       iniciarChamada();
   if (id==='mapa-sala')     iniciarMapaSala();
   if (id==='alunos')        renderAlunos();
@@ -4795,7 +4795,7 @@ async function iniciarMapaSala() {
   renderTurmasMapa();
 }
 
-function renderTurmasMapa() {
+async function renderTurmasMapa() {
   const turno = document.getElementById('mapa-filter-turno')?.value || '';
   const q = (document.getElementById('mapa-filter-busca')?.value || '').toLowerCase();
   let lista = turmasCache.filter(t =>
@@ -4807,9 +4807,24 @@ function renderTurmasMapa() {
     container.innerHTML = '<div class="empty"><p>Nenhuma turma encontrada.</p></div>';
     return;
   }
+
+  // Busca mapas salvos do Supabase para todas as turmas
+  let mapasSalvos = {};
+  try {
+    const { data } = await db.from('mapas_sala')
+      .select('turma_id, dados')
+      .eq('escola_id', currentEscola.id);
+    (data||[]).forEach(m => { mapasSalvos[m.turma_id] = Object.keys(m.dados||{}).length; });
+  } catch(e) {
+    // Fallback localStorage
+    lista.forEach(t => {
+      const saved = localStorage.getItem('pf-mapa-' + t.id);
+      if (saved) { try { mapasSalvos[t.id] = Object.keys(JSON.parse(saved)).length; } catch(e2) {} }
+    });
+  }
+
   container.innerHTML = lista.map(t => {
-    const saved = localStorage.getItem('pf-mapa-' + t.id);
-    const alocados = saved ? Object.keys(JSON.parse(saved||'{}')).length : 0;
+    const alocados = mapasSalvos[t.id] || 0;
     return `<div onclick="selecionarTurmaMapa('${t.id}')" style="
       display:flex;align-items:center;gap:14px;
       padding:14px 16px;border-radius:var(--r);
@@ -4821,7 +4836,9 @@ function renderTurmasMapa() {
       <div style="font-size:28px">🗺️</div>
       <div style="flex:1">
         <div style="font-size:14px;font-weight:700;font-family:'Space Grotesk',sans-serif">${t.nome}</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:2px">${t.periodo} · ${alocados > 0 ? alocados+' aluno(s) mapeados' : 'Mapa em branco'}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">
+          ${t.periodo} · ${alocados > 0 ? `☁️ ${alocados} aluno(s) mapeados` : 'Mapa em branco'}
+        </div>
       </div>
       <span style="font-size:11px;color:var(--text3)">Editar →</span>
     </div>`;
@@ -4833,15 +4850,28 @@ async function selecionarTurmaMapa(turmaId) {
   _mapaDados = {};
   const turma = turmasCache.find(t => t.id === turmaId);
 
-  // Carrega alunos
   await refreshCache();
   _mapaAlunosDaTurma = alunosCache
     .filter(a => a.turma_id === turmaId)
     .sort((a,b) => a.nome.localeCompare(b.nome));
 
-  // Carrega mapa salvo
-  const saved = localStorage.getItem('pf-mapa-' + turmaId);
-  if (saved) { try { _mapaDados = JSON.parse(saved); } catch(e) { _mapaDados = {}; } }
+  // Carrega mapa do Supabase (fonte primária)
+  try {
+    const { data } = await db.from('mapas_sala')
+      .select('dados, linhas')
+      .eq('escola_id', currentEscola.id)
+      .eq('turma_id', turmaId)
+      .maybeSingle();
+    if (data) {
+      _mapaDados = data.dados || {};
+      const sel = document.getElementById('mapa-linhas');
+      if (sel && data.linhas) sel.value = String(data.linhas);
+    }
+  } catch(e) {
+    // Fallback: localStorage se Supabase falhar
+    const saved = localStorage.getItem('pf-mapa-' + turmaId);
+    if (saved) { try { _mapaDados = JSON.parse(saved); } catch(e2) { _mapaDados = {}; } }
+  }
 
   document.getElementById('mapa-titulo-editor').textContent = turma?.nome || 'Mapa de Sala';
   document.getElementById('mapa-sub-editor').textContent =
@@ -4927,11 +4957,9 @@ function abrirSelecaoAluno(key, numStr) {
 
 function filtrarAlunosMapa() {
   const q = (document.getElementById('mapa-aluno-busca')?.value || '').toLowerCase().trim();
-  const ocupados = new Set(
-    Object.entries(_mapaDados)
-      .filter(([k]) => k !== _mapaCarteiraAtual)
-      .map(([,v]) => v.aluno_id)
-  );
+  // Identifica onde cada aluno está alocado atualmente
+  const alocadoEm = {};
+  Object.entries(_mapaDados).forEach(([key, v]) => { alocadoEm[v.aluno_id] = key; });
   const atual = _mapaDados[_mapaCarteiraAtual]?.aluno_id;
   const filtrados = _mapaAlunosDaTurma.filter(a => !q || a.nome.toLowerCase().includes(q));
   const container = document.getElementById('mapa-aluno-lista');
@@ -4940,16 +4968,22 @@ function filtrarAlunosMapa() {
     return;
   }
   container.innerHTML = filtrados.map(a => {
-    const jaAlocado = ocupados.has(a.id);
     const isAtual = a.id === atual;
-    return `<div onclick="${jaAlocado?'':` selecionarAlunoCarteira('${a.id}','${a.nome.replace(/'/g,"\\'")}') `}"
+    const outraCarteira = alocadoEm[a.id] && alocadoEm[a.id] !== _mapaCarteiraAtual ? alocadoEm[a.id] : null;
+    // Converte key (ex: L2C3) para número sequencial
+    let numOutra = '';
+    if (outraCarteira) {
+      const match = outraCarteira.match(/L(\d+)C(\d+)/);
+      if (match) numOutra = String((parseInt(match[1])-1)*5 + parseInt(match[2])).padStart(2,'0');
+    }
+    return `<div onclick="selecionarAlunoCarteira('${a.id}','${a.nome.replace(/'/g,"\\'")}','${outraCarteira||''}')"
       style="display:flex;align-items:center;gap:12px;padding:12px 14px;
-      border-radius:var(--rs);margin-bottom:6px;cursor:${jaAlocado?'default':'pointer'};
-      border:2px solid ${isAtual?'var(--accent)':jaAlocado?'var(--border)':'var(--border)'};
-      background:${isAtual?'var(--accent-glow)':jaAlocado?'var(--surface)':'var(--surface)'};
-      opacity:${jaAlocado&&!isAtual?.5:1};
+      border-radius:var(--rs);margin-bottom:6px;cursor:pointer;
+      border:2px solid ${isAtual?'var(--accent)':'var(--border)'};
+      background:${isAtual?'var(--accent-glow)':'var(--surface)'};
       transition:all .1s"
-      ${!jaAlocado?`onmouseenter="this.style.borderColor='var(--accent)';this.style.background='var(--surface2)'" onmouseleave="this.style.borderColor='var(--border)';this.style.background='var(--surface)'"`:''}>
+      onmouseenter="this.style.borderColor='var(--accent)';this.style.background='var(--surface2)'"
+      onmouseleave="this.style.borderColor='${isAtual?'var(--accent)':'var(--border)'}';this.style.background='${isAtual?'var(--accent-glow)':'var(--surface)'}'">
       <div style="width:36px;height:36px;border-radius:50%;background:${getColor(a.nome)}22;
         color:${getColor(a.nome)};display:flex;align-items:center;justify-content:center;
         font-size:11px;font-weight:700;flex-shrink:0;font-family:'Space Grotesk',sans-serif">
@@ -4959,15 +4993,28 @@ function filtrarAlunosMapa() {
         <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
           ${_duasPartes(a.nome)}
         </div>
-        <div style="font-size:10px;color:var(--text2);margin-top:1px">${a.nome}</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:1px">
+          ${isAtual ? '✓ Nesta carteira' : outraCarteira ? `📍 Carteira ${numOutra} — clique para mover` : 'Disponível'}
+        </div>
       </div>
-      ${isAtual?'<span class="badge badge-success">✓ Nesta carteira</span>':jaAlocado?'<span style="font-size:10px;color:var(--text3)">Já alocado</span>':'<span style="font-size:10px;color:var(--text3)">→ Selecionar</span>'}
+      ${isAtual?'<span class="badge badge-success">Atual</span>':outraCarteira?`<span class="badge badge-warning">Mover</span>`:'<span style="font-size:10px;color:var(--text3)">→</span>'}
     </div>`;
   }).join('');
 }
 
-function selecionarAlunoCarteira(alunoId, nome) {
+function selecionarAlunoCarteira(alunoId, nome, carteiraAnterior) {
   if (!_mapaCarteiraAtual) return;
+  // Se havia aluno na carteira destino, move para a carteira de origem do novo aluno
+  const alunoDestino = _mapaDados[_mapaCarteiraAtual];
+  if (carteiraAnterior) {
+    // Troca: remove da carteira anterior
+    if (alunoDestino) {
+      // Coloca o aluno que estava no destino na carteira de origem
+      _mapaDados[carteiraAnterior] = alunoDestino;
+    } else {
+      delete _mapaDados[carteiraAnterior];
+    }
+  }
   _mapaDados[_mapaCarteiraAtual] = { aluno_id: alunoId, nome };
   voltarMapaEditor();
 }
@@ -4978,13 +5025,31 @@ function removerAlunoCarteira() {
   voltarMapaEditor();
 }
 
-function salvarMapaSala() {
+async function salvarMapaSala() {
   if (!_mapaTurmaId) return;
+  const linhas = parseInt(document.getElementById('mapa-linhas')?.value) || 6;
+  const btn = document.getElementById('btn-salvar-mapa');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Salvando...'; }
   try {
+    // Salva no Supabase (upsert — cria ou atualiza)
+    const { error } = await db.from('mapas_sala').upsert({
+      escola_id: currentEscola.id,
+      turma_id: _mapaTurmaId,
+      dados: _mapaDados,
+      linhas,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'escola_id,turma_id' });
+    if (error) throw error;
+    // Salva também no localStorage como cache offline
     localStorage.setItem('pf-mapa-' + _mapaTurmaId, JSON.stringify(_mapaDados));
-    toast('Mapa salvo!', '💾', 3000);
-    renderTurmasMapa();
-  } catch(e) { toast('Erro ao salvar.', '❌'); }
+    toast('Mapa salvo na nuvem! ☁️', '💾', 3000);
+  } catch(e) {
+    // Fallback: só localStorage
+    localStorage.setItem('pf-mapa-' + _mapaTurmaId, JSON.stringify(_mapaDados));
+    toast('Salvo localmente (sem conexão).', '⚠️', 4000);
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '💾 Salvar'; }
+  renderTurmasMapa();
 }
 
 function limparMapaSala() {
@@ -5037,7 +5102,7 @@ async function exportarMapaPDF() {
       doc.roundedRect(x, y, cellW, cellH, 1.5, 1.5, 'FD');
       // Número
       doc.setFontSize(6); doc.setFont('helvetica','bold');
-      doc.setTextColor(aluno?[91,141,238]:[170,175,190]);
+      if (aluno) { doc.setTextColor(91,141,238); } else { doc.setTextColor(170,175,190); }
       doc.text(numStr, x+cellW/2, y+5, {align:'center'});
       // Nome
       if (aluno) {
